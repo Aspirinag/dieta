@@ -353,65 +353,124 @@
     return tot ? Math.round((fatti / tot) * 100) : null;
   }
 
+  // Serie di valori per i grafici: colore e nome
+  function multiChart(series) {
+    const h = 140, w = 320, pad = 18;
+    const tutti = series.flatMap((x) => x.values.filter((v) => v != null));
+    if (tutti.length < 2) return '<p class="muted">Servono almeno due misurazioni per il grafico.</p>';
+    const n = Math.max(...series.map((x) => x.values.length));
+    const min = Math.min(...tutti), max = Math.max(...tutti), range = max - min || 1;
+    const linee = series.map((x) => {
+      const coords = x.values
+        .map((v, i) => (v == null ? null : `${(pad + (i * (w - 2 * pad)) / Math.max(n - 1, 1)).toFixed(1)},${(h - pad - ((v - min) / range) * (h - 2 * pad)).toFixed(1)}`))
+        .filter(Boolean);
+      return coords.length > 1
+        ? `<polyline points="${coords.join(' ')}" fill="none" stroke="${x.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`
+        : '';
+    }).join('');
+    const legenda = series.map((x) => `<span style="color:${x.color};font-weight:700">● ${x.nome}</span>`).join(' &nbsp; ');
+    return `<svg class="chart" viewBox="0 0 ${w} ${h}">${linee}</svg><p class="muted">${legenda}</p>`;
+  }
+
   function andamento() {
     const bia = [...prof().bia].sort((a, b) => a.data.localeCompare(b.data));
     const ad = aderenza();
     const adHtml = ad == null
       ? '<p class="muted">Nessun piano attivo negli ultimi 7 giorni.</p>'
-      : `<p><strong>${ad}%</strong> dei pasti segnati negli ultimi 7 giorni.</p>`;
+      : `<p>Hai segnato il <strong>${ad}%</strong> dei pasti negli ultimi 7 giorni.</p>`;
     if (!bia.length) {
       return `
         <h1>Andamento</h1>
         <div class="card">${adHtml}</div>
-        <div class="card"><strong>Nessuna misurazione.</strong><p class="muted">Aggiungi le misure della BIA dalla scheda Dati.</p></div>`;
+        <div class="card"><strong>Nessuna misurazione.</strong><p class="muted">Carica la BIA in PDF dalla scheda Dati.</p></div>`;
     }
     const primo = bia[0], ultimo = bia[bia.length - 1];
-    const delta = (k) => (primo[k] != null && ultimo[k] != null ? ultimo[k] - primo[k] : null);
-    const cella = (v, unit = '') => (v == null ? '–' : `${v}${unit}`);
-    const deltaCella = (d, unit) => {
+    const prec = bia.length > 1 ? bia[bia.length - 2] : null;
+    const voci = [
+      { k: 'peso', nome: 'Peso', u: 'kg', verso: -1 },
+      { k: 'grasso_kg', nome: 'Massa grassa', u: 'kg', verso: -1 },
+      { k: 'magra_kg', nome: 'Massa magra', u: 'kg', verso: 1 },
+      { k: 'vita_cm', nome: 'Vita', u: 'cm', verso: -1 },
+      { k: 'addome_cm', nome: 'Addome', u: 'cm', verso: -1 },
+      { k: 'fianchi_cm', nome: 'Fianchi', u: 'cm', verso: -1 },
+    ];
+    const val = (m, k) => (m[k] == null ? '–' : String(m[k]).replace('.', ','));
+    const diff = (a, b, k) => (a && b && a[k] != null && b[k] != null ? +(b[k] - a[k]).toFixed(1) : null);
+    const fmtD = (d, u, verso) => {
       if (d == null) return '–';
-      const cls = d > 0 ? 'delta-up' : 'delta-down';
-      return `<span class="${cls}">${d > 0 ? '+' : ''}${d.toFixed(1)}${unit}</span>`;
+      const bene = d * verso > 0;
+      const cls = d === 0 ? '' : bene ? 'delta-down' : 'delta-up';
+      return `<span class="${cls}">${d > 0 ? '+' : ''}${String(d).replace('.', ',')} ${u}</span>`;
     };
-    const peso = bia.map((m) => m.peso).filter((v) => v != null);
-    const grasso = bia.map((m) => m.grasso_kg).filter((v) => v != null);
+
+    // Riepilogo automatico
+    const consigli = [];
+    const dGrasso = diff(primo, ultimo, 'grasso_kg');
+    const dMagra = diff(primo, ultimo, 'magra_kg');
+    if (dGrasso != null && dMagra != null) {
+      if (dGrasso < 0 && dMagra >= -0.5) consigli.push('Dall\'inizio il calo riguarda soprattutto la massa grassa, e la massa magra è stabile: è il risultato che cerchiamo.');
+      if (dMagra < -1) consigli.push('La massa magra è scesa di più di 1 kg: conviene parlarne con la nutrizionista.');
+      if (dGrasso > 0) consigli.push('La massa grassa è salita rispetto all\'inizio.');
+    }
+    const dPrec = prec ? [
+      `Peso ${fmtD(diff(prec, ultimo, 'peso'), 'kg', -1)}`,
+      `massa grassa ${fmtD(diff(prec, ultimo, 'grasso_kg'), 'kg', -1)}`,
+      `vita ${fmtD(diff(prec, ultimo, 'vita_cm'), 'cm', -1)}`,
+    ].join(' · ') : '';
+
+    const tabellaDiff = voci.map((v) => `
+      <tr>
+        <th>${v.nome}</th>
+        <td>${val(primo, v.k)} → ${val(ultimo, v.k)} ${v.u}</td>
+        <td>${fmtD(diff(primo, ultimo, v.k), v.u, v.verso)}</td>
+      </tr>`).join('');
+
     const righe = [...bia].reverse().map((m) => `
       <tr>
         <td>${fmtDate(m.data)}</td>
-        <td>${cella(m.peso)}</td>
-        <td>${cella(m.grasso_kg)}</td>
-        <td>${cella(m.magra_kg)}</td>
-        <td>${cella(m.vita_cm)}</td>
+        <td>${val(m, 'peso')}</td>
+        <td>${val(m, 'grasso_kg')}</td>
+        <td>${val(m, 'magra_kg')}</td>
+        <td>${val(m, 'vita_cm')}</td>
+        <td>${val(m, 'addome_cm')}</td>
+        <td>${val(m, 'fianchi_cm')}</td>
       </tr>`).join('');
+
     const obiettivi = ultimo.obiettivo_peso != null || ultimo.obiettivo_grasso_pct != null
-      ? `<p class="muted">Obiettivi: peso ${cella(ultimo.obiettivo_peso, ' kg')}, massa grassa ${cella(ultimo.obiettivo_grasso_pct, '%')}</p>`
-      : '';
+      ? `<p class="muted">Obiettivi: peso ${val(ultimo, 'obiettivo_peso')} kg, massa grassa ${val(ultimo, 'obiettivo_grasso_pct')}%</p>` : '';
+
     return `
       <h1>Andamento</h1>
-      <div class="card">${adHtml}</div>
-      <h2>Dal primo all'ultimo controllo</h2>
       <div class="card">
-        <table>
-          <tr><th>Peso</th><td>${cella(primo.peso)} → ${cella(ultimo.peso)}</td><td>${deltaCella(delta('peso'), ' kg')}</td></tr>
-          <tr><th>Massa grassa</th><td>${cella(primo.grasso_kg)} → ${cella(ultimo.grasso_kg)} kg</td><td>${deltaCella(delta('grasso_kg'), ' kg')}</td></tr>
-          <tr><th>Massa magra</th><td>${cella(primo.magra_kg)} → ${cella(ultimo.magra_kg)} kg</td><td>${deltaCella(delta('magra_kg'), ' kg')}</td></tr>
-          <tr><th>Vita</th><td>${cella(primo.vita_cm)} → ${cella(ultimo.vita_cm)} cm</td><td>${deltaCella(delta('vita_cm'), ' cm')}</td></tr>
-        </table>
+        ${adHtml}
+        ${dPrec ? `<p><strong>Dall'ultima misurazione (${fmtDate(prec.data)}):</strong><br>${dPrec}</p>` : ''}
+        ${consigli.map((c) => `<p>• ${c}</p>`).join('')}
+      </div>
+      <h2>Dall'inizio: ${fmtDate(primo.data)} → ${fmtDate(ultimo.data)}</h2>
+      <div class="card">
+        <table>${tabellaDiff}</table>
         ${obiettivi}
       </div>
-      <h2>Grafici</h2>
+      <h2>Peso e composizione</h2>
       <div class="card">
-        <strong>Peso (viola) e massa grassa (arancio), kg</strong>
-        <svg class="chart" viewBox="0 0 320 120">
-          ${sparkline(peso, '#9b8cff')}
-          ${sparkline(grasso, '#ff7a59')}
-        </svg>
-        <p class="muted">Dal ${fmtDate(primo.data)} al ${fmtDate(ultimo.data)}, ${bia.length} ${bia.length === 1 ? 'misurazione' : 'misurazioni'}.</p>
+        ${multiChart([
+          { nome: 'Peso', color: '#9b8cff', values: bia.map((m) => m.peso) },
+          { nome: 'Massa grassa', color: '#ff7a59', values: bia.map((m) => m.grasso_kg) },
+          { nome: 'Massa magra', color: '#2fa67f', values: bia.map((m) => m.magra_kg) },
+        ])}
+      </div>
+      <h2>Centimetri</h2>
+      <div class="card">
+        ${multiChart([
+          { nome: 'Vita', color: '#ff7a59', values: bia.map((m) => m.vita_cm) },
+          { nome: 'Addome', color: '#9b8cff', values: bia.map((m) => m.addome_cm) },
+          { nome: 'Fianchi', color: '#2fa67f', values: bia.map((m) => m.fianchi_cm) },
+        ])}
       </div>
       <h2>Storico misurazioni</h2>
-      <div class="card">
+      <div class="card" style="overflow-x: auto">
         <table>
-          <tr><th>Data</th><th>Peso</th><th>Grasso</th><th>Magra</th><th>Vita</th></tr>
+          <tr><th>Data</th><th>Peso</th><th>Grasso</th><th>Magra</th><th>Vita</th><th>Addome</th><th>Fianchi</th></tr>
           ${righe}
         </table>
       </div>`;
@@ -449,6 +508,12 @@
         <p class="muted">Scegli un file .json con il piano o con le misure BIA. Viene aggiunto al profilo ${esc(prof().nome)}.</p>
         <button class="primary" data-import="1">Scegli file</button>
       </div>
+      <h2>BIA in PDF</h2>
+      <div class="card">
+        <p class="muted">Carica il referto BIA in PDF: i valori vengono letti e salvati nel telefono. Il PDF non viene conservato.</p>
+        <button class="primary" data-biaup="1">Carica BIA in PDF</button>
+        <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
+      </div>
       <h2>Aggiungi misurazione BIA</h2>
       <div class="card">
         <div class="grid2">
@@ -470,6 +535,43 @@
           <button class="small" data-export="1">Esporta backup</button>
         </div>
       </div>`;
+  }
+
+  // ---------- BIA DAI PDF ----------
+  // Legge i valori dal referto impedenziometrico (testo estratto riga per riga)
+  function parseBia(rawText) {
+    const text = rawText.split('\n').map((l) => l.replace(/\s*\|\s*/g, ' ').replace(/\s+/g, ' ').trim()).join('\n');
+    const num = (x) => parseFloat(String(x).replace(',', '.'));
+    const one = (re) => { const m = text.match(re); return m ? num(m[1]) : null; };
+    const data = text.match(/VISITA DEL (\d{2})\/(\d{2})\/(\d{4})/);
+    return {
+      data: data ? `${data[3]}-${data[2]}-${data[1]}` : null,
+      peso: one(/\bPeso: ([\d.,]+) kg/),
+      grasso_kg: one(/FAT \(Massa Grassa\): ([\d.,]+) kg/),
+      grasso_pct: one(/FAT \(Massa Grassa\): [\d.,]+ kg ([\d.,]+)/),
+      magra_kg: one(/FFM \(Massa Magra\): ([\d.,]+) kg/),
+      magra_pct: one(/FFM \(Massa Magra\): [\d.,]+ kg ([\d.,]+)/),
+      acqua_l: one(/TBW \(Acqua Corporea Totale\): ([\d.,]+) lt/),
+      bmr: one(/BMR \(Metabolismo Basale\): ([\d.,]+) kcal/),
+      vat_cm2: one(/Viscerale \(VAT\): ([\d.,]+) cm/),
+      vita_cm: one(/Circonferenza vita: ([\d.,]+) cm/),
+      addome_cm: one(/Circonferenza addominale: ([\d.,]+) cm/),
+      fianchi_cm: one(/Circonferenza fianchi: ([\d.,]+) cm/),
+      torace_cm: one(/Circonferenza torace: ([\d.,]+) cm/),
+      obiettivo_peso: one(/Peso Desiderabile: ([\d.,]+) kg/),
+      obiettivo_grasso_pct: one(/FAT Desiderabile: ([\d.,]+) %/),
+    };
+  }
+  async function leggiBiaPdf(file) {
+    const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const out = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const tc = await (await doc.getPage(p)).getTextContent();
+      const rows = {};
+      tc.items.forEach((it) => { const y = Math.round(it.transform[5]); (rows[y] = rows[y] || []).push({ x: it.transform[4], s: it.str }); });
+      Object.keys(rows).map(Number).sort((a, b) => b - a).forEach((y) => out.push(rows[y].sort((a, b) => a.x - b.x).map((i) => i.s).join(' | ')));
+    }
+    return parseBia(out.join('\n'));
   }
 
   // ---------- RENDER ----------
@@ -513,6 +615,7 @@
       save(); return render();
     }
 
+    if (d.biaup !== undefined) { document.getElementById('biaFile').click(); return; }
     if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
     if (d.pdfdel !== undefined) {
       if (!confirm('Rimuovere il PDF della dieta?')) return;
@@ -565,6 +668,26 @@
       prof().bia.push(m);
     });
   }
+
+  // Carica una BIA in PDF: legge i valori, chiede conferma e li salva
+  document.addEventListener('change', async (e) => {
+    if (e.target.id !== 'biaFile') return;
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const m = await leggiBiaPdf(file);
+      if (!m.data || m.peso == null) return alert('Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA.');
+      const ok = confirm(`Aggiungo la BIA del ${fmtDate(m.data)}?\nPeso ${String(m.peso).replace('.', ',')} kg · massa grassa ${String(m.grasso_kg).replace('.', ',')} kg · vita ${m.vita_cm ?? '–'} cm`);
+      if (!ok) return;
+      mergeBia([m]);
+      save();
+      render();
+      alert('BIA salvata. La trovi in ANDAMENTO.');
+    } catch (err) {
+      alert('Non riesco a leggere questo PDF.');
+    }
+  });
 
   // Carica il PDF della dieta del profilo attivo
   document.addEventListener('change', async (e) => {
