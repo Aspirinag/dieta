@@ -125,6 +125,7 @@
   function load() {
     try {
       const s = { ...structuredClone(DEFAULT), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+      if (s.preferito && s.profili[s.preferito]) s.attivo = s.preferito;
       return s;
     } catch (e) {
       return structuredClone(DEFAULT);
@@ -155,15 +156,9 @@
     prof().dieta[iso] = r;
     return r;
   }
-  // Alternativa preferita del profilo per quel pasto e quel giorno della settimana
-  const prefKey = (iso, i) => `${dayIdx(iso)}:${i}`;
-  function prefOpt(iso, i) {
-    const pr = prof().preferiti || {};
-    return pr[prefKey(iso, i)] ?? 0;
-  }
   function slotState(iso, i) {
     const r = recFor(iso);
-    return r.slot[i] || { opt: prefOpt(iso, i), fatto: false };
+    return r.slot[i] || { opt: 0, fatto: false };
   }
 
   // ---------- SCHEMA DIETETICO DAL PDF ----------
@@ -272,7 +267,7 @@ function parseSchema(righe) {
         <p class="muted">${DAYS[dayIdx(iso)]} ${fmtDate(iso)}</p>
         <div class="card">
           <strong>Nessun piano attivo per oggi.</strong>
-          <p class="muted">Importa il piano della stagione dalla scheda Dati.</p>
+          <p class="muted">Carica lo schema PDF dalla scheda Dati.</p>
           <button class="small" data-tab="dati">Vai a Dati</button>
         </div>`;
     }
@@ -284,8 +279,7 @@ function parseSchema(righe) {
       const alternative = pasto.opzioni.length > 1
         ? `<div class="row">${pasto.opzioni.map((o, j) => `
             <button class="chip ${j === st.opt ? 'on' : ''}" data-opt="${i}:${j}">${esc(o.titolo || 'Opzione ' + (j + 1))}</button>
-            <button class="chip" data-pref="${i}:${j}" aria-label="Preferita">${prefOpt(iso, i) === j ? '★' : '☆'}</button>`).join('')}</div>
-          <p class="muted">★ = la scelta che fai di solito: è quella proposta per default.</p>`
+`).join('')}</div>`
         : '';
       return `
         <div class="card">
@@ -567,8 +561,13 @@ function parseSchema(righe) {
   // Ridisegna la pagina; in cima solo al cambio di scheda o profilo, altrimenti resta dove sei
   function render(inCima = false) {
     const y = window.scrollY;
-    const profili = Object.entries(state.profili).map(([id, p]) =>
-      `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(p.nome)}</button>`).join('');
+    const ordine = Object.keys(state.profili).sort((a, b) => (a === state.preferito ? -1 : b === state.preferito ? 1 : 0));
+    const profili = ordine.map((id) => {
+      const p = state.profili[id];
+      const pref = id === state.preferito;
+      return `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(p.nome)}</button>
+        <button class="chip" data-prefprofilo="${id}" aria-label="Profilo preferito">${pref ? '★' : '☆'}</button>`;
+    }).join('');
     const corpo = tab === 'oggi' ? oggi() : tab === 'andamento' ? andamento() : dati();
     document.getElementById('app').innerHTML = `<div class="profili">${profili}</div>${corpo}`;
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
@@ -590,18 +589,13 @@ function parseSchema(righe) {
 
     if (d.tab) { tab = d.tab; return render(true); }
     if (d.profilo) { state.attivo = d.profilo; save(); return render(true); }
+    if (d.prefprofilo) {
+      state.preferito = state.preferito === d.prefprofilo ? null : d.prefprofilo;
+      save(); return render(true);
+    }
 
     const iso = todayISO();
     if (d.fatto !== undefined) { const i = Number(d.fatto); return setSlot(iso, i, { fatto: !slotState(iso, i).fatto }); }
-    if (d.pref !== undefined) {
-      const [i, j] = d.pref.split(':').map(Number);
-      const iso = todayISO();
-      prof().preferiti = prof().preferiti || {};
-      if (prefOpt(iso, i) === j) delete prof().preferiti[prefKey(iso, i)];
-      else prof().preferiti[prefKey(iso, i)] = j;
-      setSlot(iso, i, { opt: prefOpt(iso, i) });
-      return;
-    }
     if (d.opt !== undefined) { const [i, j] = d.opt.split(':').map(Number); return setSlot(iso, i, { opt: j }); }
     if (d.olio !== undefined) {
       const r = recFor(iso);
