@@ -569,13 +569,15 @@ function parseSchema(righe) {
   }
 
   // ---------- RENDER ----------
-  function render() {
+  // Ridisegna la pagina; in cima solo al cambio di scheda o profilo, altrimenti resta dove sei
+  function render(inCima = false) {
+    const y = window.scrollY;
     const profili = Object.entries(state.profili).map(([id, p]) =>
       `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(p.nome)}</button>`).join('');
     const corpo = tab === 'oggi' ? oggi() : tab === 'andamento' ? andamento() : dati();
     document.getElementById('app').innerHTML = `<div class="profili">${profili}</div>${corpo}`;
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-    window.scrollTo(0, 0);
+    window.scrollTo(0, inCima ? 0 : y);
   }
 
   // Modifica un piano o una misura, poi salva e ridisegna
@@ -591,8 +593,8 @@ function parseSchema(righe) {
     if (!b) return;
     const d = b.dataset;
 
-    if (d.tab) { tab = d.tab; return render(); }
-    if (d.profilo) { state.attivo = d.profilo; save(); return render(); }
+    if (d.tab) { tab = d.tab; return render(true); }
+    if (d.profilo) { state.attivo = d.profilo; save(); return render(true); }
 
     const iso = todayISO();
     if (d.fatto !== undefined) { const i = Number(d.fatto); return setSlot(iso, i, { fatto: !slotState(iso, i).fatto }); }
