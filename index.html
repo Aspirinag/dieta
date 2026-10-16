@@ -105,8 +105,10 @@
   <button data-tab="dati">⚙️ DATI</button>
 </nav>
 <input type="file" id="impFile" accept="application/json,.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-  const DAYS = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const DAYS =['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
   const OLIO_TOT = 6;   // cucchiaini al giorno
   const ACQUA_TOT = 2;  // litri al giorno
   const KEY = 'dieta:v1';
@@ -158,6 +160,103 @@
   function slotState(iso, i) {
     const r = recFor(iso);
     return r.slot[i] || { opt: 0, fatto: false };
+  }
+
+  // ---------- PDF DELLA DIETA (salvato nel browser del telefono) ----------
+  const pdfKey = () => `pdf:${state.attivo}`;
+  function dbOpen() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('dieta', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('file');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  async function pdfPut(key, blob) {
+    const db = await dbOpen();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('file', 'readwrite');
+      tx.objectStore('file').put(blob, key);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+  async function pdfGet(key) {
+    const db = await dbOpen();
+    return new Promise((res, rej) => {
+      const q = db.transaction('file').objectStore('file').get(key);
+      q.onsuccess = () => res(q.result || null);
+      q.onerror = () => rej(q.error);
+    });
+  }
+  async function pdfDel(key) {
+    const db = await dbOpen();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('file', 'readwrite');
+      tx.objectStore('file').delete(key);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+
+  // Disegna una pagina del PDF in un canvas, adatto alla larghezza dello schermo
+  async function renderPdfPage(box, page) {
+    const blob = await pdfGet(pdfKey());
+    if (!blob) { box.innerHTML = '<p class="muted">Nessun PDF caricato.</p>'; return; }
+    const pdf = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise;
+    const pg = await pdf.getPage(Math.min(page, pdf.numPages));
+    const base = pg.getViewport({ scale: 1 });
+    const width = box.clientWidth || 340;
+    const vp = pg.getViewport({ scale: (width * 2) / base.width }); // x2 per schermi retina
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    canvas.style.width = '100%';
+    canvas.style.borderRadius = '12px';
+    box.innerHTML = '';
+    box.appendChild(canvas);
+    await pg.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  }
+  function hydratePdf() {
+    const box = document.getElementById('pdfbox');
+    if (!box) return;
+    // Un giorno per pagina: lunedì = pagina 1
+    renderPdfPage(box, dayIdx(todayISO()) + 1).catch(() => {
+      box.innerHTML = '<p class="muted">Non riesco a mostrare il PDF. Ricaricalo dalla scheda Dati.</p>';
+    });
+  }
+
+  // ---------- OGGI CON PDF ----------
+  function oggiPdf() {
+    const iso = todayISO();
+    const r = recFor(iso);
+    return `
+      <h1>Oggi, ${DAYS[dayIdx(iso)]}</h1>
+      <p class="muted">${fmtDate(iso)} · dalla dieta caricata</p>
+      <div class="card"><div id="pdfbox"><p class="muted">Caricamento della pagina…</p></div></div>
+      <h2>Olio e acqua</h2>
+      <div class="card">
+        <div class="between">
+          <strong>Olio extra vergine</strong>
+          <div class="stepper">
+            <button class="small" data-olio="-1">−</button>
+            <span class="val">${r.olio} / ${OLIO_TOT}</span>
+            <button class="small" data-olio="1">+</button>
+          </div>
+        </div>
+        <p class="muted">cucchiaini, da distribuire nella giornata</p>
+      </div>
+      <div class="card">
+        <div class="between">
+          <strong>Acqua</strong>
+          <div class="stepper">
+            <button class="small" data-acqua="-0.25">−</button>
+            <span class="val">${r.acqua.toFixed(2)} / ${ACQUA_TOT} L</span>
+            <button class="small" data-acqua="0.25">+</button>
+          </div>
+        </div>
+        <p class="muted">Un bicchiere è circa 0,25 L</p>
+      </div>`;
   }
 
   // ---------- OGGI ----------
@@ -334,6 +433,17 @@
       <h1>Dati</h1>
       <h2>Piani alimentari</h2>
       ${piani}
+      <h2>PDF della dieta</h2>
+      <div class="card">
+        ${prof().pdfNome
+          ? `<p>Caricato: <strong>${esc(prof().pdfNome)}</strong></p>
+             <p class="muted">Oggi vedi la pagina del giorno in OGGI. Lunedì è la pagina 1.</p>
+             <div class="row"><button class="primary" data-pdfup="1">Sostituisci PDF</button></div>
+             <button class="link" data-pdfdel="1">Rimuovi PDF</button>`
+          : `<p class="muted">Carica il PDF della dieta: lo vedi in OGGI, pagina per pagina.</p>
+             <button class="primary" data-pdfup="1">Carica PDF della dieta</button>`}
+        <input type="file" id="pdfFile" accept="application/pdf,.pdf" style="display: none">
+      </div>
       <h2>Importa</h2>
       <div class="card">
         <p class="muted">Scegli un file .json con il piano o con le misure BIA. Viene aggiunto al profilo ${esc(prof().nome)}.</p>
@@ -366,10 +476,11 @@
   function render() {
     const profili = Object.entries(state.profili).map(([id, p]) =>
       `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(p.nome)}</button>`).join('');
-    const corpo = tab === 'oggi' ? oggi() : tab === 'andamento' ? andamento() : dati();
+    const corpo = tab === 'oggi' ? (prof().pdfNome ? oggiPdf() : oggi()) : tab === 'andamento' ? andamento() : dati();
     document.getElementById('app').innerHTML = `<div class="profili">${profili}</div>${corpo}`;
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     window.scrollTo(0, 0);
+    if (tab === 'oggi' && prof().pdfNome) hydratePdf();
   }
 
   // Modifica un piano o una misura, poi salva e ridisegna
@@ -380,7 +491,7 @@
     render();
   }
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', async (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     const d = b.dataset;
@@ -402,6 +513,13 @@
       save(); return render();
     }
 
+    if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
+    if (d.pdfdel !== undefined) {
+      if (!confirm('Rimuovere il PDF della dieta?')) return;
+      await pdfDel(pdfKey());
+      prof().pdfNome = null;
+      save(); return render();
+    }
     if (d.import !== undefined) { document.getElementById('impFile').click(); return; }
     if (d.delpiano !== undefined) {
       const ordinati = [...prof().piani].sort((a, b2) => a.dal.localeCompare(b2.dal));
@@ -447,6 +565,23 @@
       prof().bia.push(m);
     });
   }
+
+  // Carica il PDF della dieta del profilo attivo
+  document.addEventListener('change', async (e) => {
+    if (e.target.id !== 'pdfFile') return;
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      await pdfPut(pdfKey(), file);
+      prof().pdfNome = file.name;
+      save();
+      render();
+      alert('PDF caricato. Lo trovi in OGGI.');
+    } catch (err) {
+      alert('Non riesco a salvare il PDF. Riprova.');
+    }
+  });
 
   // Importa un file: piano alimentare oppure misure BIA
   document.addEventListener('change', (e) => {
