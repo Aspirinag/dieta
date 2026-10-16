@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dieta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#fff8f2">
+<meta name="theme-color" content="#f4fff8">
 <title>Dieta</title>
 <style>
   * { box-sizing: border-box; }
@@ -54,14 +54,14 @@
   .profili { display: flex; gap: 8px; margin-bottom: 4px; }
   .profili button.on { background: #d4ff3f; color: #0a0a0a; }
   /* Tema chiaro e allegro */
-  html { background: #fff8f2; }
+  html { background: #f4fff8; }
   body {
     color: #2d2a3e;
     background:
-      radial-gradient(circle at 8% 2%, #ffd9c7 0%, transparent 38%),
+      radial-gradient(circle at 8% 2%, #cdf5df 0%, transparent 38%),
       radial-gradient(circle at 92% 30%, #cdf5e6 0%, transparent 40%),
       radial-gradient(circle at 40% 100%, #e5dcff 0%, transparent 45%),
-      #fff8f2;
+      #f4fff8;
     background-attachment: fixed;
   }
   .muted { color: #6b6880; }
@@ -75,10 +75,10 @@
   }
   input { background: #ffffff; color: #2d2a3e; border: 1px solid #e6dff0; }
   input::placeholder { color: #a7a3b8; }
-  .primary { background: #ff7a59; color: #ffffff; box-shadow: 0 8px 20px rgba(255, 122, 89, 0.3); }
+  .primary { background: #22a86a; color: #ffffff; box-shadow: 0 8px 20px rgba(34, 168, 106, 0.3); }
   .small, .chip { background: #ffffff; color: #2d2a3e; border: 1px solid #efe6f5; box-shadow: 0 2px 8px rgba(120, 90, 150, 0.08); }
   .chip.on { background: #5fd3b0; color: #1e3b33; border-color: #5fd3b0; }
-  .profili button.on { background: #ff7a59; color: #ffffff; }
+  .profili button.on { background: #22a86a; color: #ffffff; }
   .badge { background: #9b8cff; color: #ffffff; }
   .check .box { border-color: rgba(45, 42, 62, 0.35); }
   .check.on .box { background: #5fd3b0; border-color: #5fd3b0; color: #1e3b33; }
@@ -86,14 +86,14 @@
   th { color: #6b6880; }
   th, td { border-bottom: 1px solid rgba(45, 42, 62, 0.08); }
   .delta-up { color: #e5484d; }
-  .delta-down { color: #2fa67f; }
+  .delta-down { color: #2bb6c9; }
   nav {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid #efe6f5;
     box-shadow: 0 10px 30px rgba(120, 90, 150, 0.18);
   }
   nav button { color: #8a86a0; }
-  nav button.active { color: #ff7a59; }
+  nav button.active { color: #22a86a; }
 </style>
 </head>
 <body>
@@ -454,16 +454,16 @@ function parseSchema(righe) {
       <div class="card">
         ${multiChart([
           { nome: 'Peso', color: '#9b8cff', values: bia.map((m) => m.peso) },
-          { nome: 'Massa grassa', color: '#ff7a59', values: bia.map((m) => m.grasso_kg) },
-          { nome: 'Massa magra', color: '#2fa67f', values: bia.map((m) => m.magra_kg) },
+          { nome: 'Massa grassa', color: '#22a86a', values: bia.map((m) => m.grasso_kg) },
+          { nome: 'Massa magra', color: '#2bb6c9', values: bia.map((m) => m.magra_kg) },
         ])}
       </div>
       <h2>Centimetri</h2>
       <div class="card">
         ${multiChart([
-          { nome: 'Vita', color: '#ff7a59', values: bia.map((m) => m.vita_cm) },
+          { nome: 'Vita', color: '#22a86a', values: bia.map((m) => m.vita_cm) },
           { nome: 'Addome', color: '#9b8cff', values: bia.map((m) => m.addome_cm) },
-          { nome: 'Fianchi', color: '#2fa67f', values: bia.map((m) => m.fianchi_cm) },
+          { nome: 'Fianchi', color: '#2bb6c9', values: bia.map((m) => m.fianchi_cm) },
         ])}
       </div>
       <h2>Storico misurazioni</h2>
