@@ -53,7 +53,6 @@
   nav button.active { color: #d4ff3f; }
   .profili { display: flex; gap: 8px; margin-bottom: 4px; }
   .profili button.on { background: #d4ff3f; color: #0a0a0a; }
-  #impFile { display: none; }
   /* Tema chiaro e allegro */
   html { background: #fff8f2; }
   body {
@@ -104,7 +103,6 @@
   <button data-tab="andamento">📈 ANDAMENTO</button>
   <button data-tab="dati">⚙️ DATI</button>
 </nav>
-<input type="file" id="impFile" accept="application/json,.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -497,17 +495,6 @@ function parseSchema(righe) {
         <button class="primary" data-pdfup="1">Carica schema PDF</button>
         <input type="file" id="pdfFile" accept="application/pdf,.pdf" style="display: none">
       </div>
-      <h2>Importa</h2>
-      <div class="card">
-        <p class="muted">Scegli un file .json con il piano o con le misure BIA. Viene aggiunto al profilo ${esc(prof().nome)}.</p>
-        <button class="primary" data-import="1">Scegli file</button>
-      </div>
-      <h2>BIA in PDF</h2>
-      <div class="card">
-        <p class="muted">Carica il referto BIA in PDF: i valori vengono letti e salvati nel telefono. Il PDF non viene conservato.</p>
-        <button class="primary" data-biaup="1">Carica BIA in PDF</button>
-        <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
-      </div>
       <h2>Aggiungi misurazione BIA</h2>
       <div class="card">
         <div class="grid2">
@@ -612,31 +599,6 @@ function parseSchema(righe) {
 
     if (d.biaup !== undefined) { document.getElementById('biaFile').click(); return; }
     if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
-    if (d.import !== undefined) { document.getElementById('impFile').click(); return; }
-    if (d.delpiano !== undefined) {
-      const ordinati = [...prof().piani].sort((a, b2) => a.dal.localeCompare(b2.dal));
-      const p = ordinati[Number(d.delpiano)];
-      if (!confirm(`Eliminare il piano "${p.nome}"?`)) return;
-      prof().piani = prof().piani.filter((x) => x !== p);
-      save(); return render();
-    }
-    if (d.savebia !== undefined) {
-      const data = document.getElementById('b_data').value;
-      if (!data) return alert('Inserisci la data');
-      const m = {
-        data,
-        peso: num(document.getElementById('b_peso').value),
-        grasso_kg: num(document.getElementById('b_grasso').value),
-        magra_kg: num(document.getElementById('b_magra').value),
-        acqua_l: num(document.getElementById('b_acqua').value),
-        bmr: num(document.getElementById('b_bmr').value),
-        vat_cm2: num(document.getElementById('b_vat').value),
-        vita_cm: num(document.getElementById('b_vita').value),
-      };
-      if (m.peso == null) return alert('Inserisci almeno il peso');
-      mergeBia([m]);
-      save(); alert('Misurazione salvata.'); return render();
-    }
     if (d.export !== undefined) {
       const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
       const a = document.createElement('a');
@@ -703,44 +665,6 @@ function parseSchema(righe) {
     } catch (err) {
       alert('Non riesco a leggere questo PDF.');
     }
-  });
-
-  // Importa un file: piano alimentare oppure misure BIA
-  document.addEventListener('change', (e) => {
-    if (e.target.id !== 'impFile') return;
-    const file = e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const json = JSON.parse(reader.result);
-        let esito = [];
-        if (Array.isArray(json.piani)) {
-          json.piani.forEach((p) => {
-            if (!p.dal || !Array.isArray(p.giorni) || p.giorni.length !== 7) throw new Error('piano');
-            prof().piani = prof().piani.filter((x) => !(x.nome === p.nome && x.dal === p.dal));
-            // Il nuovo piano sostituisce quelli aperti: il precedente si chiude il giorno prima
-            prof().piani.forEach((old) => {
-              if (old.dal < p.dal && (!old.al || old.al >= p.dal)) old.al = addDays(p.dal, -1);
-            });
-            prof().piani.push(p);
-          });
-          esito.push(`${json.piani.length} piano/i`);
-        }
-        if (Array.isArray(json.misurazioni)) {
-          mergeBia(json.misurazioni);
-          esito.push(`${json.misurazioni.length} misurazione/i BIA`);
-        }
-        if (!esito.length) throw new Error('formato');
-        save();
-        render();
-        alert(`Importato: ${esito.join(' e ')} per ${prof().nome}.`);
-      } catch (err) {
-        alert('File non riconosciuto. Serve un file piano o misure BIA generato per questa app.');
-      }
-    };
-    reader.readAsText(file);
   });
 
   render();
