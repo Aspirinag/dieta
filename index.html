@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dieta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#2c2c36">
+<meta name="theme-color" content="#fff8f2">
 <title>Dieta</title>
 <style>
   * { box-sizing: border-box; }
@@ -54,14 +54,55 @@
   .profili { display: flex; gap: 8px; margin-bottom: 4px; }
   .profili button.on { background: #d4ff3f; color: #0a0a0a; }
   #impFile { display: none; }
+  /* Tema chiaro e allegro */
+  html { background: #fff8f2; }
+  body {
+    color: #2d2a3e;
+    background:
+      radial-gradient(circle at 8% 2%, #ffd9c7 0%, transparent 38%),
+      radial-gradient(circle at 92% 30%, #cdf5e6 0%, transparent 40%),
+      radial-gradient(circle at 40% 100%, #e5dcff 0%, transparent 45%),
+      #fff8f2;
+    background-attachment: fixed;
+  }
+  .muted { color: #6b6880; }
+  .card {
+    background: rgba(255, 255, 255, 0.82);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 22px rgba(120, 90, 150, 0.12);
+    border-radius: 22px;
+  }
+  input { background: #ffffff; color: #2d2a3e; border: 1px solid #e6dff0; }
+  input::placeholder { color: #a7a3b8; }
+  .primary { background: #ff7a59; color: #ffffff; box-shadow: 0 8px 20px rgba(255, 122, 89, 0.3); }
+  .small, .chip { background: #ffffff; color: #2d2a3e; border: 1px solid #efe6f5; box-shadow: 0 2px 8px rgba(120, 90, 150, 0.08); }
+  .chip.on { background: #5fd3b0; color: #1e3b33; border-color: #5fd3b0; }
+  .profili button.on { background: #ff7a59; color: #ffffff; }
+  .badge { background: #9b8cff; color: #ffffff; }
+  .check .box { border-color: rgba(45, 42, 62, 0.35); }
+  .check.on .box { background: #5fd3b0; border-color: #5fd3b0; color: #1e3b33; }
+  .link { color: #e5484d; }
+  th { color: #6b6880; }
+  th, td { border-bottom: 1px solid rgba(45, 42, 62, 0.08); }
+  .delta-up { color: #e5484d; }
+  .delta-down { color: #2fa67f; }
+  nav {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #efe6f5;
+    box-shadow: 0 10px 30px rgba(120, 90, 150, 0.18);
+  }
+  nav button { color: #8a86a0; }
+  nav button.active { color: #ff7a59; }
 </style>
 </head>
 <body>
 <main id="app"></main>
 <nav>
-  <button data-tab="oggi">OGGI</button>
-  <button data-tab="andamento">ANDAMENTO</button>
-  <button data-tab="dati">DATI</button>
+  <button data-tab="oggi">🥗 OGGI</button>
+  <button data-tab="andamento">📈 ANDAMENTO</button>
+  <button data-tab="dati">⚙️ DATI</button>
 </nav>
 <input type="file" id="impFile" accept="application/json,.json">
 <script>
@@ -261,10 +302,10 @@
       </div>
       <h2>Grafici</h2>
       <div class="card">
-        <strong>Peso (bianco) e massa grassa (lime), kg</strong>
+        <strong>Peso (viola) e massa grassa (arancio), kg</strong>
         <svg class="chart" viewBox="0 0 320 120">
-          ${sparkline(peso, '#ffffff')}
-          ${sparkline(grasso, '#d4ff3f')}
+          ${sparkline(peso, '#9b8cff')}
+          ${sparkline(grasso, '#ff7a59')}
         </svg>
         <p class="muted">Dal ${fmtDate(primo.data)} al ${fmtDate(ultimo.data)}, ${bia.length} ${bia.length === 1 ? 'misurazione' : 'misurazioni'}.</p>
       </div>
