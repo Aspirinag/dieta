@@ -497,6 +497,12 @@ function parseSchema(righe) {
         <button class="primary" data-pdfup="1">Carica schema PDF</button>
         <input type="file" id="pdfFile" accept="application/pdf,.pdf" style="display: none">
       </div>
+      <h2>BIA in PDF</h2>
+      <div class="card">
+        <p class="muted">Carica il referto BIA in PDF: i valori vengono letti e salvati in ANDAMENTO, dopo la tua conferma.</p>
+        <button class="primary" data-biaup="1">Carica BIA PDF</button>
+        <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
+      </div>
       <h2>Aggiungi misurazione BIA</h2>
       <div class="card">
         <div class="grid2">
@@ -542,7 +548,7 @@ function parseSchema(righe) {
       fianchi_cm: one(/Circonferenza fianchi: ([\d.,]+) cm/),
       torace_cm: one(/Circonferenza torace: ([\d.,]+) cm/),
       obiettivo_peso: one(/Peso Desiderabile: ([\d.,]+) kg/),
-      obiettivo_grasso_pct: one(/FAT Desiderabile: ([\d.,]+) %/),
+      obiettivo_grasso_pct: one(/FAT Desiderabile: ([\d.,]+)\s*%/),
     };
   }
   async function leggiBiaPdf(file) {
