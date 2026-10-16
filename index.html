@@ -155,9 +155,15 @@
     prof().dieta[iso] = r;
     return r;
   }
+  // Alternativa preferita del profilo per quel pasto e quel giorno della settimana
+  const prefKey = (iso, i) => `${dayIdx(iso)}:${i}`;
+  function prefOpt(iso, i) {
+    const pr = prof().preferiti || {};
+    return pr[prefKey(iso, i)] ?? 0;
+  }
   function slotState(iso, i) {
     const r = recFor(iso);
-    return r.slot[i] || { opt: 0, fatto: false };
+    return r.slot[i] || { opt: prefOpt(iso, i), fatto: false };
   }
 
   // ---------- SCHEMA DIETETICO DAL PDF ----------
@@ -277,7 +283,9 @@ function parseSchema(righe) {
       const opt = pasto.opzioni[st.opt] || pasto.opzioni[0];
       const alternative = pasto.opzioni.length > 1
         ? `<div class="row">${pasto.opzioni.map((o, j) => `
-            <button class="chip ${j === st.opt ? 'on' : ''}" data-opt="${i}:${j}">${esc(o.titolo || 'Opzione ' + (j + 1))}</button>`).join('')}</div>`
+            <button class="chip ${j === st.opt ? 'on' : ''}" data-opt="${i}:${j}">${esc(o.titolo || 'Opzione ' + (j + 1))}</button>
+            <button class="chip" data-pref="${i}:${j}" aria-label="Preferita">${prefOpt(iso, i) === j ? '★' : '☆'}</button>`).join('')}</div>
+          <p class="muted">★ = la scelta che fai di solito: è quella proposta per default.</p>`
         : '';
       return `
         <div class="card">
@@ -585,6 +593,15 @@ function parseSchema(righe) {
 
     const iso = todayISO();
     if (d.fatto !== undefined) { const i = Number(d.fatto); return setSlot(iso, i, { fatto: !slotState(iso, i).fatto }); }
+    if (d.pref !== undefined) {
+      const [i, j] = d.pref.split(':').map(Number);
+      const iso = todayISO();
+      prof().preferiti = prof().preferiti || {};
+      if (prefOpt(iso, i) === j) delete prof().preferiti[prefKey(iso, i)];
+      else prof().preferiti[prefKey(iso, i)] = j;
+      setSlot(iso, i, { opt: prefOpt(iso, i) });
+      return;
+    }
     if (d.opt !== undefined) { const [i, j] = d.opt.split(':').map(Number); return setSlot(iso, i, { opt: j }); }
     if (d.olio !== undefined) {
       const r = recFor(iso);
