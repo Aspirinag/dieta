@@ -94,12 +94,19 @@
   }
   nav button { color: #8a86a0; }
   nav button.active { color: #22a86a; }
+  .giorni { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 16px; }
+  .giorni .chip { padding: 10px 0; font-size: 13px; text-align: center; position: relative; }
+  .giorni .chip.oggi::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #22a86a; }
+  .giorni .chip.on.oggi::after { background: #1e3b33; }
+  .opzione + .opzione { border-top: 1px dashed rgba(45, 42, 62, 0.15); margin-top: 10px; padding-top: 10px; }
+  .opzione .titolo { font-size: 14px; font-weight: 700; color: #6b6880; }
 </style>
 </head>
 <body>
 <main id="app"></main>
 <nav>
   <button data-tab="oggi">🥗 OGGI</button>
+  <button data-tab="settimana">📅 SETTIMANA</button>
   <button data-tab="andamento">📈 ANDAMENTO</button>
   <button data-tab="dati">⚙️ DATI</button>
 </nav>
@@ -121,6 +128,7 @@
 
   let state = load();
   let tab = 'oggi';
+  let giornoSel = (new Date().getDay() + 6) % 7; // giorno scelto in SETTIMANA (Lunedì = 0)
 
   function load() {
     try {
@@ -320,6 +328,41 @@ function parseSchema(righe) {
         <p class="muted">Un bicchiere è circa 0,25 L</p>
       </div>
       <p class="muted">Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti.</p>`;
+  }
+
+  // ---------- SETTIMANA ----------
+  // Lo schema è fisso: mostra i pasti di ogni giorno del piano attivo oggi, con tutte le alternative
+  function settimana() {
+    const oggiIdx = dayIdx(todayISO());
+    const piano = planFor(todayISO());
+    if (!piano) {
+      return `
+        <h1>Settimana</h1>
+        <div class="card">
+          <strong>Nessun piano attivo.</strong>
+          <p class="muted">Carica lo schema PDF dalla scheda Dati.</p>
+          <button class="small" data-tab="dati">Vai a Dati</button>
+        </div>`;
+    }
+    const giorno = piano.giorni[giornoSel];
+    const chips = DAYS.map((nome, i) => `
+      <button class="chip ${i === giornoSel ? 'on' : ''} ${i === oggiIdx ? 'oggi' : ''}" data-giorno="${i}">${nome.slice(0, 3)}</button>`).join('');
+    const pasti = giorno.pasti.map((pasto) => `
+      <div class="card">
+        <strong>${esc(pasto.nome)}</strong>
+        ${pasto.opzioni.map((o, j) => `
+          <div class="opzione">
+            ${pasto.opzioni.length > 1 ? `<div class="titolo">${esc(o.titolo || 'Opzione ' + (j + 1))}</div>` : ''}
+            <ul class="alimenti">${o.alimenti.map((a) => `<li>${esc(a.nome)} <span class="muted">${esc(a.quantita)}</span></li>`).join('')}</ul>
+          </div>`).join('')}
+      </div>`).join('');
+    return `
+      <h1>Settimana</h1>
+      <p class="muted">${esc(piano.nome)}</p>
+      <div class="giorni">${chips}</div>
+      <h2>${DAYS[giornoSel]}${giornoSel === oggiIdx ? ' · oggi' : ''}</h2>
+      ${giorno.palestra ? '<span class="badge">Giorno di palestra</span>' : ''}
+      ${pasti}`;
   }
 
   // ---------- ANDAMENTO ----------
@@ -574,7 +617,7 @@ function parseSchema(righe) {
       return `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(p.nome)}</button>
         <button class="chip" data-prefprofilo="${id}" aria-label="Profilo preferito">${pref ? '★' : '☆'}</button>`;
     }).join('');
-    const corpo = tab === 'oggi' ? oggi() : tab === 'andamento' ? andamento() : dati();
+    const corpo = tab === 'oggi' ? oggi() : tab === 'settimana' ? settimana() : tab === 'andamento' ? andamento() : dati();
     document.getElementById('app').innerHTML = `<div class="profili">${profili}</div>${corpo}`;
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     window.scrollTo(0, inCima ? 0 : y);
@@ -593,7 +636,11 @@ function parseSchema(righe) {
     if (!b) return;
     const d = b.dataset;
 
-    if (d.tab) { tab = d.tab; return render(true); }
+    if (d.tab) {
+      if (d.tab === 'settimana' && tab !== 'settimana') giornoSel = dayIdx(todayISO());
+      tab = d.tab; return render(true);
+    }
+    if (d.giorno !== undefined) { giornoSel = Number(d.giorno); return render(); }
     if (d.profilo) { state.attivo = d.profilo; save(); return render(true); }
     if (d.prefprofilo) {
       state.preferito = state.preferito === d.prefprofilo ? null : d.prefprofilo;
