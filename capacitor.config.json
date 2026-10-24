@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.aspirinag.dieta",
+  "appName": "Dieta",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f4fff8"
+  }
+}

@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#f4fff8">
 <title>Dieta</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; color: #fff; font-family: -apple-system, system-ui, sans-serif; }
@@ -110,9 +111,9 @@
   <button data-tab="andamento">📈 ANDAMENTO</button>
   <button data-tab="dati">⚙️ DATI</button>
 </nav>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
 <script>
-  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
   const DAYS =['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
   const OLIO_TOT = 6;   // cucchiaini al giorno
   const ACQUA_TOT = 2;  // litri al giorno
@@ -139,7 +140,40 @@
       return structuredClone(DEFAULT);
     }
   }
-  function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+  function save() {
+    const json = JSON.stringify(state);
+    localStorage.setItem(KEY, json);
+    if (NATIVO) Plugin('Preferences').set({ key: KEY, value: json });
+  }
+
+  // ---------- APP PER IPHONE (Capacitor) ----------
+  // Nell'app i dati vengono copiati anche nelle preferenze di iOS, che il sistema non cancella mai
+  const NATIVO = !!window.Capacitor?.isNativePlatform?.();
+  const Plugin = (nome) => window.Capacitor.Plugins[nome];
+  async function ripristinaNativo() {
+    if (!NATIVO) return;
+    if (!localStorage.getItem(KEY)) {
+      const { value } = await Plugin('Preferences').get({ key: KEY });
+      if (value) { localStorage.setItem(KEY, value); state = load(); }
+    }
+    save();
+  }
+  // Nel browser scarica il file, nell'app apre il pannello Condividi (Salva su File, AirDrop, ...)
+  async function condividiFile(nome, testo) {
+    if (!NATIVO) {
+      const url = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nome;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const { uri } = await Plugin('Filesystem').writeFile({ path: nome, data: testo, directory: 'CACHE', encoding: 'utf8' });
+    try { await Plugin('Share').share({ title: nome, files: [uri] }); } catch (e) { /* condivisione annullata */ }
+  }
 
   const prof = () => state.profili[state.attivo];
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -562,10 +596,12 @@ function parseSchema(righe) {
       </div>
       <h2>Backup</h2>
       <div class="card">
-        <p class="muted">I dati restano nel browser del telefono. Esporta ogni tanto un backup.</p>
+        <p class="muted">I dati restano sul telefono. Esporta ogni tanto un backup, e importalo per passare dalla web app all'app (o se cambi telefono).</p>
         <div class="row">
           <button class="small" data-export="1">Esporta backup</button>
+          <button class="small" data-import="1">Importa backup</button>
         </div>
+        <input type="file" id="importFile" accept="application/json,.json" style="display: none">
       </div>`;
   }
 
@@ -663,17 +699,8 @@ function parseSchema(righe) {
 
     if (d.biaup !== undefined) { document.getElementById('biaFile').click(); return; }
     if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
-    if (d.export !== undefined) {
-      const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dieta-backup-${todayISO()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      return;
-    }
+    if (d.export !== undefined) return condividiFile(`dieta-backup-${todayISO()}.json`, JSON.stringify(state, null, 2));
+    if (d.import !== undefined) { document.getElementById('importFile').click(); return; }
   });
 
   // Aggiunge o aggiorna misure BIA, senza duplicati per data
@@ -731,7 +758,26 @@ function parseSchema(righe) {
     }
   });
 
-  render();
+  // Importa un backup: sostituisce i dati attuali con quelli del file
+  document.addEventListener('change', async (e) => {
+    if (e.target.id !== 'importFile') return;
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      if (!parsed || typeof parsed.profili !== 'object') throw new Error('formato');
+      if (!confirm('Il backup sostituisce tutti i dati attuali. Continuo?')) return;
+      state = { ...structuredClone(DEFAULT), ...parsed };
+      save();
+      render();
+      alert('Backup importato.');
+    } catch (err) {
+      alert('File non valido: scegli un backup esportato da questa app.');
+    }
+  });
+
+  ripristinaNativo().catch(() => {}).finally(() => render());
 </script>
 </body>
 </html>
