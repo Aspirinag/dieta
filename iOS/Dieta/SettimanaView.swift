@@ -52,9 +52,11 @@ struct SettimanaView: View {
                 Text(piano.nome)
             }
             Section {
-                let previste = archivio.profilo.calorie(Giorni.aggiungi(Giorni.lunedi(Giorni.oggi()), giorno))?.previste
+                // Dal giorno del piano, non dalla data: il piano può iniziare a metà di questa settimana
+                let previste = Double(archivio.profilo.olio) * Calorie.kcalCucchiainoOlio
+                    + g.pasti.compactMap { $0.opzioni.first?.kcal }.reduce(0, +)
                 LabeledContent(Giorni.nomi[giorno] + (giorno == oggi ? " (oggi)" : "")) {
-                    if let previste { Text(kcal(previste)).monospacedDigit() }
+                    Text(kcal(previste)).monospacedDigit()
                 }
                 if g.palestra {
                     Label("Giorno di palestra", systemImage: "dumbbell.fill").foregroundStyle(.tint)
