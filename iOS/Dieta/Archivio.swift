@@ -143,11 +143,10 @@ final class Archivio {
 
     func azzeraSpesa() { stato.spesa = nil }
 
-    // Profili che hanno un piano in questa settimana, nell'ordine del menu
+    // Profili che hanno un piano nei 7 giorni della lista, nell'ordine del menu
     var profiliSpesa: [Profilo] {
-        let lun = Giorni.lunedi(Giorni.oggi())
-        return idProfili.compactMap { stato.profili[$0] }
-            .filter { p in (0..<7).contains { p.piano(per: Giorni.aggiungi(lun, $0)) != nil } }
+        idProfili.compactMap { stato.profili[$0] }
+            .filter { p in Giorni.prossimi7().contains { p.piano(per: $0) != nil } }
     }
 
     func vociSpesa() -> [VoceSpesa] {
@@ -262,16 +261,15 @@ extension Profilo {
         }
     }
 
-    // Alimenti della settimana in corso: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
+    // Alimenti dei prossimi 7 giorni, oggi compreso (non da lunedì: un piano che inizia a metà
+    // settimana coprirebbe solo pochi giorni). Per ogni pasto vale l'alternativa scelta, altrimenti la prima.
     // Le quantità in g, ml, kg o l si sommano, le altre si contano
     func alimentiSettimana() -> [String: Conto] {
-        let lun = Giorni.lunedi(Giorni.oggi())
         var voci: [String: Conto] = [:]
         let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
-        for i in 0..<7 {
-            let iso = Giorni.aggiungi(lun, i)
+        for iso in Giorni.prossimi7() {
             guard let p = piano(per: iso) else { continue }
-            for (j, pasto) in p.giorni[i].pasti.enumerated() {
+            for (j, pasto) in p.giorni[Giorni.indice(iso)].pasti.enumerated() {
                 let scelta = dieta[iso]?.slot[String(j)]?.opt ?? 0
                 let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : pasto.opzioni.first
                 for a in opz?.alimenti ?? [] {

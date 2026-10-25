@@ -35,6 +35,9 @@ enum Giorni {
 
     static func lunedi(_ iso: String) -> String { aggiungi(iso, -indice(iso)) }
 
+    // Oggi e i 6 giorni successivi: il periodo della lista della spesa
+    static func prossimi7() -> [String] { (0..<7).map { aggiungi(oggi(), $0) } }
+
     // gg/mm/aaaa
     static func breve(_ iso: String) -> String {
         let p = iso.split(separator: "-")

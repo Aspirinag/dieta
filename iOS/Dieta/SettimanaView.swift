@@ -163,9 +163,9 @@ struct SettimanaView: View {
         let voci = archivio.vociSpesa()
         let profili = archivio.profiliSpesa
         let presi = archivio.spunteSpesa()
-        let lun = Giorni.lunedi(Giorni.oggi())
+        let giorni = Giorni.prossimi7()
         if voci.isEmpty {
-            ContentUnavailableView("Nessun piano questa settimana", systemImage: "cart")
+            ContentUnavailableView("Nessun piano nei prossimi 7 giorni", systemImage: "cart")
         } else {
             Section {
                 ForEach(voci) { v in
@@ -182,10 +182,10 @@ struct SettimanaView: View {
                     }
                 }
             } header: {
-                Text("Dal \(Giorni.breve(lun)) al \(Giorni.breve(Giorni.aggiungi(lun, 6)))")
+                Text("Dal \(Giorni.breve(giorni[0])) al \(Giorni.breve(giorni[6]))")
             } footer: {
                 Text((profili.count > 1 ? "Lista unica per \(profili.map(\.nome).formatted(.list(type: .and))): le quantità sono sommate e le spunte valgono per tutti. " : "")
-                     + "Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte ripartono ogni lunedì.")
+                     + "Comprende oggi e i 6 giorni successivi. Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte ripartono ogni lunedì.")
             }
             if !presi.isEmpty {
                 Section {
