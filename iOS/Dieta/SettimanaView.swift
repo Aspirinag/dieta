@@ -147,7 +147,8 @@ struct SettimanaView: View {
     // ---------- Spesa ----------
 
     @ViewBuilder private var spesa: some View {
-        let voci = archivio.profilo.vociSpesa()
+        let voci = archivio.vociSpesa()
+        let profili = archivio.profiliSpesa
         let presi = archivio.spunteSpesa()
         let lun = Giorni.lunedi(Giorni.oggi())
         if voci.isEmpty {
@@ -159,7 +160,10 @@ struct SettimanaView: View {
                     RigaSpunta(fatto: preso, azione: { archivio.spunta(v.chiave) }) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(v.nome).strikethrough(preso)
-                            Text(v.quanto).font(.caption).foregroundStyle(.secondary)
+                            Text(v.quanto).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                            if let d = v.dettaglio {
+                                Text(d).font(.caption2).foregroundStyle(.tertiary)
+                            }
                         }
                         .opacity(preso ? 0.5 : 1)
                     }
@@ -167,7 +171,8 @@ struct SettimanaView: View {
             } header: {
                 Text("Dal \(Giorni.breve(lun)) al \(Giorni.breve(Giorni.aggiungi(lun, 6)))")
             } footer: {
-                Text("Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte ripartono ogni lunedì.")
+                Text((profili.count > 1 ? "Lista unica per \(profili.map(\.nome).formatted(.list(type: .and))): le quantità sono sommate e le spunte valgono per tutti. " : "")
+                     + "Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte ripartono ogni lunedì.")
             }
             if !presi.isEmpty {
                 Section {
@@ -179,7 +184,7 @@ struct SettimanaView: View {
 
     private var testoSpesa: String {
         let presi = archivio.spunteSpesa()
-        let righe = archivio.profilo.vociSpesa().filter { presi[$0.chiave] != true }.map { "- \($0.nome): \($0.quanto)" }
+        let righe = archivio.vociSpesa().filter { presi[$0.chiave] != true }.map { "- \($0.nome): \($0.quanto)" }
         return (["Lista della spesa"] + righe).joined(separator: "\n")
     }
 }

@@ -128,19 +128,49 @@ final class Archivio {
 
     // ---------- Lista della spesa ----------
 
+    // Una sola lista per tutti i profili: alimenti sommati e spunte condivise
     func spunteSpesa() -> [String: Bool] {
         let lun = Giorni.lunedi(Giorni.oggi())
-        return profilo.spesa?.settimana == lun ? profilo.spesa?.presi ?? [:] : [:]
+        return stato.spesa?.settimana == lun ? stato.spesa?.presi ?? [:] : [:]
     }
 
     func spunta(_ chiave: String) {
         let lun = Giorni.lunedi(Giorni.oggi())
-        var s = profilo.spesa?.settimana == lun ? profilo.spesa! : Spesa(settimana: lun)
+        var s = stato.spesa?.settimana == lun ? stato.spesa! : Spesa(settimana: lun)
         s.presi[chiave] = !(s.presi[chiave] ?? false)
-        profilo.spesa = s
+        stato.spesa = s
     }
 
-    func azzeraSpesa() { profilo.spesa = nil }
+    func azzeraSpesa() { stato.spesa = nil }
+
+    // Profili che hanno un piano in questa settimana, nell'ordine del menu
+    var profiliSpesa: [Profilo] {
+        let lun = Giorni.lunedi(Giorni.oggi())
+        return idProfili.compactMap { stato.profili[$0] }
+            .filter { p in (0..<7).contains { p.piano(per: Giorni.aggiungi(lun, $0)) != nil } }
+    }
+
+    func vociSpesa() -> [VoceSpesa] {
+        let profili = profiliSpesa
+        var voci: [String: (nome: String, conti: [Profilo.Conto])] = [:]
+        for p in profili {
+            for (k, c) in p.alimentiSettimana() {
+                voci[k, default: (nome: c.nome, conti: [])].conti.append(c)
+            }
+        }
+        return voci
+            .sorted { $0.value.nome.localizedCompare($1.value.nome) == .orderedAscending }
+            .map { k, v in
+                var totale = Profilo.Conto(nome: v.nome, profilo: "")
+                for c in v.conti {
+                    totale.volte += c.volte
+                    totale.unita.merge(c.unita, uniquingKeysWith: +)
+                }
+                // Con più profili si vede anche quanto serve a ciascuno
+                let dettaglio = profili.count > 1 ? v.conti.map { "\($0.profilo) \($0.breve)" }.joined(separator: " · ") : nil
+                return VoceSpesa(chiave: k, nome: v.nome, quanto: totale.quanto, dettaglio: dettaglio)
+            }
+    }
 
     // ---------- Promemoria ----------
 
@@ -189,18 +219,39 @@ extension Profilo {
         return tot > 0 ? Int((Double(fatti) / Double(tot) * 100).rounded()) : nil
     }
 
-    struct VoceSpesa: Identifiable {
-        let chiave: String
+    // Quanto serve di un alimento nella settimana (a un profilo o a tutti)
+    struct Conto {
         let nome: String
-        let quanto: String
-        var id: String { chiave }
+        let profilo: String
+        var unita: [String: Double] = [:]
+        var volte = 0
+
+        var quanto: String {
+            let volte = volte == 1 ? "1 volta" : "\(volte) volte"
+            return totale.isEmpty ? volte : "\(totale) (\(volte))"
+        }
+
+        // Solo la quantità (o le volte, se non si pesa): per il dettaglio di ogni profilo
+        var breve: String { totale.isEmpty ? (volte == 1 ? "1 volta" : "\(volte) volte") : totale }
+
+        // Grammi e millilitri passano a kg e litri da 1000 in su
+        private var totale: String {
+            var u = unita
+            for (piccola, grande) in [("g", "kg"), ("ml", "l")] {
+                if let v = u[piccola], v + (u[grande] ?? 0) * 1000 >= 1000 {
+                    u[grande, default: 0] += v / 1000
+                    u[piccola] = nil
+                }
+            }
+            return u.sorted { $0.key < $1.key }.map { "\(num($0.value)) \($0.key)" }.joined(separator: " + ")
+        }
     }
 
     // Alimenti della settimana in corso: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
     // Le quantità in g, ml, kg o l si sommano, le altre si contano
-    func vociSpesa() -> [VoceSpesa] {
+    func alimentiSettimana() -> [String: Conto] {
         let lun = Giorni.lunedi(Giorni.oggi())
-        var voci: [String: (nome: String, unita: [String: Double], volte: Int)] = [:]
+        var voci: [String: Conto] = [:]
         let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
         for i in 0..<7 {
             let iso = Giorni.aggiungi(lun, i)
@@ -216,7 +267,7 @@ extension Profilo {
                     pulito = pulito.trimmingCharacters(in: .whitespaces)
                     let nome = pulito.prefix(1).uppercased() + pulito.dropFirst()
                     let k = nome.lowercased()
-                    var v = voci[k] ?? (nome: nome, unita: [:], volte: 0)
+                    var v = voci[k] ?? Conto(nome: nome, profilo: self.nome)
                     v.volte += 1
                     if let m = a.quantita.firstMatch(of: regex), let n = leggiNumero(String(m.1)) {
                         var u = m.2.lowercased()
@@ -228,13 +279,15 @@ extension Profilo {
             }
         }
         return voci
-            .sorted { $0.value.nome.localizedCompare($1.value.nome) == .orderedAscending }
-            .map { k, v in
-                let volte = v.volte == 1 ? "1 volta" : "\(v.volte) volte"
-                let tot = v.unita.sorted { $0.key < $1.key }.map { "\(num($0.value)) \($0.key)" }.joined(separator: " + ")
-                return VoceSpesa(chiave: k, nome: v.nome, quanto: tot.isEmpty ? volte : "\(tot) (\(volte))")
-            }
     }
+}
+
+struct VoceSpesa: Identifiable {
+    let chiave: String
+    let nome: String
+    let quanto: String
+    var dettaglio: String?
+    var id: String { chiave }
 }
 
 // Notifiche locali

@@ -58,6 +58,9 @@ extension Stato {
         oggiR.olio = 2
         oggiR.acqua = 0.75
         p.dieta[oggi] = oggiR
-        return Stato(profili: ["raffaele": p, "alessandra": Profilo(nome: "Alessandra")], attivo: "raffaele")
+        // Stesso schema anche per Alessandra, così la lista della spesa unisce due profili
+        var a = Profilo(nome: "Alessandra")
+        a.piani = p.piani
+        return Stato(profili: ["raffaele": p, "alessandra": a], attivo: "raffaele")
     }
 }
