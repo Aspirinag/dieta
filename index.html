@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#f4fff8">
 <title>Dieta</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; color: #fff; font-family: -apple-system, system-ui, sans-serif; }
@@ -30,6 +31,7 @@
   input::placeholder { color: #b0b0bb; }
   button { font: inherit; border: none; cursor: pointer; }
   .primary { display: block; width: 100%; background: linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 55%), #d4ff3f; color: #0a0a0a; font-weight: 700; font-size: 16px; border-radius: 16px; padding: 14px; margin: 12px 0; }
+  .small.mini { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
   .small { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-weight: 600; border-radius: 12px; padding: 10px 14px; }
   .chip { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-weight: 600; border-radius: 999px; padding: 8px 14px; }
   .chip.on { background: #d4ff3f; color: #0a0a0a; border-color: #d4ff3f; }
@@ -110,9 +112,9 @@
   <button data-tab="andamento">📈 ANDAMENTO</button>
   <button data-tab="dati">⚙️ DATI</button>
 </nav>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
 <script>
-  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
   const DAYS =['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
   const OLIO_TOT = 6;   // cucchiaini al giorno
   const ACQUA_TOT = 2;  // litri al giorno
@@ -129,6 +131,9 @@
   let state = load();
   let tab = 'oggi';
   let giornoSel = (new Date().getDay() + 6) % 7; // giorno scelto in SETTIMANA (Lunedì = 0)
+  let giornoVisto = null; // giorno mostrato in OGGI (null = oggi), per segnare anche i giorni passati
+  let biaEdit = null;     // data della BIA che si sta modificando in DATI
+  const visto = () => giornoVisto || todayISO();
 
   function load() {
     try {
@@ -139,7 +144,40 @@
       return structuredClone(DEFAULT);
     }
   }
-  function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+  function save() {
+    const json = JSON.stringify(state);
+    localStorage.setItem(KEY, json);
+    if (NATIVO) Plugin('Preferences').set({ key: KEY, value: json });
+  }
+
+  // ---------- APP PER IPHONE (Capacitor) ----------
+  // Nell'app i dati vengono copiati anche nelle preferenze di iOS, che il sistema non cancella mai
+  const NATIVO = !!window.Capacitor?.isNativePlatform?.();
+  const Plugin = (nome) => window.Capacitor.Plugins[nome];
+  async function ripristinaNativo() {
+    if (!NATIVO) return;
+    if (!localStorage.getItem(KEY)) {
+      const { value } = await Plugin('Preferences').get({ key: KEY });
+      if (value) { localStorage.setItem(KEY, value); state = load(); }
+    }
+    save();
+  }
+  // Nel browser scarica il file, nell'app apre il pannello Condividi (Salva su File, AirDrop, ...)
+  async function condividiFile(nome, testo) {
+    if (!NATIVO) {
+      const url = URL.createObjectURL(new Blob([testo], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nome;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const { uri } = await Plugin('Filesystem').writeFile({ path: nome, data: testo, directory: 'CACHE', encoding: 'utf8' });
+    try { await Plugin('Share').share({ title: nome, files: [uri] }); } catch (e) { /* condivisione annullata */ }
+  }
 
   const prof = () => state.profili[state.attivo];
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -266,15 +304,28 @@ function parseSchema(righe) {
   }
 
   // ---------- OGGI ----------
+  // Intestazione di OGGI con le frecce per andare ai giorni passati (non oltre oggi)
+  function testaGiorno(iso) {
+    const oggiIso = todayISO();
+    const titolo = iso === oggiIso ? `Oggi, ${DAYS[dayIdx(iso)]}` : iso === addDays(oggiIso, -1) ? `Ieri, ${DAYS[dayIdx(iso)]}` : DAYS[dayIdx(iso)];
+    return `
+      <div class="between">
+        <button class="small" data-sposta="-1" aria-label="Giorno precedente">‹</button>
+        <h1 style="margin: 0; text-align: center">${titolo}</h1>
+        <button class="small" data-sposta="1" aria-label="Giorno successivo" ${iso >= oggiIso ? 'disabled style="visibility: hidden"' : ''}>›</button>
+      </div>
+      ${iso !== oggiIso ? '<button class="link" data-sposta="0" style="color: #22a86a; display: block; margin: 8px auto 0">Torna a oggi</button>' : ''}`;
+  }
+
   function oggi() {
-    const iso = todayISO();
+    const iso = visto();
     const piano = planFor(iso);
     if (!piano) {
       return `
-        <h1>Oggi</h1>
-        <p class="muted">${DAYS[dayIdx(iso)]} ${fmtDate(iso)}</p>
+        ${testaGiorno(iso)}
+        <p class="muted">${fmtDate(iso)}</p>
         <div class="card">
-          <strong>Nessun piano attivo per oggi.</strong>
+          <strong>Nessun piano attivo per questo giorno.</strong>
           <p class="muted">Carica lo schema PDF dalla scheda Dati.</p>
           <button class="small" data-tab="dati">Vai a Dati</button>
         </div>`;
@@ -300,7 +351,7 @@ function parseSchema(righe) {
         </div>`;
     }).join('');
     return `
-      <h1>Oggi, ${DAYS[dayIdx(iso)]}</h1>
+      ${testaGiorno(iso)}
       <p class="muted">${fmtDate(iso)} · ${esc(piano.nome)}</p>
       ${giorno.palestra ? '<span class="badge">Giorno di palestra</span>' : ''}
       ${pasti}
@@ -382,7 +433,7 @@ function parseSchema(righe) {
   function aderenza() {
     let tot = 0, fatti = 0;
     const oggiIso = todayISO();
-    for (let k = 6; k >= 0; k--) {
+    for (let k = 7; k >= 1; k--) { // da 7 giorni fa a ieri: oggi è ancora in corso
       const iso = addDays(oggiIso, -k);
       const piano = planFor(iso);
       if (!piano) continue;
@@ -395,23 +446,30 @@ function parseSchema(righe) {
     return tot ? Math.round((fatti / tot) * 100) : null;
   }
 
-  // Serie di valori per i grafici: colore e nome
-  function multiChart(series) {
-    const h = 140, w = 320, pad = 18;
-    const tutti = series.flatMap((x) => x.values.filter((v) => v != null));
-    if (tutti.length < 2) return '<p class="muted">Servono almeno due misurazioni per il grafico.</p>';
-    const n = Math.max(...series.map((x) => x.values.length));
-    const min = Math.min(...tutti), max = Math.max(...tutti), range = max - min || 1;
-    const linee = series.map((x) => {
-      const coords = x.values
-        .map((v, i) => (v == null ? null : `${(pad + (i * (w - 2 * pad)) / Math.max(n - 1, 1)).toFixed(1)},${(h - pad - ((v - min) / range) * (h - 2 * pad)).toFixed(1)}`))
-        .filter(Boolean);
-      return coords.length > 1
-        ? `<polyline points="${coords.join(' ')}" fill="none" stroke="${x.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`
-        : '';
+  // Grafico con più serie: ogni linea ha la sua scala (peso e massa grassa hanno ordini di grandezza diversi),
+  // ogni serie occupa una fascia e mostra il valore iniziale e finale; sotto, le date della prima e ultima misura
+  function multiChart(series, date) {
+    const valide = series.filter((x) => x.values.filter((v) => v != null).length > 1);
+    if (!valide.length) return '<p class="muted">Servono almeno due misurazioni per il grafico.</p>';
+    const fascia = 56, w = 320, padX = 40, h = fascia * valide.length + 8;
+    const n = date.length;
+    const xOf = (i) => padX + (i * (w - 2 * padX)) / Math.max(n - 1, 1);
+    const fmtV = (v) => String(v).replace('.', ',');
+    const linee = valide.map((x, s) => {
+      const nums = x.values.filter((v) => v != null);
+      const min = Math.min(...nums), range = Math.max(...nums) - min || 1;
+      const top = s * fascia + 14, alt = fascia - 24;
+      const pts = x.values.map((v, i) => (v == null ? null : [xOf(i), top + alt - ((v - min) / range) * alt])).filter(Boolean);
+      const primo = pts[0], ultimo = pts[pts.length - 1];
+      return `<polyline points="${pts.map((p) => p.map((c) => c.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${x.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${pts.map(([px, py]) => `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="${x.color}"/>`).join('')}
+        <text x="${primo[0] - 6}" y="${primo[1] + 4}" text-anchor="end" font-size="11" font-weight="700" fill="${x.color}">${fmtV(nums[0])}</text>
+        <text x="${ultimo[0] + 6}" y="${ultimo[1] + 4}" font-size="11" font-weight="700" fill="${x.color}">${fmtV(nums[nums.length - 1])}</text>`;
     }).join('');
-    const legenda = series.map((x) => `<span style="color:${x.color};font-weight:700">● ${x.nome}</span>`).join(' &nbsp; ');
-    return `<svg class="chart" viewBox="0 0 ${w} ${h}">${linee}</svg><p class="muted">${legenda}</p>`;
+    const legenda = valide.map((x) => `<span style="color:${x.color};font-weight:700">● ${x.nome}</span>`).join(' &nbsp; ');
+    return `<svg class="chart" viewBox="0 0 ${w} ${h}">${linee}</svg>
+      <div class="between muted"><span>${fmtDate(date[0])}</span><span>${fmtDate(date[n - 1])}</span></div>
+      <p class="muted">${legenda}</p>`;
   }
 
   function andamento() {
@@ -419,7 +477,7 @@ function parseSchema(righe) {
     const ad = aderenza();
     const adHtml = ad == null
       ? '<p class="muted">Nessun piano attivo negli ultimi 7 giorni.</p>'
-      : `<p>Hai segnato il <strong>${ad}%</strong> dei pasti negli ultimi 7 giorni.</p>`;
+      : `<p>Hai segnato il <strong>${ad}%</strong> dei pasti negli ultimi 7 giorni (oggi escluso).</p>`;
     if (!bia.length) {
       return `
         <h1>Andamento</h1>
@@ -469,7 +527,10 @@ function parseSchema(righe) {
 
     const righe = [...bia].reverse().map((m) => `
       <tr>
-        <td>${fmtDate(m.data)}</td>
+        <td style="white-space: nowrap">${fmtDate(m.data)}<br>
+          <button class="small mini" data-editbia="${m.data}" aria-label="Modifica">✎</button>
+          <button class="small mini" data-delbia="${m.data}" aria-label="Elimina">✕</button>
+        </td>
         <td>${val(m, 'peso')}</td>
         <td>${val(m, 'grasso_kg')}</td>
         <td>${val(m, 'magra_kg')}</td>
@@ -499,7 +560,7 @@ function parseSchema(righe) {
           { nome: 'Peso', color: '#9b8cff', values: bia.map((m) => m.peso) },
           { nome: 'Massa grassa', color: '#22a86a', values: bia.map((m) => m.grasso_kg) },
           { nome: 'Massa magra', color: '#2bb6c9', values: bia.map((m) => m.magra_kg) },
-        ])}
+        ], bia.map((m) => m.data))}
       </div>
       <h2>Centimetri</h2>
       <div class="card">
@@ -507,7 +568,7 @@ function parseSchema(righe) {
           { nome: 'Vita', color: '#22a86a', values: bia.map((m) => m.vita_cm) },
           { nome: 'Addome', color: '#9b8cff', values: bia.map((m) => m.addome_cm) },
           { nome: 'Fianchi', color: '#2bb6c9', values: bia.map((m) => m.fianchi_cm) },
-        ])}
+        ], bia.map((m) => m.data))}
       </div>
       <h2>Storico misurazioni</h2>
       <div class="card" style="overflow-x: auto">
@@ -519,9 +580,22 @@ function parseSchema(righe) {
   }
 
   // ---------- DATI ----------
+  // Campi della misurazione a mano: id del campo, chiave salvata, etichetta, tastiera
+  const CAMPI_BIA = [
+    ['b_peso', 'peso', 'Peso (kg)', 'decimal'],
+    ['b_grasso', 'grasso_kg', 'Massa grassa (kg)', 'decimal'],
+    ['b_magra', 'magra_kg', 'Massa magra (kg)', 'decimal'],
+    ['b_acqua', 'acqua_l', 'Acqua (l)', 'decimal'],
+    ['b_bmr', 'bmr', 'Metabolismo (kcal)', 'numeric'],
+    ['b_vat', 'vat_cm2', 'Grasso viscerale (cm²)', 'numeric'],
+    ['b_vita', 'vita_cm', 'Vita (cm)', 'decimal'],
+    ['b_addome', 'addome_cm', 'Addome (cm)', 'decimal'],
+    ['b_fianchi', 'fianchi_cm', 'Fianchi (cm)', 'decimal'],
+    ['b_torace', 'torace_cm', 'Torace (cm)', 'decimal'],
+  ];
   function dati() {
     const piani = prof().piani.length
-      ? [...prof().piani].sort((a, b) => a.dal.localeCompare(b.dal)).map((p, i) => `
+      ? prof().piani.map((p, i) => ({ p, i })).sort((a, b) => a.p.dal.localeCompare(b.p.dal)).map(({ p, i }) => `
           <div class="card">
             <div class="between">
               <div><strong>${esc(p.nome)}</strong><p class="muted">${fmtDate(p.dal)} → ${p.al ? fmtDate(p.al) : 'aperto'}</p></div>
@@ -530,6 +604,7 @@ function parseSchema(righe) {
           </div>`).join('')
       : '<p class="muted">Nessun piano importato.</p>';
     const oggiIso = todayISO();
+    const ed = biaEdit ? prof().bia.find((x) => x.data === biaEdit) : null;
     return `
       <h1>Dati</h1>
       <h2>Piani alimentari</h2>
@@ -546,26 +621,23 @@ function parseSchema(righe) {
         <button class="primary" data-biaup="1">Carica BIA PDF</button>
         <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
       </div>
-      <h2>Aggiungi misurazione BIA</h2>
+      <h2 id="formBia">${biaEdit ? `Modifica misurazione del ${fmtDate(biaEdit)}` : 'Aggiungi misurazione BIA'}</h2>
       <div class="card">
         <div class="grid2">
-          <input type="date" id="b_data" value="${oggiIso}">
-          <input inputmode="decimal" id="b_peso" placeholder="Peso (kg)">
-          <input inputmode="decimal" id="b_grasso" placeholder="Massa grassa (kg)">
-          <input inputmode="decimal" id="b_magra" placeholder="Massa magra (kg)">
-          <input inputmode="decimal" id="b_acqua" placeholder="Acqua (l)">
-          <input inputmode="numeric" id="b_bmr" placeholder="Metabolismo (kcal)">
-          <input inputmode="numeric" id="b_vat" placeholder="Grasso viscerale (cm²)">
-          <input inputmode="decimal" id="b_vita" placeholder="Vita (cm)">
+          <input type="date" id="b_data" value="${biaEdit || oggiIso}" ${biaEdit ? 'disabled' : ''}>
+          ${CAMPI_BIA.map(([id, k, ph, mode]) => `<input inputmode="${mode}" id="${id}" placeholder="${ph}" value="${ed && ed[k] != null ? String(ed[k]).replace('.', ',') : ''}">`).join('')}
         </div>
         <button class="primary" data-savebia="1">Salva misurazione</button>
+        ${biaEdit ? '<button class="small" data-annullabia="1">Annulla modifica</button>' : ''}
       </div>
       <h2>Backup</h2>
       <div class="card">
-        <p class="muted">I dati restano nel browser del telefono. Esporta ogni tanto un backup.</p>
+        <p class="muted">I dati restano sul telefono. Esporta ogni tanto un backup, e importalo per passare dalla web app all'app (o se cambi telefono).</p>
         <div class="row">
           <button class="small" data-export="1">Esporta backup</button>
+          <button class="small" data-import="1">Importa backup</button>
         </div>
+        <input type="file" id="importFile" accept="application/json,.json" style="display: none">
       </div>`;
   }
 
@@ -638,16 +710,24 @@ function parseSchema(righe) {
 
     if (d.tab) {
       if (d.tab === 'settimana' && tab !== 'settimana') giornoSel = dayIdx(todayISO());
+      if (d.tab === 'oggi' && tab !== 'oggi') giornoVisto = null;
+      if (d.tab !== 'dati') biaEdit = null;
       tab = d.tab; return render(true);
     }
+    if (d.sposta !== undefined) {
+      const n = Number(d.sposta);
+      const nuovo = n === 0 ? todayISO() : addDays(visto(), n);
+      giornoVisto = nuovo >= todayISO() ? null : nuovo;
+      return render(true);
+    }
     if (d.giorno !== undefined) { giornoSel = Number(d.giorno); return render(); }
-    if (d.profilo) { state.attivo = d.profilo; save(); return render(true); }
+    if (d.profilo) { state.attivo = d.profilo; biaEdit = null; save(); return render(true); }
     if (d.prefprofilo) {
       state.preferito = state.preferito === d.prefprofilo ? null : d.prefprofilo;
       save(); return render(true);
     }
 
-    const iso = todayISO();
+    const iso = visto();
     if (d.fatto !== undefined) { const i = Number(d.fatto); return setSlot(iso, i, { fatto: !slotState(iso, i).fatto }); }
     if (d.opt !== undefined) { const [i, j] = d.opt.split(':').map(Number); return setSlot(iso, i, { opt: j }); }
     if (d.olio !== undefined) {
@@ -661,19 +741,37 @@ function parseSchema(righe) {
       save(); return render();
     }
 
+    if (d.delpiano !== undefined) {
+      const p = prof().piani[Number(d.delpiano)];
+      if (!confirm(`Eliminare il piano "${p.nome}"? I pasti già segnati restano.`)) return;
+      prof().piani.splice(Number(d.delpiano), 1);
+      save(); return render();
+    }
+    if (d.savebia !== undefined) {
+      const data = biaEdit || document.getElementById('b_data').value;
+      const vecchia = prof().bia.find((x) => x.data === data);
+      // In modifica si parte dalla misura esistente, così restano i valori letti dal PDF che il modulo non mostra
+      const m = { ...(biaEdit ? vecchia : {}), data };
+      CAMPI_BIA.forEach(([id, k]) => { m[k] = num(String(document.getElementById(id).value).replace(',', '.')); });
+      if (!data || m.peso == null) return alert('Inserisci almeno la data e il peso.');
+      if (!biaEdit && vecchia && !confirm(`C'è già una misurazione del ${fmtDate(data)}: la sostituisco?`)) return;
+      mergeBia([m]);
+      biaEdit = null;
+      save();
+      tab = 'andamento';
+      return render(true);
+    }
+    if (d.editbia) { biaEdit = d.editbia; tab = 'dati'; render(); document.getElementById('formBia').scrollIntoView(); return; }
+    if (d.annullabia) { biaEdit = null; return render(); }
+    if (d.delbia) {
+      if (!confirm(`Eliminare la misurazione del ${fmtDate(d.delbia)}?`)) return;
+      prof().bia = prof().bia.filter((x) => x.data !== d.delbia);
+      save(); return render();
+    }
     if (d.biaup !== undefined) { document.getElementById('biaFile').click(); return; }
     if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
-    if (d.export !== undefined) {
-      const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dieta-backup-${todayISO()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      return;
-    }
+    if (d.export !== undefined) return condividiFile(`dieta-backup-${todayISO()}.json`, JSON.stringify(state, null, 2));
+    if (d.import !== undefined) { document.getElementById('importFile').click(); return; }
   });
 
   // Aggiunge o aggiorna misure BIA, senza duplicati per data
@@ -731,7 +829,26 @@ function parseSchema(righe) {
     }
   });
 
-  render();
+  // Importa un backup: sostituisce i dati attuali con quelli del file
+  document.addEventListener('change', async (e) => {
+    if (e.target.id !== 'importFile') return;
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      if (!parsed || typeof parsed.profili !== 'object') throw new Error('formato');
+      if (!confirm('Il backup sostituisce tutti i dati attuali. Continuo?')) return;
+      state = { ...structuredClone(DEFAULT), ...parsed };
+      save();
+      render();
+      alert('Backup importato.');
+    } catch (err) {
+      alert('File non valido: scegli un backup esportato da questa app.');
+    }
+  });
+
+  ripristinaNativo().catch(() => {}).finally(() => render());
 </script>
 </body>
 </html>
