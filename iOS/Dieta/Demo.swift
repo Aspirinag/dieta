@@ -6,7 +6,11 @@ extension Stato {
         let oggi = Giorni.oggi()
         let giorni = Giorni.nomi.enumerated().map { i, nome in
             GiornoPiano(nome: nome, palestra: i == 0 || i == 3, pasti: [
-                Pasto(nome: "Colazione", opzioni: [Opzione(alimenti: [
+                // Giorni diversi tra loro, con pezzi e q.b. come negli schemi veri
+                Pasto(nome: "Colazione", opzioni: [Opzione(alimenti: i >= 5 ? [
+                    Alimento(nome: "Fette biscottate", quantita: "n°3"),
+                    Alimento(nome: "Spremuta d'arancia", quantita: "150ml"),
+                ] : [
                     Alimento(nome: "Yogurt greco", quantita: "150 g"),
                     Alimento(nome: "Fiocchi d'avena", quantita: "30 g"),
                 ])]),
@@ -21,11 +25,14 @@ extension Stato {
                     ]),
                 ]),
                 Pasto(nome: "Spuntino", opzioni: [Opzione(alimenti: [
-                    Alimento(nome: "Mela", quantita: "150 g"),
+                    i % 2 == 0 ? Alimento(nome: "Banana", quantita: "n°1") : Alimento(nome: "Mela", quantita: "150 g"),
                     Alimento(nome: "Noci", quantita: "15 g"),
                 ])]),
                 Pasto(nome: "Cena", opzioni: [Opzione(alimenti: [
-                    Alimento(nome: "Petto di pollo", quantita: "150 g"),
+                    [Alimento(nome: "Petto di pollo", quantita: "150 g"),
+                     Alimento(nome: "Hamburger di pollo", quantita: i == 1 ? "n°1" : "200g"),
+                     Alimento(nome: "Fior di merluzzo", quantita: "250g")][i % 3],
+                    i % 3 == 1 ? Alimento(nome: "Mozzarella", quantita: "125 g") : Alimento(nome: "Passata di pomodoro", quantita: "q.b."),
                     Alimento(nome: "Insalata", quantita: "libera"),
                     Alimento(nome: "Pane integrale", quantita: "50 g"),
                 ])]),

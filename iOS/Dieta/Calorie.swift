@@ -8,76 +8,110 @@ enum Calorie {
         let kcal: Double         // per 100 g (o 100 ml)
         var pezzo: Double = 100  // grammi di un pezzo, di una fetta o di un cucchiaino
         var qb: Double = 0       // grammi da contare quando la quantità è «q.b.»
+        var reparto = Reparto.altro
+    }
+
+    // Reparti del supermercato, nell'ordine in cui si girano: la lista della spesa è divisa così
+    enum Reparto: Int, CaseIterable, Comparable {
+        case fruttaVerdura, pane, carne, pesce, latticini, legumi, dispensa, altro
+
+        static func < (a: Reparto, b: Reparto) -> Bool { a.rawValue < b.rawValue }
+
+        var nome: String {
+            switch self {
+            case .fruttaVerdura: "Frutta e verdura"
+            case .pane: "Pane e cereali"
+            case .carne: "Carne e salumi"
+            case .pesce: "Pesce"
+            case .latticini: "Latticini e uova"
+            case .legumi: "Legumi"
+            case .dispensa: "Dispensa"
+            case .altro: "Altro"
+            }
+        }
+
+        var icona: String {
+            switch self {
+            case .fruttaVerdura: "carrot.fill"
+            case .pane: "basket.fill"
+            case .carne: "flame.fill"
+            case .pesce: "fish.fill"
+            case .latticini: "refrigerator.fill"
+            case .legumi: "leaf.fill"
+            case .dispensa: "cabinet.fill"
+            case .altro: "bag.fill"
+            }
+        }
     }
 
     // In ordine: le voci più specifiche prima di quelle generiche (es. «pasta integrale» prima di «pasta»)
     static let tabella: [Voce] = [
         // Cereali, pane e sostituti
-        Voce(parole: ["pasta integrale", "riso o pasta integrale"], kcal: 330),
-        Voce(parole: ["pasta"], kcal: 355),
-        Voce(parole: ["riso"], kcal: 335),
-        Voce(parole: ["farro", "orzo", "quinoa", "cous cous", "couscous"], kcal: 340),
-        Voce(parole: ["avena", "muesli", "cereali", "corn flakes"], kcal: 375),
-        Voce(parole: ["biscotti", "crackers", "gallette"], kcal: 420, pezzo: 8),
-        Voce(parole: ["marmellata", "miele", "confettura"], kcal: 280, pezzo: 10),
-        Voce(parole: ["fette biscottate"], kcal: 410, pezzo: 8),
-        Voce(parole: ["pane integrale"], kcal: 245),
-        Voce(parole: ["pane tostato"], kcal: 300),
-        Voce(parole: ["toast"], kcal: 260, pezzo: 110),
-        Voce(parole: ["pizza"], kcal: 270, pezzo: 300),
-        Voce(parole: ["panino"], kcal: 285, pezzo: 80),
-        Voce(parole: ["piadina"], kcal: 300, pezzo: 100),
-        Voce(parole: ["pangrattato"], kcal: 350),
-        Voce(parole: ["pane"], kcal: 280, pezzo: 50),
-        Voce(parole: ["patate"], kcal: 85),
+        Voce(parole: ["pasta integrale", "riso o pasta integrale"], kcal: 330, reparto: .pane),
+        Voce(parole: ["pasta"], kcal: 355, reparto: .pane),
+        Voce(parole: ["riso"], kcal: 335, reparto: .pane),
+        Voce(parole: ["farro", "orzo", "quinoa", "cous cous", "couscous"], kcal: 340, reparto: .pane),
+        Voce(parole: ["avena", "muesli", "cereali", "corn flakes"], kcal: 375, reparto: .pane),
+        Voce(parole: ["biscotti", "crackers", "gallette"], kcal: 420, pezzo: 8, reparto: .pane),
+        Voce(parole: ["marmellata", "miele", "confettura"], kcal: 280, pezzo: 10, reparto: .dispensa),
+        Voce(parole: ["fette biscottate"], kcal: 410, pezzo: 8, reparto: .pane),
+        Voce(parole: ["pane integrale"], kcal: 245, reparto: .pane),
+        Voce(parole: ["pane tostato"], kcal: 300, reparto: .pane),
+        Voce(parole: ["toast"], kcal: 260, pezzo: 110, reparto: .pane),
+        Voce(parole: ["pizza"], kcal: 270, pezzo: 300, reparto: .altro),
+        Voce(parole: ["panino"], kcal: 285, pezzo: 80, reparto: .pane),
+        Voce(parole: ["piadina"], kcal: 300, pezzo: 100, reparto: .pane),
+        Voce(parole: ["pangrattato"], kcal: 350, reparto: .dispensa),
+        Voce(parole: ["pane"], kcal: 280, pezzo: 50, reparto: .pane),
+        Voce(parole: ["patate"], kcal: 85, reparto: .fruttaVerdura),
         // Legumi (la prima quantità è quella da secchi)
-        Voce(parole: ["lenticchie"], kcal: 290),
-        Voce(parole: ["fagioli"], kcal: 290),
-        Voce(parole: ["legumi"], kcal: 300),
-        Voce(parole: ["piselli"], kcal: 70),
+        Voce(parole: ["lenticchie"], kcal: 290, reparto: .legumi),
+        Voce(parole: ["fagioli"], kcal: 290, reparto: .legumi),
+        Voce(parole: ["legumi"], kcal: 300, reparto: .legumi),
+        Voce(parole: ["piselli"], kcal: 70, reparto: .legumi),
         // Carne, pesce, uova
-        Voce(parole: ["hamburger di pollo"], kcal: 150, pezzo: 100),
-        Voce(parole: ["hamburger"], kcal: 220, pezzo: 100),
-        Voce(parole: ["salsiccia di pollo"], kcal: 180),
-        Voce(parole: ["spiedini di pollo"], kcal: 90, pezzo: 150),
-        Voce(parole: ["pollo", "tacchino"], kcal: 105),
-        Voce(parole: ["manzo", "vitello"], kcal: 120),
-        Voce(parole: ["carne o pesce"], kcal: 115),
-        Voce(parole: ["bresaola"], kcal: 150),
-        Voce(parole: ["prosciutto cotto"], kcal: 180),
-        Voce(parole: ["speck"], kcal: 300),
-        Voce(parole: ["merluzzo", "orata", "branzino", "spigola", "sogliola", "nasello"], kcal: 85),
-        Voce(parole: ["tonno"], kcal: 110, pezzo: 52),
-        Voce(parole: ["salmone"], kcal: 185),
-        Voce(parole: ["gamberi", "calamari", "seppie"], kcal: 75),
-        Voce(parole: ["pesce spada"], kcal: 110),
-        Voce(parole: ["polipi", "moscardini", "polpo"], kcal: 60),
-        Voce(parole: ["albume"], kcal: 45, pezzo: 35),
-        Voce(parole: ["uovo", "uova"], kcal: 130, pezzo: 55),
+        Voce(parole: ["hamburger di pollo"], kcal: 150, pezzo: 100, reparto: .carne),
+        Voce(parole: ["hamburger"], kcal: 220, pezzo: 100, reparto: .carne),
+        Voce(parole: ["salsiccia di pollo"], kcal: 180, reparto: .carne),
+        Voce(parole: ["spiedini di pollo"], kcal: 90, pezzo: 150, reparto: .carne),
+        Voce(parole: ["pollo", "tacchino"], kcal: 105, reparto: .carne),
+        Voce(parole: ["manzo", "vitello"], kcal: 120, reparto: .carne),
+        Voce(parole: ["carne o pesce"], kcal: 115, reparto: .carne),
+        Voce(parole: ["bresaola"], kcal: 150, reparto: .carne),
+        Voce(parole: ["prosciutto cotto"], kcal: 180, reparto: .carne),
+        Voce(parole: ["speck"], kcal: 300, reparto: .carne),
+        Voce(parole: ["merluzzo", "orata", "branzino", "spigola", "sogliola", "nasello"], kcal: 85, reparto: .pesce),
+        Voce(parole: ["tonno"], kcal: 110, pezzo: 52, reparto: .pesce),
+        Voce(parole: ["salmone"], kcal: 185, reparto: .pesce),
+        Voce(parole: ["gamberi", "calamari", "seppie"], kcal: 75, reparto: .pesce),
+        Voce(parole: ["pesce spada"], kcal: 110, reparto: .pesce),
+        Voce(parole: ["polipi", "moscardini", "polpo"], kcal: 60, reparto: .pesce),
+        Voce(parole: ["albume"], kcal: 45, pezzo: 35, reparto: .latticini),
+        Voce(parole: ["uovo", "uova"], kcal: 130, pezzo: 55, reparto: .latticini),
         // Latticini
-        Voce(parole: ["yogurt greco"], kcal: 57),
-        Voce(parole: ["yogurt proteico"], kcal: 60),
-        Voce(parole: ["yogurt"], kcal: 65),
-        Voce(parole: ["fiocchi di formaggio"], kcal: 100),
-        Voce(parole: ["ricotta"], kcal: 140),
-        Voce(parole: ["latte"], kcal: 50),
-        Voce(parole: ["mozzarella"], kcal: 250),
-        Voce(parole: ["stracchino", "robiola"], kcal: 300),
-        Voce(parole: ["grana", "parmigiano"], kcal: 390),
-        Voce(parole: ["provola"], kcal: 350),
-        Voce(parole: ["formaggio"], kcal: 350, pezzo: 30),
+        Voce(parole: ["yogurt greco"], kcal: 57, reparto: .latticini),
+        Voce(parole: ["yogurt proteico"], kcal: 60, reparto: .latticini),
+        Voce(parole: ["yogurt"], kcal: 65, reparto: .latticini),
+        Voce(parole: ["fiocchi di formaggio"], kcal: 100, reparto: .latticini),
+        Voce(parole: ["ricotta"], kcal: 140, reparto: .latticini),
+        Voce(parole: ["latte"], kcal: 50, reparto: .latticini),
+        Voce(parole: ["mozzarella"], kcal: 250, reparto: .latticini),
+        Voce(parole: ["stracchino", "robiola"], kcal: 300, reparto: .latticini),
+        Voce(parole: ["grana", "parmigiano"], kcal: 390, reparto: .latticini),
+        Voce(parole: ["provola"], kcal: 350, reparto: .latticini),
+        Voce(parole: ["formaggio"], kcal: 350, pezzo: 30, reparto: .latticini),
         // Frutta
-        Voce(parole: ["noci"], kcal: 690),
-        Voce(parole: ["frutta secca", "mandorle", "nocciole"], kcal: 620),
-        Voce(parole: ["burro di arachidi"], kcal: 590, pezzo: 7),
-        Voce(parole: ["banana"], kcal: 65, pezzo: 120),
-        Voce(parole: ["spremuta"], kcal: 35),
-        Voce(parole: ["frutta", "mela", "pera", "arancia", "kiwi"], kcal: 50, pezzo: 150),
+        Voce(parole: ["noci"], kcal: 690, reparto: .dispensa),
+        Voce(parole: ["frutta secca", "mandorle", "nocciole"], kcal: 620, reparto: .dispensa),
+        Voce(parole: ["burro di arachidi"], kcal: 590, pezzo: 7, reparto: .dispensa),
+        Voce(parole: ["banana"], kcal: 65, pezzo: 120, reparto: .fruttaVerdura),
+        Voce(parole: ["spremuta"], kcal: 35, reparto: .fruttaVerdura),
+        Voce(parole: ["frutta", "mela", "pera", "arancia", "kiwi"], kcal: 50, pezzo: 150, reparto: .fruttaVerdura),
         // Verdure e condimenti (q.b. = una porzione di verdura, condimenti trascurabili)
-        Voce(parole: ["minestrone"], kcal: 35),
-        Voce(parole: ["vellutata"], kcal: 40, qb: 200),
-        Voce(parole: ["passata"], kcal: 25, qb: 50),
-        Voce(parole: ["verdur", "zucca", "zucchine", "spinaci", "insalata", "rucola", "pomodorini", "funghi", "peperoni"], kcal: 25, qb: 150),
+        Voce(parole: ["minestrone"], kcal: 35, reparto: .fruttaVerdura),
+        Voce(parole: ["vellutata"], kcal: 40, qb: 200, reparto: .fruttaVerdura),
+        Voce(parole: ["passata"], kcal: 25, qb: 50, reparto: .dispensa),
+        Voce(parole: ["verdur", "zucca", "zucchine", "spinaci", "insalata", "rucola", "pomodorini", "funghi", "peperoni"], kcal: 25, qb: 150, reparto: .fruttaVerdura),
     ]
 
     static let kcalCucchiainoOlio = 45.0   // 5 g di olio extra vergine

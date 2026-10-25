@@ -162,46 +162,123 @@ struct SettimanaView: View {
     }
 
     // ---------- Spesa ----------
+    // Divisa per reparto come al supermercato; quantità a destra in grassetto; ciò che è già preso scende in fondo
 
     @ViewBuilder private var spesa: some View {
         let voci = archivio.vociSpesa()
         let profili = archivio.profiliSpesa
         let presi = archivio.spunteSpesa()
         let giorni = Giorni.prossimi7()
+        let daPrendere = voci.filter { presi[$0.chiave] != true }
+        let nelCarrello = voci.filter { presi[$0.chiave] == true }
         if voci.isEmpty {
             ContentUnavailableView("Nessun piano nei prossimi 7 giorni", systemImage: "cart")
         } else {
             Section {
-                ForEach(voci) { v in
-                    let preso = presi[v.chiave] == true
-                    RigaSpunta(fatto: preso, azione: { archivio.spunta(v.chiave) }) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(v.nome).strikethrough(preso)
-                            Text(v.quanto).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                            if let d = v.dettaglio {
-                                Text(d).font(.caption2).foregroundStyle(.tertiary)
-                            }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(daPrendere.isEmpty ? "Tutto preso" : "Ancora \(daPrendere.count) da prendere")
+                            .font(.headline)
+                            .contentTransition(.numericText())
+                        Spacer()
+                        Text("\(nelCarrello.count)/\(voci.count)").foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    ProgressView(value: Double(nelCarrello.count), total: Double(voci.count))
+                    Text("Dal \(Giorni.breve(giorni[0])) al \(Giorni.breve(giorni[6]))"
+                         + (profili.count > 1 ? " · per \(profili.map(\.nome).formatted(.list(type: .and)))" : ""))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+            }
+            ForEach(Calorie.Reparto.allCases, id: \.self) { r in
+                let righe = daPrendere.filter { $0.reparto == r }
+                if !righe.isEmpty {
+                    Section {
+                        ForEach(righe) { v in rigaSpesa(v, preso: false) }
+                    } header: {
+                        HStack(spacing: 8) {
+                            Image(systemName: r.icona)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 24, height: 24)
+                                .background(coloreReparto(r).gradient, in: .rect(cornerRadius: 7))
+                            Text(r.nome)
+                            Spacer()
+                            Text("\(righe.count)").monospacedDigit()
                         }
-                        .opacity(preso ? 0.5 : 1)
                     }
                 }
-            } header: {
-                Text("Dal \(Giorni.breve(giorni[0])) al \(Giorni.breve(giorni[6]))")
-            } footer: {
-                Text((profili.count > 1 ? "Lista unica per \(profili.map(\.nome).formatted(.list(type: .and))): le quantità sono sommate e le spunte valgono per tutti. " : "")
-                     + "Comprende oggi e i 6 giorni successivi. Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Ogni spunta dura 7 giorni.")
             }
-            if !presi.isEmpty {
+            if !nelCarrello.isEmpty {
                 Section {
-                    Button("Togli le spunte", systemImage: "arrow.counterclockwise") { archivio.azzeraSpesa() }
+                    ForEach(nelCarrello) { v in rigaSpesa(v, preso: true) }
+                    Button("Togli tutte le spunte", systemImage: "arrow.counterclockwise") { archivio.azzeraSpesa() }
+                } header: {
+                    Label("Già nel carrello", systemImage: "cart.fill")
                 }
+            }
+            Section {
+            } footer: {
+                Text((profili.count > 1 ? "Le quantità sono la somma di tutti i profili (sotto ogni voce la parte di ciascuno) e le spunte valgono per tutti. " : "")
+                     + "×5 vuol dire 5 di quell'alimento (es. 5 banane). Comprende oggi e i 6 giorni successivi; per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Ogni spunta dura 7 giorni.")
             }
         }
     }
 
+    private func rigaSpesa(_ v: VoceSpesa, preso: Bool) -> some View {
+        Button {
+            withAnimation(.snappy) { archivio.spunta(v.chiave) }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: preso ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(preso ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(v.nome).strikethrough(preso)
+                    if let d = v.dettaglio, !preso {
+                        Text(d).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 12)
+                Text(v.quanto)
+                    .font(.body.weight(v.quanto == "q.b." ? .regular : .semibold))
+                    .fontDesign(.rounded)
+                    .monospacedDigit()
+                    .foregroundStyle(v.quanto == "q.b." || preso ? .secondary : .primary)
+                    .multilineTextAlignment(.trailing)
+            }
+            .opacity(preso ? 0.55 : 1)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: preso)
+    }
+
+    private func coloreReparto(_ r: Calorie.Reparto) -> Color {
+        switch r {
+        case .fruttaVerdura: Color(red: 0.20, green: 0.66, blue: 0.42)
+        case .pane: Color(red: 0.95, green: 0.62, blue: 0.13)
+        case .carne: Color(red: 0.88, green: 0.30, blue: 0.30)
+        case .pesce: Color(red: 0.20, green: 0.52, blue: 0.90)
+        case .latticini: Color(red: 0.36, green: 0.38, blue: 0.85)
+        case .legumi: Color(red: 0.55, green: 0.58, blue: 0.16)
+        case .dispensa: Color(red: 0.60, green: 0.43, blue: 0.30)
+        case .altro: .gray
+        }
+    }
+
+    // Da condividere (es. su WhatsApp): solo ciò che manca, per reparto
     private var testoSpesa: String {
         let presi = archivio.spunteSpesa()
-        let righe = archivio.vociSpesa().filter { presi[$0.chiave] != true }.map { "- \($0.nome): \($0.quanto)" }
-        return (["Lista della spesa"] + righe).joined(separator: "\n")
+        let mancano = archivio.vociSpesa().filter { presi[$0.chiave] != true }
+        var righe = ["Lista della spesa"]
+        for r in Calorie.Reparto.allCases {
+            let voci = mancano.filter { $0.reparto == r }
+            guard !voci.isEmpty else { continue }
+            righe.append("\n" + r.nome.uppercased())
+            righe += voci.map { "- \($0.nome)" + ($0.quanto.isEmpty ? "" : ": \($0.quanto)") }
+        }
+        return righe.joined(separator: "\n")
     }
 }

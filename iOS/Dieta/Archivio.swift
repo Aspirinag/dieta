@@ -189,7 +189,8 @@ final class Archivio {
                 }
                 // Con più profili si vede anche quanto serve a ciascuno (non se è solo «q.b.»)
                 let dettaglio = profili.count > 1 && !totale.unita.isEmpty ? v.conti.map { "\($0.profilo) \($0.quanto)" }.joined(separator: " · ") : nil
-                return VoceSpesa(chiave: k, nome: v.nome, quanto: totale.quanto, dettaglio: dettaglio)
+                return VoceSpesa(chiave: k, nome: v.nome, quanto: totale.quanto, dettaglio: dettaglio,
+                                 reparto: Calorie.voce(v.nome)?.reparto ?? .altro)
             }
     }
 
@@ -270,10 +271,15 @@ extension Profilo {
         var qb = false
 
         static let ordine = ["kg", "g", "l", "ml", "pezzi", "fette", "cucchiai", "cucchiaini"]
-        static let singolare = ["pezzi": "pezzo", "fette": "fetta", "cucchiai": "cucchiaio", "cucchiaini": "cucchiaino"]
+        static let singolare = ["fette": "fetta", "cucchiai": "cucchiaio", "cucchiaini": "cucchiaino"]
 
         var quanto: String {
             var u = unita
+            // Se l'alimento compare sia a peso sia a pezzi, i pezzi diventano grammi (peso medio di un pezzo)
+            if let pz = u["pezzi"], u["g"] != nil || u["kg"] != nil, let v = Calorie.voce(nome) {
+                u["g", default: 0] += pz * v.pezzo
+                u["pezzi"] = nil
+            }
             // Grammi e millilitri passano a kg e litri da 1000 in su
             for (piccola, grande) in [("g", "kg"), ("ml", "l")] {
                 if let v = u[piccola], v + (u[grande] ?? 0) * 1000 >= 1000 {
@@ -281,8 +287,9 @@ extension Profilo {
                     u[piccola] = nil
                 }
             }
+            // I pezzi si scrivono «×5» accanto al nome (5 banane, 5 panini): «5 pezzi» non diceva di cosa
             let parti = Self.ordine.compactMap { k in
-                u[k].map { v in "\(num(v)) \(v == 1 ? Self.singolare[k] ?? k : k)" }
+                u[k].map { v in k == "pezzi" ? "×\(num(v))" : "\(num(v)) \(v == 1 ? Self.singolare[k] ?? k : k)" }
             }
             return (parti + (qb ? ["q.b."] : [])).joined(separator: " + ")
         }
@@ -322,7 +329,10 @@ extension Profilo {
                     }
                     pulito = pulito.trimmingCharacters(in: .whitespaces)
                     let nome = pulito.prefix(1).uppercased() + pulito.dropFirst()
+                    // Nomi quasi uguali nello schema diventano una voce sola («Verdura a scelta» e «Verdure a scelta»)
                     let k = nome.lowercased()
+                        .replacingOccurrences(of: "verdura ", with: "verdure ")
+                        .replacingOccurrences(of: " e ", with: ", ")
                     var v = voci[k] ?? Conto(nome: nome, profilo: self.nome)
                     v.aggiungi(a.quantita)
                     voci[k] = v
@@ -338,6 +348,7 @@ struct VoceSpesa: Identifiable {
     let nome: String
     let quanto: String
     var dettaglio: String?
+    var reparto = Calorie.Reparto.altro
     var id: String { chiave }
 }
 
