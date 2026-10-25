@@ -20,25 +20,33 @@ struct DatiView: View {
     @State private var aggiungiProfilo = false
     @State private var profiloDaEliminare: String?
 
+    // Il corpo è diviso in passaggi: tutti i modificatori in un'unica espressione sono troppi per il compilatore
     var body: some View {
-        NavigationStack {
-            List {
-                piani
-                misure
-                profili
-                impostazioni
-                promemoria
-                backup
+        NavigationStack { conDialoghi }
+    }
+
+    private var lista: some View {
+        List {
+            piani
+            misure
+            profili
+            impostazioni
+            promemoria
+            backup
+        }
+        .navigationTitle("Dati")
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
+        .overlay {
+            if lettura {
+                ProgressView("Lettura del PDF…")
+                    .padding(24)
+                    .background(.regularMaterial, in: .rect(cornerRadius: 20))
             }
-            .navigationTitle("Dati")
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-            .overlay {
-                if lettura {
-                    ProgressView("Lettura del PDF…")
-                        .padding(24)
-                        .background(.regularMaterial, in: .rect(cornerRadius: 20))
-                }
-            }
+        }
+    }
+
+    private var conImporta: some View {
+        lista
             .fileImporter(
                 isPresented: Binding(get: { importa != nil }, set: { if !$0 { importa = nil } }),
                 allowedContentTypes: importa == .backup ? [.json] : [.pdf]
@@ -60,14 +68,17 @@ struct DatiView: View {
             .sheet(isPresented: $nuovaMisura) {
                 NavigationStack { EditorMisura(dataEsistente: nil) }
             }
+    }
+
+    private var conAvvisi: some View {
+        conImporta
             .alert("Aggiungo la BIA del \(Giorni.breve(nuovaBia?.data ?? ""))?", isPresented: Binding(
                 get: { nuovaBia != nil }, set: { if !$0 { nuovaBia = nil } }
             ), presenting: nuovaBia) { m in
                 Button("Aggiungi") { archivio.salvaMisura(m) }
                 Button("Annulla", role: .cancel) {}
             } message: { m in
-                Text("Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm" +
-                     (archivio.profilo.bia.contains { $0.data == m.data } ? "\nSostituisce la misurazione della stessa data." : ""))
+                Text(riassuntoBia(m))
             }
             .alert("Importare il backup?", isPresented: Binding(
                 get: { backupLetto != nil }, set: { if !$0 { backupLetto = nil } }
@@ -84,6 +95,10 @@ struct DatiView: View {
             } message: {
                 Text(errore ?? "")
             }
+    }
+
+    private var conDialoghi: some View {
+        conAvvisi
             .confirmationDialog("Eliminare il piano?", isPresented: Binding(
                 get: { pianoDaEliminare != nil }, set: { if !$0 { pianoDaEliminare = nil } }
             ), titleVisibility: .visible, presenting: pianoDaEliminare) { p in
@@ -120,7 +135,12 @@ struct DatiView: View {
                 }
                 Button("Annulla", role: .cancel) {}
             }
-        }
+    }
+
+    private func riassuntoBia(_ m: Misura) -> String {
+        var t = "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm"
+        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\nSostituisce la misurazione della stessa data." }
+        return t
     }
 
     private func leggi(_ tipo: Importa, _ dati: Data, nome: String) async {
