@@ -16,18 +16,34 @@ if ! xcode-select -p 2>/dev/null | grep -q "Xcode.app"; then
   echo "Imposto Xcode come strumento predefinito (ti chiede la password del Mac)"
   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 fi
-xcodebuild -version | head -1
+VERSIONE_XCODE=$(xcodebuild -version)
+echo "${VERSIONE_XCODE%%$'\n'*}"
 xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1 || {
   echo "Completo la prima configurazione di Xcode (ti chiede la password del Mac)"
   sudo xcodebuild -runFirstLaunch
 }
-VERSIONE=$(xcodebuild -version | head -1 | grep -oE '[0-9]+' | head -1)
+VERSIONE=$(echo "${VERSIONE_XCODE%%$'\n'*}" | grep -oE '[0-9]+' | sed -n 1p)
 [ "$VERSIONE" -ge 26 ] || errore "Serve Xcode 26 o successivo (hai Xcode $VERSIONE): aggiornalo dall'App Store."
 
 # ---------- Apple ID (team) ----------
 passo "Cerco il tuo Apple ID in Xcode"
-TEAM=${TEAM:-$( { defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null; defaults read com.apple.dt.Xcode IDEProvisioningTeams 2>/dev/null; } \
-  | grep -m1 -oE 'teamID = "?[A-Z0-9]{10}' | grep -oE '[A-Z0-9]{10}$' || true)}
+leggi_team() {
+  { defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null; defaults read com.apple.dt.Xcode IDEProvisioningTeams 2>/dev/null; } \
+    | grep -m1 -oE 'teamID = "?[A-Z0-9]{10}' | grep -oE '[A-Z0-9]{10}$' || true
+}
+# Xcode 27 non salva più i team nelle preferenze: li ricavo dal certificato Apple Development (OU = team)
+team_da_certificato() {
+  security find-certificate -a -c "Apple Development" -p 2>/dev/null \
+    | openssl x509 -noout -subject -nameopt multiline 2>/dev/null \
+    | awk -F' = ' '/organizationalUnitName/{print $2; exit}' || true
+}
+TEAM=${TEAM:-}
+[ -n "$TEAM" ] || TEAM=$(leggi_team)
+[ -n "$TEAM" ] || TEAM=$(team_da_certificato)
+if [ -z "$TEAM" ] && defaults read com.apple.dt.Xcode DVTDeveloperAccountManagerAppleIDLists 2>/dev/null | grep -q identifier; then
+  open -a Xcode
+  errore "L'Apple ID c'è ma non ha ancora un certificato. In Xcode → Settings… → Accounts seleziona l'account, clicca 'Manage Certificates…' → + → 'Apple Development', chiudi e rilancia."
+fi
 if [ -z "$TEAM" ]; then
   open -a Xcode
   errore "In Xcode non c'è nessun Apple ID. Si è aperto Xcode: vai in Xcode → Settings… → Accounts → + → Apple Account, accedi, poi rilancia questo comando."

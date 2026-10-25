@@ -6,7 +6,11 @@ extension Stato {
         let oggi = Giorni.oggi()
         let giorni = Giorni.nomi.enumerated().map { i, nome in
             GiornoPiano(nome: nome, palestra: i == 0 || i == 3, pasti: [
-                Pasto(nome: "Colazione", opzioni: [Opzione(alimenti: [
+                // Giorni diversi tra loro, con pezzi e q.b. come negli schemi veri
+                Pasto(nome: "Colazione", opzioni: [Opzione(alimenti: i >= 5 ? [
+                    Alimento(nome: "Fette biscottate", quantita: "n°3"),
+                    Alimento(nome: "Spremuta d'arancia", quantita: "150ml"),
+                ] : [
                     Alimento(nome: "Yogurt greco", quantita: "150 g"),
                     Alimento(nome: "Fiocchi d'avena", quantita: "30 g"),
                 ])]),
@@ -21,11 +25,14 @@ extension Stato {
                     ]),
                 ]),
                 Pasto(nome: "Spuntino", opzioni: [Opzione(alimenti: [
-                    Alimento(nome: "Mela", quantita: "150 g"),
+                    i % 2 == 0 ? Alimento(nome: "Banana", quantita: "n°1") : Alimento(nome: "Mela", quantita: "150 g"),
                     Alimento(nome: "Noci", quantita: "15 g"),
                 ])]),
                 Pasto(nome: "Cena", opzioni: [Opzione(alimenti: [
-                    Alimento(nome: "Petto di pollo", quantita: "150 g"),
+                    [Alimento(nome: "Petto di pollo", quantita: "150 g"),
+                     Alimento(nome: "Hamburger di pollo", quantita: i == 1 ? "n°1" : "200g"),
+                     Alimento(nome: "Fior di merluzzo", quantita: "250g")][i % 3],
+                    i % 3 == 1 ? Alimento(nome: "Mozzarella", quantita: "125 g") : Alimento(nome: "Passata di pomodoro", quantita: "q.b."),
                     Alimento(nome: "Insalata", quantita: "libera"),
                     Alimento(nome: "Pane integrale", quantita: "50 g"),
                 ])]),
@@ -45,6 +52,7 @@ extension Stato {
             m.obiettivoPeso = 76
             return m
         }
+        p.pesate = [Giorni.aggiungi(oggi, -45): 83.4, Giorni.aggiungi(oggi, -15): 81.9, Giorni.aggiungi(oggi, -1): 80.8]
         for k in 1...6 {
             var r = Registro()
             for i in 0..<4 where (i + k) % 4 != 0 { r.slot[String(i)] = Slot(fatto: true) }
@@ -55,9 +63,13 @@ extension Stato {
         var oggiR = Registro()
         oggiR.slot["0"] = Slot(fatto: true)
         oggiR.slot["1"] = Slot(opt: 1)
+        oggiR.slot["2"] = Slot(altro: "Cornetto al bar")
         oggiR.olio = 2
         oggiR.acqua = 0.75
         p.dieta[oggi] = oggiR
-        return Stato(profili: ["raffaele": p, "alessandra": Profilo(nome: "Alessandra")], attivo: "raffaele")
+        // Stesso schema anche per Alessandra, così la lista della spesa unisce due profili
+        var a = Profilo(nome: "Alessandra")
+        a.piani = p.piani
+        return Stato(profili: ["raffaele": p, "alessandra": a], attivo: "raffaele")
     }
 }

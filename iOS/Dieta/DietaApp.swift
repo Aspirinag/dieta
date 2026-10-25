@@ -6,6 +6,8 @@ struct DietaApp: App {
     @State private var archivio = Archivio()
     private let delegato = DelegatoNotifiche()
 
+    @UIApplicationDelegateAdaptor private var avvio: AvvioApp
+
     init() {
         UNUserNotificationCenter.current().delegate = delegato
     }
@@ -18,12 +20,28 @@ struct DietaApp: App {
     }
 }
 
+// Titoli delle schermate con il font arrotondato: più morbido, senza diventare giocoso.
+// Va fatto qui e non in DietaApp.init: là UIKit parte troppo presto e l'app perde il colore principale
+final class AvvioApp: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions opzioni: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let barra = UINavigationBar.appearance()
+        for (stile, peso) in [(UIFont.TextStyle.largeTitle, UIFont.Weight.bold), (.headline, .semibold)] {
+            let base = UIFont.preferredFont(forTextStyle: stile)
+            let descrittore = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
+            let font = UIFont(descriptor: descrittore.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: peso]]), size: base.pointSize)
+            if stile == .largeTitle { barra.largeTitleTextAttributes = [.font: font] } else { barra.titleTextAttributes = [.font: font] }
+        }
+        return true
+    }
+}
+
 enum Scheda: String {
     case oggi, settimana, andamento, dati
 }
 
 struct Radice: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.scenePhase) private var fase
     @State private var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
 
     var body: some View {
@@ -37,11 +55,22 @@ struct Radice: View {
             Tab("Andamento", systemImage: "chart.line.uptrend.xyaxis", value: .andamento) {
                 AndamentoView()
             }
-            Tab("Dati", systemImage: "gearshape", value: .dati) {
+            Tab("Profilo", systemImage: "person.crop.circle", value: .dati) {
                 DatiView()
             }
         }
+        .importatore()
         .task { await archivio.programmaPromemoria() }
+        .onChange(of: fase) { _, nuova in
+            if nuova != .active { archivio.salvaSubito() }
+        }
+        .alert("Dati non salvati", isPresented: Binding(
+            get: { archivio.erroreSalvataggio != nil }, set: { if !$0 { archivio.erroreSalvataggio = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(archivio.erroreSalvataggio ?? "")
+        }
     }
 }
 

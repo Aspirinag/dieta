@@ -1,19 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Piani e PDF, misurazioni, profili, impostazioni, promemoria e backup
+// Profilo: profili, piani alimentari, impostazioni, promemoria e backup.
+// Le misurazioni si caricano e si gestiscono in Andamento
 struct DatiView: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.importa) private var importa
 
-    private enum Importa { case schema, bia, backup }
-
-    @State private var importa: Importa?
-    @State private var nuovoPiano: Piano?
-    @State private var nuovaBia: Misura?
-    @State private var backupLetto: Data?
     @State private var errore: String?
-    @State private var lettura = false
-    @State private var nuovaMisura = false
     @State private var pianoDaEliminare: Piano?
     @State private var nomeProfilo = ""
     @State private var profiloDaRinominare: String?
@@ -27,69 +21,18 @@ struct DatiView: View {
 
     private var lista: some View {
         List {
-            piani
-            misure
             profili
+            piani
             impostazioni
             promemoria
             backup
         }
-        .navigationTitle("Dati")
+        .navigationTitle("Profilo")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-        .overlay {
-            if lettura {
-                ProgressView("Lettura del PDF…")
-                    .padding(24)
-                    .background(.regularMaterial, in: .rect(cornerRadius: 20))
-            }
-        }
-    }
-
-    private var conImporta: some View {
-        lista
-            .fileImporter(
-                isPresented: Binding(get: { importa != nil }, set: { if !$0 { importa = nil } }),
-                allowedContentTypes: importa == .backup ? [.json] : [.pdf]
-            ) { risultato in
-                let tipo = importa
-                importa = nil
-                guard case .success(let url) = risultato, let tipo else { return }
-                let accesso = url.startAccessingSecurityScopedResource()
-                defer { if accesso { url.stopAccessingSecurityScopedResource() } }
-                guard let dati = try? Data(contentsOf: url) else {
-                    errore = "Non riesco ad aprire il file."
-                    return
-                }
-                Task { await leggi(tipo, dati, nome: url.deletingPathExtension().lastPathComponent) }
-            }
-            .sheet(item: $nuovoPiano) { p in
-                FoglioNuovoPiano(piano: p)
-            }
-            .sheet(isPresented: $nuovaMisura) {
-                NavigationStack { EditorMisura(dataEsistente: nil) }
-            }
     }
 
     private var conAvvisi: some View {
-        conImporta
-            .alert("Aggiungo la BIA del \(Giorni.breve(nuovaBia?.data ?? ""))?", isPresented: Binding(
-                get: { nuovaBia != nil }, set: { if !$0 { nuovaBia = nil } }
-            ), presenting: nuovaBia) { m in
-                Button("Aggiungi") { archivio.salvaMisura(m) }
-                Button("Annulla", role: .cancel) {}
-            } message: { m in
-                Text(riassuntoBia(m))
-            }
-            .alert("Importare il backup?", isPresented: Binding(
-                get: { backupLetto != nil }, set: { if !$0 { backupLetto = nil } }
-            ), presenting: backupLetto) { dati in
-                Button("Importa", role: .destructive) {
-                    do { try archivio.importa(dati) } catch { errore = "File non valido: scegli un backup esportato dall'app Dieta." }
-                }
-                Button("Annulla", role: .cancel) {}
-            } message: { _ in
-                Text("Il backup sostituisce tutti i dati attuali.")
-            }
+        lista
             .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
             } message: {
@@ -137,44 +80,6 @@ struct DatiView: View {
             }
     }
 
-    private func riassuntoBia(_ m: Misura) -> String {
-        var t = "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm"
-        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\nSostituisce la misurazione della stessa data." }
-        return t
-    }
-
-    private func leggi(_ tipo: Importa, _ dati: Data, nome: String) async {
-        switch tipo {
-        case .backup:
-            backupLetto = dati
-        case .schema:
-            lettura = true
-            defer { lettura = false }
-            do {
-                let giorni = try await LettorePDF.condiviso.schema(dati)
-                guard giorni.count == 7, giorni.allSatisfy({ !$0.pasti.isEmpty }) else {
-                    errore = "Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico."
-                    return
-                }
-                nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: giorni)
-            } catch {
-                errore = "Non riesco a leggere questo PDF."
-            }
-        case .bia:
-            lettura = true
-            defer { lettura = false }
-            do {
-                let m = try await LettorePDF.condiviso.bia(dati)
-                guard !m.data.isEmpty, m.peso != nil else {
-                    errore = "Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA."
-                    return
-                }
-                nuovaBia = m
-            } catch {
-                errore = "Non riesco a leggere questo PDF."
-            }
-        }
-    }
 
     // ---------- Sezioni ----------
 
@@ -191,22 +96,11 @@ struct DatiView: View {
                     Button("Elimina", systemImage: "trash", role: .destructive) { pianoDaEliminare = p }
                 }
             }
-            Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { importa = .schema }
+            Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { importa(.schema) }
         } header: {
             Text("Piani alimentari")
         } footer: {
             Text("Lo schema in PDF viene letto e diventa il piano di Oggi e Settimana. Scorri a sinistra su un piano per eliminarlo.")
-        }
-    }
-
-    private var misure: some View {
-        Section {
-            Button("Carica referto BIA (PDF)", systemImage: "doc.text.magnifyingglass") { importa = .bia }
-            Button("Aggiungi misurazione a mano", systemImage: "square.and.pencil") { nuovaMisura = true }
-        } header: {
-            Text("Misurazioni BIA")
-        } footer: {
-            Text("Le misurazioni si vedono, modificano ed eliminano in Andamento.")
         }
     }
 
@@ -227,9 +121,18 @@ struct DatiView: View {
                     }
                 } label: {
                     HStack {
-                        Image(systemName: id == archivio.stato.attivo ? "person.crop.circle.fill" : "person.crop.circle")
-                            .foregroundStyle(Color.accentColor)
-                        Text(nome).foregroundStyle(.primary)
+                        // Iniziale in un cerchio: piena per il profilo attivo
+                        let attivo = id == archivio.stato.attivo
+                        Text(String(nome.prefix(1)).uppercased())
+                            .font(.headline)
+                            .fontDesign(.rounded)
+                            .foregroundStyle(attivo ? Color.white : Color.accentColor)
+                            .frame(width: 34, height: 34)
+                            .background(attivo ? AnyShapeStyle(Color.accentColor.gradient) : AnyShapeStyle(Color.accentColor.opacity(0.14)), in: .circle)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(nome).foregroundStyle(.primary)
+                            if attivo { Text("In uso").font(.caption).foregroundStyle(.secondary) }
+                        }
                         Spacer()
                         if archivio.stato.preferito == id {
                             Image(systemName: "star.fill").foregroundStyle(.yellow)
@@ -311,7 +214,7 @@ struct DatiView: View {
             ) {
                 Label("Esporta backup", systemImage: "square.and.arrow.up")
             }
-            Button("Importa backup", systemImage: "square.and.arrow.down") { importa = .backup }
+            Button("Importa backup", systemImage: "square.and.arrow.down") { importa(.backup) }
         } header: {
             Text("Backup")
         } footer: {
@@ -336,6 +239,7 @@ struct FoglioNuovoPiano: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dismiss) private var chiudi
     @State var piano: Piano
+    var salvato: (String) -> Void = { _ in }
     @State private var dal = Date()
 
     var body: some View {
@@ -363,6 +267,7 @@ struct FoglioNuovoPiano: View {
                     Button("Salva", systemImage: "checkmark") {
                         piano.dal = Giorni.iso(dal)
                         archivio.aggiungiPiano(piano)
+                        salvato(piano.nome)
                         chiudi()
                     }
                 }

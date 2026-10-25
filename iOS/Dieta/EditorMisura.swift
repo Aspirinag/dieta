@@ -86,3 +86,67 @@ struct EditorMisura: View {
         chiudi()
     }
 }
+
+// Pesata a casa (solo il peso), tra una BIA e l'altra: nuova o da modificare
+struct EditorPesata: View {
+    @Environment(Archivio.self) private var archivio
+    @Environment(\.dismiss) private var chiudi
+    let dataEsistente: String?
+
+    @State private var data = Date()
+    @State private var peso = ""
+    @FocusState private var attivo: Bool
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    if let d = dataEsistente {
+                        LabeledContent("Data", value: Giorni.breve(d))
+                    } else {
+                        DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
+                    }
+                    LabeledContent("Peso") {
+                        HStack {
+                            TextField("–", text: $peso)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .focused($attivo)
+                            Text("kg").foregroundStyle(.secondary)
+                        }
+                    }
+                } footer: {
+                    Text("Meglio sempre alla stessa ora, al mattino a digiuno. Le pesate si vedono nel grafico del peso insieme alle BIA.")
+                }
+                if let d = dataEsistente {
+                    Section {
+                        Button("Elimina pesata", role: .destructive) {
+                            archivio.profilo.pesate[d] = nil
+                            chiudi()
+                        }
+                    }
+                }
+            }
+            .navigationTitle(dataEsistente == nil ? "Pesata rapida" : "Modifica pesata")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Annulla", role: .cancel) { chiudi() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Salva", systemImage: "checkmark") {
+                        guard let kg = leggiNumero(peso), kg > 20, kg < 400 else { return }
+                        archivio.profilo.pesate[dataEsistente ?? Giorni.iso(data)] = kg
+                        chiudi()
+                    }
+                    .disabled(leggiNumero(peso).map { $0 <= 20 || $0 >= 400 } ?? true)
+                }
+            }
+            .onAppear {
+                if let d = dataEsistente, let kg = archivio.profilo.pesate[d] { peso = num(kg) }
+                attivo = true
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
