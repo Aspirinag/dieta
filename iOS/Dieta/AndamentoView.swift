@@ -82,13 +82,13 @@ struct AndamentoView: View {
                         let quota = p.quotaSegnata(iso)
                         VStack(spacing: 6) {
                             ZStack(alignment: .bottom) {
-                                Capsule().fill(Color.accentColor.opacity(0.14))
-                                Capsule()
+                                RoundedRectangle(cornerRadius: 5).fill(Color.accentColor.opacity(0.14))
+                                RoundedRectangle(cornerRadius: 5)
                                     .fill(Color.accentColor.gradient)
-                                    .frame(height: max(quota ?? 0, 0.04) * 44)
-                                    .opacity(quota == nil ? 0 : 1)
+                                    .frame(height: max(quota ?? 0, 0.08) * 44)
+                                    .opacity(quota == nil || quota == 0 ? 0 : 1)
                             }
-                            .frame(height: 44)
+                            .frame(width: 14, height: 44)
                             Text(String(Giorni.nomi[Giorni.indice(iso)].prefix(1)))
                                 .font(.caption2.weight(.medium))
                                 .foregroundStyle(.secondary)
