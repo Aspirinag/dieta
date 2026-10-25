@@ -7,11 +7,20 @@ struct DatiView: View {
 
     private enum Importa { case schema, bia, backup }
 
+    // PDF cifrato in attesa della password
+    private struct PdfProtetto {
+        let tipo: Importa
+        let dati: Data
+        let nome: String
+    }
+
     @State private var importa: Importa?
     @State private var nuovoPiano: Piano?
     @State private var nuovaBia: Misura?
     @State private var backupLetto: Data?
     @State private var errore: String?
+    @State private var protetto: PdfProtetto?
+    @State private var password = ""
     @State private var lettura = false
     @State private var nuovaMisura = false
     @State private var pianoDaEliminare: Piano?
@@ -60,7 +69,13 @@ struct DatiView: View {
                     errore = "Non riesco ad aprire il file."
                     return
                 }
-                Task { await leggi(tipo, dati, nome: url.deletingPathExtension().lastPathComponent) }
+                let nome = url.deletingPathExtension().lastPathComponent
+                if tipo != .backup && LettorePDF.protetto(dati) {
+                    password = ""
+                    protetto = PdfProtetto(tipo: tipo, dati: dati, nome: nome)
+                    return
+                }
+                Task { await leggi(tipo, dati, nome: nome) }
             }
             .sheet(item: $nuovoPiano) { p in
                 FoglioNuovoPiano(piano: p)
@@ -89,6 +104,18 @@ struct DatiView: View {
                 Button("Annulla", role: .cancel) {}
             } message: { _ in
                 Text("Il backup sostituisce tutti i dati attuali.")
+            }
+            .alert("PDF protetto", isPresented: Binding(
+                get: { protetto != nil }, set: { if !$0 { protetto = nil } }
+            ), presenting: protetto) { p in
+                SecureField("Password", text: $password)
+                Button("Apri") {
+                    let pwd = password
+                    Task { await leggi(p.tipo, p.dati, nome: p.nome, password: pwd) }
+                }
+                Button("Annulla", role: .cancel) {}
+            } message: { _ in
+                Text("Questo PDF si apre solo con la password. Spesso è indicata nell'email o nel messaggio con cui ti è arrivato il referto.")
             }
             .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
@@ -143,7 +170,11 @@ struct DatiView: View {
         return t
     }
 
-    private func leggi(_ tipo: Importa, _ dati: Data, nome: String) async {
+    private func leggi(_ tipo: Importa, _ dati: Data, nome: String, password: String = "") async {
+        if !password.isEmpty && !LettorePDF.passwordGiusta(dati, password) {
+            errore = "La password non è corretta."
+            return
+        }
         switch tipo {
         case .backup:
             backupLetto = dati
@@ -151,28 +182,36 @@ struct DatiView: View {
             lettura = true
             defer { lettura = false }
             do {
-                let giorni = try await LettorePDF.condiviso.schema(dati)
+                let giorni = try await LettorePDF.condiviso.schema(dati, password: password)
                 guard giorni.count == 7, giorni.allSatisfy({ !$0.pasti.isEmpty }) else {
                     errore = "Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico."
                     return
                 }
                 nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: giorni)
             } catch {
-                errore = "Non riesco a leggere questo PDF."
+                errore = messaggio(error)
             }
         case .bia:
             lettura = true
             defer { lettura = false }
             do {
-                let m = try await LettorePDF.condiviso.bia(dati)
+                let m = try await LettorePDF.condiviso.bia(dati, password: password)
                 guard !m.data.isEmpty, m.peso != nil else {
                     errore = "Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA."
                     return
                 }
                 nuovaBia = m
             } catch {
-                errore = "Non riesco a leggere questo PDF."
+                errore = messaggio(error)
             }
+        }
+    }
+
+    private func messaggio(_ errore: Error) -> String {
+        switch errore {
+        case LettorePDF.Errore.password: "Il PDF è protetto da password e non si riesce ad aprire."
+        case is DecodingError: "Ho letto il PDF ma non ne ricavo i dati: forse non è nel formato atteso."
+        default: "Non riesco a leggere questo PDF. Riprova; se succede ancora, chiudi e riapri l'app."
         }
     }
 

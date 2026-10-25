@@ -9,6 +9,8 @@
 <script>
   const daBase64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const comeFile = (b64) => ({ arrayBuffer: async () => daBase64(b64).buffer });
+  // Password del PDF cifrato, se l'app l'ha chiesta (vuota = nessuna)
+  let password = '';
 
   const GIORNI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 const PASTI = ['Spuntino', 'Pranzo', 'Cena'];
@@ -71,7 +73,7 @@ function parseSchema(righe) {
 
 
   async function leggiSchemaPdf(file) {
-    const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), password }).promise;
     const righe = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const tc = await (await doc.getPage(p)).getTextContent();
@@ -120,7 +122,7 @@ function parseSchema(righe) {
     };
   }
   async function leggiBiaPdf(file) {
-    const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), password }).promise;
     const out = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const tc = await (await doc.getPage(p)).getTextContent();
@@ -132,9 +134,9 @@ function parseSchema(righe) {
   }
 
 
-  // Chiamate dall'app (Swift): ricevono il PDF in base64 e restituiscono JSON
-  async function schema(b64) { return JSON.stringify(await leggiSchemaPdf(comeFile(b64))); }
-  async function bia(b64) { return JSON.stringify(await leggiBiaPdf(comeFile(b64))); }
+  // Chiamate dall'app (Swift): ricevono il PDF in base64 (e la password, se c'è) e restituiscono JSON
+  async function schema(b64, pwd) { password = pwd || ''; return JSON.stringify(await leggiSchemaPdf(comeFile(b64))); }
+  async function bia(b64, pwd) { password = pwd || ''; return JSON.stringify(await leggiBiaPdf(comeFile(b64))); }
 </script>
 </body>
 </html>
