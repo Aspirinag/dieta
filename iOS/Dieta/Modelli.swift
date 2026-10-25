@@ -101,16 +101,19 @@ struct Piano: Codable, Hashable, Identifiable {
 struct Slot: Codable, Hashable {
     var opt = 0
     var fatto = false
+    var altro: String?   // «Ho mangiato altro»: pasto fuori piano, con una nota facoltativa
 
-    init(opt: Int = 0, fatto: Bool = false) {
+    init(opt: Int = 0, fatto: Bool = false, altro: String? = nil) {
         self.opt = opt
         self.fatto = fatto
+        self.altro = altro
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         opt = c.valore(.opt, 0)
         fatto = c.valore(.fatto, false)
+        altro = c.valore(.altro, nil)
     }
 }
 
@@ -254,6 +257,7 @@ struct Profilo: Codable, Hashable {
     var nome: String
     var piani: [Piano] = []
     var bia: [Misura] = []
+    var pesate: [String: Double] = [:]   // pesate a casa tra una BIA e l'altra: data → kg
     var dieta: [String: Registro] = [:]
     var olioTot: Int?
     var acquaTot: Double?
@@ -261,7 +265,7 @@ struct Profilo: Codable, Hashable {
     var spesa: Spesa?
 
     enum CodingKeys: String, CodingKey {
-        case nome, piani, bia, dieta, note, spesa
+        case nome, piani, bia, pesate, dieta, note, spesa
         case olioTot = "olio_tot", acquaTot = "acqua_tot"
     }
 
@@ -274,6 +278,7 @@ struct Profilo: Codable, Hashable {
         nome = c.valore(.nome, "")
         piani = c.valore(.piani, [])
         bia = c.valore(.bia, [])
+        pesate = c.valore(.pesate, [:])
         dieta = c.valore(.dieta, [:])
         olioTot = c.valore(.olioTot, nil)
         acquaTot = c.valore(.acquaTot, nil)

@@ -52,6 +52,7 @@ extension Stato {
             m.obiettivoPeso = 76
             return m
         }
+        p.pesate = [Giorni.aggiungi(oggi, -45): 83.4, Giorni.aggiungi(oggi, -15): 81.9, Giorni.aggiungi(oggi, -1): 80.8]
         for k in 1...6 {
             var r = Registro()
             for i in 0..<4 where (i + k) % 4 != 0 { r.slot[String(i)] = Slot(fatto: true) }
@@ -62,6 +63,7 @@ extension Stato {
         var oggiR = Registro()
         oggiR.slot["0"] = Slot(fatto: true)
         oggiR.slot["1"] = Slot(opt: 1)
+        oggiR.slot["2"] = Slot(altro: "Cornetto al bar")
         oggiR.olio = 2
         oggiR.acqua = 0.75
         p.dieta[oggi] = oggiR

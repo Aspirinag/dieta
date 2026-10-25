@@ -1,6 +1,9 @@
 import SwiftUI
 import Charts
 
+// Data della pesata aperta nel foglio ("" = nuova)
+private struct DataPesata: Identifiable { let id: String }
+
 // Cruscotto: costanza nei pasti, una tessera per misura (ultimo valore, variazione, mini grafico),
 // il grafico della misura scelta, consigli e storico delle misurazioni
 struct AndamentoView: View {
@@ -8,6 +11,7 @@ struct AndamentoView: View {
     @Environment(\.importa) private var importa
     @State private var metrica: CampoMisura = .peso
     @State private var nuovaMisura = false
+    @State private var pesata: String?   // "" = nuova pesata, altrimenti la data da modificare
     @State private var selezione: Date?
 
     private struct Voce {
@@ -23,7 +27,19 @@ struct AndamentoView: View {
     private struct Punto: Identifiable {
         let data: Date
         let valore: Double
+        var pesata = false   // pesata a casa, non BIA
         var id: Date { data }
+    }
+
+    // Punti di una misura; per il peso anche le pesate a casa (nello stesso giorno vale la BIA)
+    private func punti(_ campo: CampoMisura, _ bia: [Misura]) -> [Punto] {
+        var p = bia.compactMap { m in m[campo].map { Punto(data: Giorni.data(m.data), valore: $0) } }
+        if campo == .peso {
+            let giorniBia = Set(bia.map(\.data))
+            p += archivio.profilo.pesate.filter { !giorniBia.contains($0.key) }
+                .map { Punto(data: Giorni.data($0.key), valore: $0.value, pesata: true) }
+        }
+        return p.sorted { $0.data < $1.data }
     }
 
     var body: some View {
@@ -32,14 +48,15 @@ struct AndamentoView: View {
                 let bia = archivio.profilo.bia.sorted { $0.data < $1.data }
                 VStack(spacing: 14) {
                     costanza
-                    if bia.isEmpty {
+                    if bia.isEmpty && archivio.profilo.pesate.isEmpty {
                         ContentUnavailableView {
                             Label("Nessuna misurazione", systemImage: "chart.line.uptrend.xyaxis")
                         } description: {
                             Text("Carica i referti BIA in PDF o aggiungi una misurazione a mano.")
                         } actions: {
-                            Button("Carica referti BIA (PDF)") { importa(.bia) }
+                                Button("Carica referti BIA (PDF)") { importa(.bia) }
                                 .buttonStyle(.borderedProminent)
+                            Button("Pesata rapida") { pesata = "" }
                             Button("Aggiungi a mano") { nuovaMisura = true }
                         }
                         .scheda()
@@ -58,6 +75,7 @@ struct AndamentoView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
+                        Button("Pesata rapida", systemImage: "scalemass") { pesata = "" }
                         Button("Carica referti BIA (PDF)", systemImage: "doc.text.magnifyingglass") { importa(.bia) }
                         Button("Aggiungi misurazione a mano", systemImage: "square.and.pencil") { nuovaMisura = true }
                     } label: {
@@ -71,6 +89,9 @@ struct AndamentoView: View {
             }
             .sheet(isPresented: $nuovaMisura) {
                 NavigationStack { EditorMisura(dataEsistente: nil) }
+            }
+            .sheet(item: Binding(get: { pesata.map { DataPesata(id: $0) } }, set: { pesata = $0?.id })) { p in
+                EditorPesata(dataEsistente: p.id.isEmpty ? nil : p.id)
             }
         }
     }
@@ -126,8 +147,8 @@ struct AndamentoView: View {
 
     private func tessere(_ bia: [Misura]) -> some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-            ForEach(voci.filter { v in bia.contains { $0[v.campo] != nil } }, id: \.campo) { v in
-                let punti = bia.compactMap { m in m[v.campo].map { Punto(data: Giorni.data(m.data), valore: $0) } }
+            ForEach(voci.filter { v in !punti(v.campo, bia).isEmpty }, id: \.campo) { v in
+                let punti = punti(v.campo, bia)
                 let scelta = v.campo == metrica
                 Button {
                     withAnimation(.snappy) { metrica = v.campo; selezione = nil }
@@ -191,7 +212,7 @@ struct AndamentoView: View {
     // ---------- Grafico ----------
 
     private func grafico(_ bia: [Misura]) -> some View {
-        let punti = bia.compactMap { m in m[metrica].map { Punto(data: Giorni.data(m.data), valore: $0) } }
+        let punti = punti(metrica, bia)
         // Obiettivo dall'ultima BIA: peso desiderabile, o massa grassa desiderabile in kg
         let obiettivo: Double? = switch metrica {
         case .peso: bia.last?.obiettivoPeso
@@ -226,9 +247,10 @@ struct AndamentoView: View {
                             .interpolationMethod(.monotone)
                             .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
                         PointMark(x: .value("Data", p.data), y: .value(metrica.nome, p.valore))
-                            .symbolSize(scelto?.id == p.id ? 120 : 40)
+                            .symbolSize(scelto?.id == p.id ? 120 : p.pesata ? 18 : 40)
+                            .foregroundStyle(p.pesata ? Color.gray : Color.accentColor)
                             .annotation(position: .top) {
-                                if scelto == nil && punti.count <= 8 {
+                                if scelto == nil && punti.count <= 8 && !p.pesata {
                                     Text(num(p.valore)).font(.caption2).fontDesign(.rounded).foregroundStyle(.secondary)
                                 }
                             }
@@ -260,12 +282,13 @@ struct AndamentoView: View {
                 .sensoryFeedback(.selection, trigger: scelto?.id)
                 .chartYScale(domain: .automatic(includesZero: false))
                 .chartXAxis {
-                    AxisMarks(values: punti.map(\.data)) { _ in
+                    AxisMarks(values: punti.filter { !$0.pesata }.map(\.data)) { _ in
                         AxisValueLabel(format: .dateTime.day().month(.abbreviated))
                     }
                 }
                 .frame(height: 220)
-                Text("Tieni premuto e scorri sul grafico per leggere i valori.")
+                Text("Tieni premuto e scorri sul grafico per leggere i valori."
+                     + (punti.contains(where: \.pesata) ? " I punti grigi sono le pesate a casa." : ""))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -280,13 +303,15 @@ struct AndamentoView: View {
         if !testi.isEmpty || bia.last?.obiettivoPeso != nil {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(testi, id: \.self) { c in
-                    Label(c, systemImage: "lightbulb.fill")
-                        .symbolRenderingMode(.multicolor)
+                    Label { Text(c) } icon: { Image(systemName: "lightbulb.fill").foregroundStyle(.yellow) }
                 }
-                if let ultimo = bia.last, ultimo.obiettivoPeso != nil || ultimo.obiettivoGrassoPct != nil {
-                    Label("Obiettivi: peso \(num(ultimo.obiettivoPeso)) kg, massa grassa \(num(ultimo.obiettivoGrassoPct))%",
-                          systemImage: "flag.checkered")
-                        .foregroundStyle(.secondary)
+                if let ultimo = bia.last {
+                    let obiettivi = [ultimo.obiettivoPeso.map { "peso \(num($0)) kg" },
+                                     ultimo.obiettivoGrassoPct.map { "massa grassa \(num($0))%" }].compactMap { $0 }
+                    if !obiettivi.isEmpty {
+                        Label("Obiettivi: " + obiettivi.joined(separator: ", "), systemImage: "flag.checkered")
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .font(.subheadline)
@@ -332,6 +357,30 @@ struct AndamentoView: View {
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+            }
+            let pesate = archivio.profilo.pesate.sorted { $0.key > $1.key }
+            if !pesate.isEmpty {
+                HStack {
+                    Text("Pesate a casa").font(.headline)
+                    Spacer()
+                    Text("\(pesate.count)").foregroundStyle(.secondary).monospacedDigit()
+                }
+                .padding(.top, 18)
+                .padding(.bottom, 8)
+                ForEach(Array(pesate.enumerated()), id: \.element.key) { i, p in
+                    if i > 0 { Divider() }
+                    Button { pesata = p.key } label: {
+                        HStack {
+                            Label(Giorni.breve(p.key), systemImage: "scalemass").foregroundStyle(.primary)
+                            Spacer()
+                            Text("\(num(p.value)) kg").font(.body.weight(.semibold)).fontDesign(.rounded).monospacedDigit()
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 10)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             Text("Tocca una misurazione per modificarla o eliminarla. Con + ne aggiungi di nuove.")
                 .font(.caption)

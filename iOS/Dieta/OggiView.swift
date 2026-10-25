@@ -31,7 +31,7 @@ struct OggiView: View {
                 if let piano = archivio.profilo.piano(per: giorno) {
                     let g = piano.giorni[Giorni.indice(giorno)]
                     // Il primo pasto non ancora segnato è quello «da fare»
-                    let prossimo = g.pasti.indices.first { !archivio.slot(giorno, $0).fatto }
+                    let prossimo = g.pasti.indices.first { let s = archivio.slot(giorno, $0); return !s.fatto && s.altro == nil }
                     VStack(spacing: 14) {
                         RiepilogoGiorno(giorno: giorno, piano: piano)
                         ForEach(Array(g.pasti.enumerated()), id: \.offset) { i, pasto in
@@ -167,6 +167,8 @@ struct SchedaPasto: View {
     let pasto: Pasto
     let prossimo: Bool
     @State private var aperto = false
+    @State private var chiediAltro = false
+    @State private var notaAltro = ""
 
     var body: some View {
         let s = archivio.slot(giorno, indice)
@@ -174,23 +176,29 @@ struct SchedaPasto: View {
         let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : nil
         let calorie = opz?.calorie
         let colore = colorePasto(pasto.nome)
-        let chiuso = s.fatto && !aperto
+        let fuori = s.altro != nil
+        let chiuso = (s.fatto || fuori) && !aperto
         VStack(alignment: .leading, spacing: 14) {
             Button {
-                if s.fatto { aperto.toggle() }
+                if s.fatto || fuori { aperto.toggle() }
             } label: {
                 HStack(spacing: 12) {
                     IconaPasto(nome: pasto.nome)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(pasto.nome).font(.headline)
-                        if let t = opz?.titolo, chiuso || pasto.opzioni.count == 1 {
+                        if let nota = s.altro {
+                            Text(nota.isEmpty ? "Fuori piano" : "Fuori piano: \(nota)")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.orange)
+                                .lineLimit(2)
+                        } else if let t = opz?.titolo, chiuso || pasto.opzioni.count == 1 {
                             Text(t).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                         } else if prossimo {
                             Text("Prossimo pasto").font(.subheadline.weight(.medium)).foregroundStyle(colore)
                         }
                     }
                     Spacer(minLength: 8)
-                    if let calorie, calorie.kcal > 0 {
+                    if let calorie, calorie.kcal > 0, !fuori {
                         Text(kcal(calorie.kcal, incompleto: !calorie.ignoti.isEmpty))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -201,12 +209,17 @@ struct SchedaPasto: View {
                             .font(.title2)
                             .foregroundStyle(colore)
                             .transition(.scale.combined(with: .opacity))
+                    } else if fuori {
+                        Image(systemName: "arrow.triangle.swap")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .allowsHitTesting(s.fatto)   // non .disabled: renderebbe l'intestazione grigia
+            .allowsHitTesting(s.fatto || fuori)   // non .disabled: renderebbe l'intestazione grigia
 
             if !chiuso {
                 if pasto.opzioni.count > 1 {
@@ -254,20 +267,45 @@ struct SchedaPasto: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Button {
-                    archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() }
-                    aperto = false
-                } label: {
-                    Label(s.fatto ? "Segnato come fatto · annulla" : "Segna come fatto",
-                          systemImage: s.fatto ? "arrow.uturn.backward" : "checkmark")
-                        .font(.body.weight(.semibold))
+                if fuori {
+                    Button {
+                        archivio.cambiaSlot(giorno, indice) { $0.altro = nil }
+                        aperto = false
+                    } label: {
+                        Label("Annulla «fuori piano»", systemImage: "arrow.uturn.backward")
+                            .font(.body.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.secondary)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.large)
+                } else {
+                    Button {
+                        archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle(); $0.altro = nil }
+                        aperto = false
+                    } label: {
+                        Label(s.fatto ? "Segnato come fatto · annulla" : "Segna come fatto",
+                              systemImage: s.fatto ? "arrow.uturn.backward" : "checkmark")
+                            .font(.body.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(s.fatto ? .secondary : colore)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.large)
+                    if !s.fatto {
+                        Button("Ho mangiato altro", systemImage: "arrow.triangle.swap") {
+                            notaAltro = ""
+                            chiediAltro = true
+                        }
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
+                    }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(s.fatto ? .secondary : colore)
-                .buttonBorderShape(.capsule)
-                .controlSize(.large)
             }
         }
         .scheda()
@@ -277,6 +315,17 @@ struct SchedaPasto: View {
             }
         }
         .sensoryFeedback(trigger: s.fatto) { _, nuovo in nuovo ? .success : .selection }
+        .alert("Ho mangiato altro", isPresented: $chiediAltro) {
+            TextField("Cosa? (facoltativo)", text: $notaAltro)
+            Button("Salva") {
+                let nota = notaAltro.trimmingCharacters(in: .whitespaces)
+                archivio.cambiaSlot(giorno, indice) { $0.altro = nota; $0.fatto = false }
+                aperto = false
+            }
+            Button("Annulla", role: .cancel) {}
+        } message: {
+            Text("Il pasto resta segnato come fuori piano: non conta nella costanza né nelle calorie.")
+        }
     }
 }
 
