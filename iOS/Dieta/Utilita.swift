@@ -126,19 +126,54 @@ func iconaPasto(_ nome: String) -> String {
     }
 }
 
+// Colore di un pasto: ritmo alla giornata (colazione ambra, pranzo verde, spuntino corallo, cena indaco)
+func colorePasto(_ nome: String) -> Color {
+    switch nome.lowercased() {
+    case let n where n.hasPrefix("colazione"): Color(red: 0.95, green: 0.62, blue: 0.13)
+    case let n where n.hasPrefix("pranzo"): Color(red: 0.20, green: 0.66, blue: 0.42)
+    case let n where n.hasPrefix("cena"): Color(red: 0.36, green: 0.38, blue: 0.85)
+    case let n where n.hasPrefix("spuntino") || n.hasPrefix("merenda"): Color(red: 0.96, green: 0.45, blue: 0.36)
+    default: .accentColor
+    }
+}
+
+// Icona del pasto bianca su un quadratino del suo colore, come nelle Impostazioni di iOS
+struct IconaPasto: View {
+    let nome: String
+    var lato: CGFloat = 36
+
+    var body: some View {
+        Image(systemName: iconaPasto(nome))
+            .font(.system(size: lato * 0.47, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: lato, height: lato)
+            .background(colorePasto(nome).gradient, in: .rect(cornerRadius: lato * 0.28))
+    }
+}
+
+// Riquadro delle schede: sfondo della lista raggruppata, angoli ampi
+extension View {
+    func scheda() -> some View {
+        padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 22))
+    }
+}
+
 // Anello che si riempie con l'avanzamento (0…1), con un testo al centro
 struct Anello: View {
     let valore: Double
     let testo: String
     var lato: CGFloat = 52
     var descrizione = ""     // per VoiceOver, es. «Pasti segnati: 1 su 4»
+    var colore = Color.accentColor
 
     var body: some View {
         ZStack {
-            Circle().stroke(.tint.opacity(0.18), lineWidth: 6)
+            Circle().stroke(colore.opacity(0.18), lineWidth: 6)
             Circle()
                 .trim(from: 0, to: max(0.001, min(valore, 1)))
-                .stroke(.tint, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(colore, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text(testo)
                 .font(.subheadline.weight(.semibold))

@@ -6,6 +6,8 @@ struct DietaApp: App {
     @State private var archivio = Archivio()
     private let delegato = DelegatoNotifiche()
 
+    @UIApplicationDelegateAdaptor private var avvio: AvvioApp
+
     init() {
         UNUserNotificationCenter.current().delegate = delegato
     }
@@ -15,6 +17,21 @@ struct DietaApp: App {
             Radice()
                 .environment(archivio)
         }
+    }
+}
+
+// Titoli delle schermate con il font arrotondato: più morbido, senza diventare giocoso.
+// Va fatto qui e non in DietaApp.init: là UIKit parte troppo presto e l'app perde il colore principale
+final class AvvioApp: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions opzioni: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let barra = UINavigationBar.appearance()
+        for (stile, peso) in [(UIFont.TextStyle.largeTitle, UIFont.Weight.bold), (.headline, .semibold)] {
+            let base = UIFont.preferredFont(forTextStyle: stile)
+            let descrittore = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
+            let font = UIFont(descriptor: descrittore.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: peso]]), size: base.pointSize)
+            if stile == .largeTitle { barra.largeTitleTextAttributes = [.font: font] } else { barra.titleTextAttributes = [.font: font] }
+        }
+        return true
     }
 }
 
