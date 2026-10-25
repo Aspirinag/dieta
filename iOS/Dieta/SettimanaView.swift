@@ -45,14 +45,9 @@ struct SettimanaView: View {
         if let piano = archivio.profilo.piano(per: Giorni.oggi()) {
             let g = piano.giorni[giorno]
             Section {
-                Picker("Giorno", selection: $giorno) {
-                    ForEach(0..<7, id: \.self) { i in
-                        Text(String(Giorni.nomi[i].prefix(3))).tag(i)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
+                selettoreGiorni(piano, oggi: oggi)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
             } footer: {
                 Text(piano.nome)
             }
@@ -63,7 +58,7 @@ struct SettimanaView: View {
                 }
             }
             ForEach(Array(g.pasti.enumerated()), id: \.offset) { _, pasto in
-                Section(pasto.nome) {
+                Section {
                     ForEach(Array(pasto.opzioni.enumerated()), id: \.offset) { j, o in
                         if pasto.opzioni.count > 1 {
                             Text(o.titolo ?? "Opzione \(j + 1)")
@@ -74,10 +69,12 @@ struct SettimanaView: View {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(a.nome)
                                 Spacer()
-                                Text(a.quantita).foregroundStyle(.secondary)
+                                Text(a.quantita).foregroundStyle(.secondary).monospacedDigit()
                             }
                         }
                     }
+                } header: {
+                    Label(pasto.nome, systemImage: iconaPasto(pasto.nome))
                 }
             }
         } else {
@@ -87,6 +84,64 @@ struct SettimanaView: View {
                 description: Text("Carica lo schema dietetico in PDF dalla scheda Dati.")
             )
         }
+    }
+
+    // Giorni della settimana corrente: oggi evidenziato, manubrio per la palestra, spunta se tutti i pasti sono segnati
+    private func selettoreGiorni(_ piano: Piano, oggi: Int) -> some View {
+        let lun = Giorni.lunedi(Giorni.oggi())
+        return HStack(spacing: 4) {
+            ForEach(0..<7, id: \.self) { i in
+                let data = Giorni.aggiungi(lun, i)
+                let scelto = i == giorno
+                Button {
+                    giorno = i
+                } label: {
+                    VStack(spacing: 3) {
+                        Text(String(Giorni.nomi[i].prefix(3)))
+                            .font(.caption2.weight(.medium))
+                            .textCase(.uppercase)
+                        Text(String(Int(data.suffix(2)) ?? 0))
+                            .font(.title3.weight(.semibold))
+                            .fontDesign(.rounded)
+                            .monospacedDigit()
+                        Group {
+                            if completo(data) {
+                                Image(systemName: "checkmark.circle.fill")
+                            } else if piano.giorni[i].palestra {
+                                Image(systemName: "dumbbell.fill")
+                            } else {
+                                Image(systemName: "circle.fill").hidden()
+                            }
+                        }
+                        .font(.caption2)
+                        .frame(height: 12)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .foregroundStyle(scelto ? AnyShapeStyle(.white) : i == oggi ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                    .background {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(scelto ? AnyShapeStyle(.tint) : AnyShapeStyle(Color(.secondarySystemGroupedBackground)))
+                        if i == oggi && !scelto {
+                            RoundedRectangle(cornerRadius: 14).strokeBorder(.tint, lineWidth: 1.5)
+                        }
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Giorni.nomi[i] + (i == oggi ? ", oggi" : ""))
+                .accessibilityAddTraits(scelto ? .isSelected : [])
+            }
+        }
+        .sensoryFeedback(.selection, trigger: giorno)
+        .animation(.snappy(duration: 0.25), value: giorno)
+    }
+
+    // Giorno passato (o oggi) con tutti i pasti segnati
+    private func completo(_ data: String) -> Bool {
+        guard data <= Giorni.oggi(), let p = archivio.profilo.piano(per: data) else { return false }
+        let pasti = p.giorni[Giorni.indice(data)].pasti
+        return !pasti.isEmpty && pasti.indices.allSatisfy { archivio.slot(data, $0).fatto }
     }
 
     // ---------- Spesa ----------

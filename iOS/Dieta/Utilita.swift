@@ -99,6 +99,58 @@ struct RigaSpunta<Etichetta: View>: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .sensoryFeedback(.selection, trigger: fatto)
+        .sensoryFeedback(trigger: fatto) { _, nuovo in nuovo ? .success : .selection }
+    }
+}
+
+// Icona di un pasto dal suo nome nello schema
+func iconaPasto(_ nome: String) -> String {
+    switch nome.lowercased() {
+    case let n where n.hasPrefix("colazione"): "cup.and.saucer.fill"
+    case let n where n.hasPrefix("pranzo"): "sun.max.fill"
+    case let n where n.hasPrefix("cena"): "moon.stars.fill"
+    case let n where n.hasPrefix("spuntino") || n.hasPrefix("merenda"): "carrot.fill"
+    default: "fork.knife"
+    }
+}
+
+// Anello che si riempie con l'avanzamento (0…1), con un testo al centro
+struct Anello: View {
+    let valore: Double
+    let testo: String
+    var lato: CGFloat = 52
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(.tint.opacity(0.18), lineWidth: 6)
+            Circle()
+                .trim(from: 0, to: max(0.001, min(valore, 1)))
+                .stroke(.tint, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text(testo)
+                .font(.subheadline.weight(.semibold))
+                .fontDesign(.rounded)
+                .monospacedDigit()
+                .contentTransition(.numericText())
+        }
+        .frame(width: lato, height: lato)
+        .animation(.spring(duration: 0.4), value: valore)
+    }
+}
+
+// Variazione di una misura in una capsula verde (bene), rossa (male) o grigia
+struct BadgeVariazione: View {
+    let testo: String
+    let colore: Color
+
+    var body: some View {
+        Text(testo)
+            .font(.subheadline.weight(.semibold))
+            .fontDesign(.rounded)
+            .monospacedDigit()
+            .foregroundStyle(colore == .primary ? .secondary : colore)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background((colore == .primary ? Color.secondary : colore).opacity(0.14), in: .capsule)
     }
 }

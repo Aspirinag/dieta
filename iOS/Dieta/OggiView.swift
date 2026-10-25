@@ -21,7 +21,22 @@ struct OggiView: View {
                 if let piano = archivio.profilo.piano(per: giorno) {
                     let g = piano.giorni[Giorni.indice(giorno)]
                     Section {
-                        LabeledContent(Giorni.nomi[Giorni.indice(giorno)] + " " + Giorni.breve(giorno), value: piano.nome)
+                        let fatti = g.pasti.indices.filter { archivio.slot(giorno, $0).fatto }.count
+                        HStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(Giorni.nomi[Giorni.indice(giorno)] + " " + Giorni.breve(giorno))
+                                    .font(.headline)
+                                Text(piano.nome).font(.subheadline).foregroundStyle(.secondary)
+                                if fatti == g.pasti.count {
+                                    Label("Tutti i pasti segnati", systemImage: "star.fill")
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                            Anello(valore: g.pasti.isEmpty ? 0 : Double(fatti) / Double(g.pasti.count), testo: "\(fatti)/\(g.pasti.count)")
+                        }
+                        .padding(.vertical, 4)
                         if g.palestra {
                             Label("Giorno di palestra", systemImage: "dumbbell.fill")
                                 .foregroundStyle(.tint)
@@ -94,9 +109,9 @@ struct SezionePasto: View {
             if let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : nil {
                 ForEach(Array(opz.alimenti.enumerated()), id: \.offset) { _, a in
                     HStack(alignment: .firstTextBaseline) {
-                        Text(a.nome)
+                        Text(a.nome).strikethrough(s.fatto)
                         Spacer()
-                        Text(a.quantita).foregroundStyle(.secondary)
+                        Text(a.quantita).foregroundStyle(.secondary).monospacedDigit()
                     }
                     .opacity(s.fatto ? 0.5 : 1)
                 }
@@ -107,7 +122,15 @@ struct SezionePasto: View {
                 Text(s.fatto ? "Fatto" : "Segna come fatto")
             }
         } header: {
-            Text(pasto.nome)
+            HStack {
+                Label(pasto.nome, systemImage: iconaPasto(pasto.nome))
+                Spacer()
+                if s.fatto {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(duration: 0.3), value: s.fatto)
         }
     }
 }
