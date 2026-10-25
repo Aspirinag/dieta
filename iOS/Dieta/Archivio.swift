@@ -184,11 +184,11 @@ final class Archivio {
             .map { k, v in
                 var totale = Profilo.Conto(nome: v.nome, profilo: "")
                 for c in v.conti {
-                    totale.volte += c.volte
+                    totale.qb = totale.qb || c.qb
                     totale.unita.merge(c.unita, uniquingKeysWith: +)
                 }
-                // Con più profili si vede anche quanto serve a ciascuno
-                let dettaglio = profili.count > 1 ? v.conti.map { "\($0.profilo) \($0.breve)" }.joined(separator: " · ") : nil
+                // Con più profili si vede anche quanto serve a ciascuno (non se è solo «q.b.»)
+                let dettaglio = profili.count > 1 && !totale.unita.isEmpty ? v.conti.map { "\($0.profilo) \($0.quanto)" }.joined(separator: " · ") : nil
                 return VoceSpesa(chiave: k, nome: v.nome, quanto: totale.quanto, dettaglio: dettaglio)
             }
     }
@@ -261,30 +261,46 @@ extension Profilo {
     }
 
     // Quanto serve di un alimento nella settimana (a un profilo o a tutti)
+    // Quanto serve di un alimento (a un profilo o a tutti): quantità sommate per unità,
+    // es. «420 g», «2,1 kg + 3 pezzi», «4 cucchiaini»; «q.b.» se non c'è niente da pesare o contare
     struct Conto {
         let nome: String
         let profilo: String
         var unita: [String: Double] = [:]
-        var volte = 0
+        var qb = false
+
+        static let ordine = ["kg", "g", "l", "ml", "pezzi", "fette", "cucchiai", "cucchiaini"]
+        static let singolare = ["pezzi": "pezzo", "fette": "fetta", "cucchiai": "cucchiaio", "cucchiaini": "cucchiaino"]
 
         var quanto: String {
-            let volte = volte == 1 ? "1 volta" : "\(volte) volte"
-            return totale.isEmpty ? volte : "\(totale) (\(volte))"
-        }
-
-        // Solo la quantità (o le volte, se non si pesa): per il dettaglio di ogni profilo
-        var breve: String { totale.isEmpty ? (volte == 1 ? "1 volta" : "\(volte) volte") : totale }
-
-        // Grammi e millilitri passano a kg e litri da 1000 in su
-        private var totale: String {
             var u = unita
+            // Grammi e millilitri passano a kg e litri da 1000 in su
             for (piccola, grande) in [("g", "kg"), ("ml", "l")] {
                 if let v = u[piccola], v + (u[grande] ?? 0) * 1000 >= 1000 {
                     u[grande, default: 0] += v / 1000
                     u[piccola] = nil
                 }
             }
-            return u.sorted { $0.key < $1.key }.map { "\(num($0.value)) \($0.key)" }.joined(separator: " + ")
+            let parti = Self.ordine.compactMap { k in
+                u[k].map { v in "\(num(v)) \(v == 1 ? Self.singolare[k] ?? k : k)" }
+            }
+            return (parti + (qb ? ["q.b."] : [])).joined(separator: " + ")
+        }
+
+        // Dalla quantità dello schema vale la prima alternativa: «40g/120g» = 40 g (da secco), «100ml o n°1» = 100 ml
+        mutating func aggiungi(_ quantita: String) {
+            let q = quantita.lowercased()
+            let prima = (q.split(separator: "/").first.map(String.init) ?? q).components(separatedBy: " o ").first ?? q
+            if let m = prima.firstMatch(of: #/(\d+(?:[.,]\d+)?)\s*(kg|gr|g|ml|l)\b/#), let n = leggiNumero(String(m.1)) {
+                unita[m.2 == "gr" ? "g" : String(m.2), default: 0] += n
+            } else if let m = prima.firstMatch(of: #/n°?\s*(\d+)\s*([a-z]*)/#), let n = Double(m.1) {
+                let parola = String(m.2)
+                let u = parola.hasPrefix("cucchiain") ? "cucchiaini" : parola.hasPrefix("cucchia") ? "cucchiai"
+                    : parola.hasPrefix("fett") ? "fette" : "pezzi"
+                unita[u, default: 0] += n
+            } else {
+                qb = true
+            }
         }
     }
 
@@ -293,13 +309,13 @@ extension Profilo {
     // Le quantità in g, ml, kg o l si sommano, le altre si contano
     func alimentiSettimana() -> [String: Conto] {
         var voci: [String: Conto] = [:]
-        let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
         for iso in Giorni.prossimi7() {
             guard let p = piano(per: iso) else { continue }
             for (j, pasto) in p.giorni[Giorni.indice(iso)].pasti.enumerated() {
                 let scelta = dieta[iso]?.slot[String(j)]?.opt ?? 0
                 let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : pasto.opzioni.first
-                for a in opz?.alimenti ?? [] {
+                // Senza quantità è il titolo di un piatto: i suoi ingredienti sono nelle righe sotto
+                for a in opz?.alimenti ?? [] where !a.quantita.trimmingCharacters(in: .whitespaces).isEmpty {
                     var pulito = a.nome
                     for prefisso in ["Contorno: ", "Secondo: "] where pulito.hasPrefix(prefisso) {
                         pulito.removeFirst(prefisso.count)
@@ -308,12 +324,7 @@ extension Profilo {
                     let nome = pulito.prefix(1).uppercased() + pulito.dropFirst()
                     let k = nome.lowercased()
                     var v = voci[k] ?? Conto(nome: nome, profilo: self.nome)
-                    v.volte += 1
-                    if let m = a.quantita.firstMatch(of: regex), let n = leggiNumero(String(m.1)) {
-                        var u = m.2.lowercased()
-                        if u == "gr" { u = "g" }
-                        v.unita[u, default: 0] += n
-                    }
+                    v.aggiungi(a.quantita)
                     voci[k] = v
                 }
             }
