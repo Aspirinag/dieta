@@ -416,7 +416,7 @@ function parseSchema(righe) {
   function aderenza() {
     let tot = 0, fatti = 0;
     const oggiIso = todayISO();
-    for (let k = 6; k >= 0; k--) {
+    for (let k = 7; k >= 1; k--) { // da 7 giorni fa a ieri: oggi è ancora in corso
       const iso = addDays(oggiIso, -k);
       const piano = planFor(iso);
       if (!piano) continue;
@@ -429,23 +429,30 @@ function parseSchema(righe) {
     return tot ? Math.round((fatti / tot) * 100) : null;
   }
 
-  // Serie di valori per i grafici: colore e nome
-  function multiChart(series) {
-    const h = 140, w = 320, pad = 18;
-    const tutti = series.flatMap((x) => x.values.filter((v) => v != null));
-    if (tutti.length < 2) return '<p class="muted">Servono almeno due misurazioni per il grafico.</p>';
-    const n = Math.max(...series.map((x) => x.values.length));
-    const min = Math.min(...tutti), max = Math.max(...tutti), range = max - min || 1;
-    const linee = series.map((x) => {
-      const coords = x.values
-        .map((v, i) => (v == null ? null : `${(pad + (i * (w - 2 * pad)) / Math.max(n - 1, 1)).toFixed(1)},${(h - pad - ((v - min) / range) * (h - 2 * pad)).toFixed(1)}`))
-        .filter(Boolean);
-      return coords.length > 1
-        ? `<polyline points="${coords.join(' ')}" fill="none" stroke="${x.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`
-        : '';
+  // Grafico con più serie: ogni linea ha la sua scala (peso e massa grassa hanno ordini di grandezza diversi),
+  // ogni serie occupa una fascia e mostra il valore iniziale e finale; sotto, le date della prima e ultima misura
+  function multiChart(series, date) {
+    const valide = series.filter((x) => x.values.filter((v) => v != null).length > 1);
+    if (!valide.length) return '<p class="muted">Servono almeno due misurazioni per il grafico.</p>';
+    const fascia = 56, w = 320, padX = 40, h = fascia * valide.length + 8;
+    const n = date.length;
+    const xOf = (i) => padX + (i * (w - 2 * padX)) / Math.max(n - 1, 1);
+    const fmtV = (v) => String(v).replace('.', ',');
+    const linee = valide.map((x, s) => {
+      const nums = x.values.filter((v) => v != null);
+      const min = Math.min(...nums), range = Math.max(...nums) - min || 1;
+      const top = s * fascia + 14, alt = fascia - 24;
+      const pts = x.values.map((v, i) => (v == null ? null : [xOf(i), top + alt - ((v - min) / range) * alt])).filter(Boolean);
+      const primo = pts[0], ultimo = pts[pts.length - 1];
+      return `<polyline points="${pts.map((p) => p.map((c) => c.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="${x.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${pts.map(([px, py]) => `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="${x.color}"/>`).join('')}
+        <text x="${primo[0] - 6}" y="${primo[1] + 4}" text-anchor="end" font-size="11" font-weight="700" fill="${x.color}">${fmtV(nums[0])}</text>
+        <text x="${ultimo[0] + 6}" y="${ultimo[1] + 4}" font-size="11" font-weight="700" fill="${x.color}">${fmtV(nums[nums.length - 1])}</text>`;
     }).join('');
-    const legenda = series.map((x) => `<span style="color:${x.color};font-weight:700">● ${x.nome}</span>`).join(' &nbsp; ');
-    return `<svg class="chart" viewBox="0 0 ${w} ${h}">${linee}</svg><p class="muted">${legenda}</p>`;
+    const legenda = valide.map((x) => `<span style="color:${x.color};font-weight:700">● ${x.nome}</span>`).join(' &nbsp; ');
+    return `<svg class="chart" viewBox="0 0 ${w} ${h}">${linee}</svg>
+      <div class="between muted"><span>${fmtDate(date[0])}</span><span>${fmtDate(date[n - 1])}</span></div>
+      <p class="muted">${legenda}</p>`;
   }
 
   function andamento() {
@@ -453,7 +460,7 @@ function parseSchema(righe) {
     const ad = aderenza();
     const adHtml = ad == null
       ? '<p class="muted">Nessun piano attivo negli ultimi 7 giorni.</p>'
-      : `<p>Hai segnato il <strong>${ad}%</strong> dei pasti negli ultimi 7 giorni.</p>`;
+      : `<p>Hai segnato il <strong>${ad}%</strong> dei pasti negli ultimi 7 giorni (oggi escluso).</p>`;
     if (!bia.length) {
       return `
         <h1>Andamento</h1>
@@ -533,7 +540,7 @@ function parseSchema(righe) {
           { nome: 'Peso', color: '#9b8cff', values: bia.map((m) => m.peso) },
           { nome: 'Massa grassa', color: '#22a86a', values: bia.map((m) => m.grasso_kg) },
           { nome: 'Massa magra', color: '#2bb6c9', values: bia.map((m) => m.magra_kg) },
-        ])}
+        ], bia.map((m) => m.data))}
       </div>
       <h2>Centimetri</h2>
       <div class="card">
@@ -541,7 +548,7 @@ function parseSchema(righe) {
           { nome: 'Vita', color: '#22a86a', values: bia.map((m) => m.vita_cm) },
           { nome: 'Addome', color: '#9b8cff', values: bia.map((m) => m.addome_cm) },
           { nome: 'Fianchi', color: '#2bb6c9', values: bia.map((m) => m.fianchi_cm) },
-        ])}
+        ], bia.map((m) => m.data))}
       </div>
       <h2>Storico misurazioni</h2>
       <div class="card" style="overflow-x: auto">
@@ -555,7 +562,7 @@ function parseSchema(righe) {
   // ---------- DATI ----------
   function dati() {
     const piani = prof().piani.length
-      ? [...prof().piani].sort((a, b) => a.dal.localeCompare(b.dal)).map((p, i) => `
+      ? prof().piani.map((p, i) => ({ p, i })).sort((a, b) => a.p.dal.localeCompare(b.p.dal)).map(({ p, i }) => `
           <div class="card">
             <div class="between">
               <div><strong>${esc(p.nome)}</strong><p class="muted">${fmtDate(p.dal)} → ${p.al ? fmtDate(p.al) : 'aperto'}</p></div>
@@ -697,6 +704,27 @@ function parseSchema(righe) {
       save(); return render();
     }
 
+    if (d.delpiano !== undefined) {
+      const p = prof().piani[Number(d.delpiano)];
+      if (!confirm(`Eliminare il piano "${p.nome}"? I pasti già segnati restano.`)) return;
+      prof().piani.splice(Number(d.delpiano), 1);
+      save(); return render();
+    }
+    if (d.savebia !== undefined) {
+      const v = (id) => num(String(document.getElementById(id).value).replace(',', '.'));
+      const data = document.getElementById('b_data').value;
+      const m = {
+        data, peso: v('b_peso'), grasso_kg: v('b_grasso'), magra_kg: v('b_magra'), acqua_l: v('b_acqua'),
+        bmr: v('b_bmr'), vat_cm2: v('b_vat'), vita_cm: v('b_vita'),
+      };
+      if (!data || m.peso == null) return alert('Inserisci almeno la data e il peso.');
+      const vecchia = prof().bia.find((x) => x.data === data);
+      if (vecchia && !confirm(`C'è già una misurazione del ${fmtDate(data)}: la sostituisco?`)) return;
+      mergeBia([m]);
+      save();
+      render();
+      return alert('Misurazione salvata. La trovi in ANDAMENTO.');
+    }
     if (d.biaup !== undefined) { document.getElementById('biaFile').click(); return; }
     if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
     if (d.export !== undefined) return condividiFile(`dieta-backup-${todayISO()}.json`, JSON.stringify(state, null, 2));
