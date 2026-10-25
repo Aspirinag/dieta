@@ -56,21 +56,34 @@ struct SettimanaView: View {
                 // Dal giorno del piano, non dalla data: il piano può iniziare a metà di questa settimana
                 let previste = Double(archivio.profilo.olio) * Calorie.kcalCucchiainoOlio
                     + g.pasti.compactMap { $0.opzioni.first?.kcal }.reduce(0, +)
-                LabeledContent(Giorni.nomi[giorno] + (giorno == oggi ? " (oggi)" : "")) {
-                    Text(kcal(previste)).monospacedDigit()
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Giorni.nomi[giorno] + (giorno == oggi ? " · oggi" : ""))
+                            .font(.title3.weight(.semibold))
+                            .fontDesign(.rounded)
+                        Text("\(kcal(previste)) previste").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    Spacer()
+                    if g.palestra {
+                        Label("Palestra", systemImage: "dumbbell.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.accentColor.gradient, in: .capsule)
+                    }
                 }
-                if g.palestra {
-                    Label("Giorno di palestra", systemImage: "dumbbell.fill").foregroundStyle(.tint)
-                }
+                .padding(.vertical, 4)
             }
             ForEach(Array(g.pasti.enumerated()), id: \.offset) { _, pasto in
+                let colore = colorePasto(pasto.nome)
                 Section {
                     ForEach(Array(pasto.opzioni.enumerated()), id: \.offset) { j, o in
                         if pasto.opzioni.count > 1 {
                             HStack {
                                 Text(o.titolo ?? "Opzione \(j + 1)")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.tint)
+                                    .foregroundStyle(colore)
                                 Spacer()
                                 if o.kcal > 0 { Text(kcal(o.kcal)).font(.caption).foregroundStyle(.secondary).monospacedDigit() }
                             }
@@ -84,8 +97,9 @@ struct SettimanaView: View {
                         }
                     }
                 } header: {
-                    HStack {
-                        Label(pasto.nome, systemImage: iconaPasto(pasto.nome))
+                    HStack(spacing: 8) {
+                        IconaPasto(nome: pasto.nome, lato: 24)
+                        Text(pasto.nome)
                         Spacer()
                         if pasto.opzioni.count == 1, let o = pasto.opzioni.first, o.kcal > 0 {
                             Text(kcal(o.kcal)).monospacedDigit().textCase(nil)
