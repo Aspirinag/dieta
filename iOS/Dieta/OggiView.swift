@@ -5,6 +5,7 @@ import SwiftUI
 struct OggiView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.scenePhase) private var fase
+    @Environment(\.importa) private var importa
     @State private var giorno = Giorni.oggi()
     @State private var ultimoOggi = Giorni.oggi()
 
@@ -52,12 +53,17 @@ struct OggiView: View {
                     .animation(.spring(duration: 0.35), value: archivio.registro(giorno))
                 } else {
                     let prossimo = archivio.profilo.prossimoPiano(dopo: giorno)
-                    ContentUnavailableView(
-                        "Nessun piano per questo giorno",
-                        systemImage: "fork.knife",
-                        description: Text(prossimo.map { "Il piano «\($0.nome)» inizia il \(Giorni.breve($0.dal))." }
-                                          ?? "Carica lo schema dietetico in PDF dalla scheda Dati.")
-                    )
+                    ContentUnavailableView {
+                        Label("Nessun piano per questo giorno", systemImage: "fork.knife")
+                    } description: {
+                        Text(prossimo.map { "Il piano «\($0.nome)» inizia il \(Giorni.breve($0.dal))." }
+                             ?? "Carica lo schema dietetico in PDF: diventa il piano di Oggi e Settimana.")
+                    } actions: {
+                        if prossimo == nil {
+                            Button("Carica schema dietetico") { importa(.schema) }
+                                .buttonStyle(.borderedProminent)
+                        }
+                    }
                     .padding(.top, 80)
                 }
             }

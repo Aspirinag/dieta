@@ -66,7 +66,7 @@ final class Archivio {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
             try backup().write(to: Self.fileDati, options: .atomic)
         } catch {
-            erroreSalvataggio = "Non riesco a salvare i dati (\(error.localizedDescription)). Le ultime modifiche potrebbero andare perse: esporta un backup da Dati."
+            erroreSalvataggio = "Non riesco a salvare i dati (\(error.localizedDescription)). Le ultime modifiche potrebbero andare perse: esporta un backup da Profilo."
         }
     }
 

@@ -5,7 +5,9 @@ import Charts
 // il grafico della misura scelta, consigli e storico delle misurazioni
 struct AndamentoView: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.importa) private var importa
     @State private var metrica: CampoMisura = .peso
+    @State private var nuovaMisura = false
     @State private var selezione: Date?
 
     private struct Voce {
@@ -31,11 +33,15 @@ struct AndamentoView: View {
                 VStack(spacing: 14) {
                     costanza
                     if bia.isEmpty {
-                        ContentUnavailableView(
-                            "Nessuna misurazione",
-                            systemImage: "chart.line.uptrend.xyaxis",
-                            description: Text("Carica la BIA in PDF o aggiungila a mano dalla scheda Dati.")
-                        )
+                        ContentUnavailableView {
+                            Label("Nessuna misurazione", systemImage: "chart.line.uptrend.xyaxis")
+                        } description: {
+                            Text("Carica i referti BIA in PDF o aggiungi una misurazione a mano.")
+                        } actions: {
+                            Button("Carica referti BIA (PDF)") { importa(.bia) }
+                                .buttonStyle(.borderedProminent)
+                            Button("Aggiungi a mano") { nuovaMisura = true }
+                        }
                         .scheda()
                     } else {
                         tessere(bia)
@@ -49,9 +55,22 @@ struct AndamentoView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Andamento")
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        Button("Carica referti BIA (PDF)", systemImage: "doc.text.magnifyingglass") { importa(.bia) }
+                        Button("Aggiungi misurazione a mano", systemImage: "square.and.pencil") { nuovaMisura = true }
+                    } label: {
+                        Label("Aggiungi", systemImage: "plus")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) { MenuProfilo() }
+            }
             .navigationDestination(for: String.self) { data in
                 EditorMisura(dataEsistente: data)
+            }
+            .sheet(isPresented: $nuovaMisura) {
+                NavigationStack { EditorMisura(dataEsistente: nil) }
             }
         }
     }
@@ -314,7 +333,7 @@ struct AndamentoView: View {
                 }
                 .buttonStyle(.plain)
             }
-            Text("Tocca una misurazione per modificarla o eliminarla.")
+            Text("Tocca una misurazione per modificarla o eliminarla. Con + ne aggiungi di nuove.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.top, 6)

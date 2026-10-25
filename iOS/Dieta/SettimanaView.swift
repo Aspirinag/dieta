@@ -97,7 +97,7 @@ struct SettimanaView: View {
             ContentUnavailableView(
                 "Nessun piano attivo",
                 systemImage: "calendar",
-                description: Text("Carica lo schema dietetico in PDF dalla scheda Dati.")
+                description: Text("Carica lo schema dietetico in PDF dalla scheda Profilo o da Oggi.")
             )
         }
     }

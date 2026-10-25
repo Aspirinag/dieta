@@ -1,35 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Piani e PDF, misurazioni, profili, impostazioni, promemoria e backup
+// Profilo: profili, piani alimentari, impostazioni, promemoria e backup.
+// Le misurazioni si caricano e si gestiscono in Andamento
 struct DatiView: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.importa) private var importa
 
-    private enum Importa { case schema, bia, backup }
-
-    // PDF cifrato in attesa della password
-    private struct PdfProtetto {
-        let tipo: Importa
-        let dati: Data
-        let nome: String
-    }
-
-    // Il tipo resta salvato a parte: alla chiusura del selettore SwiftUI azzera la presentazione
-    // prima di consegnare il file, e il tipo andava perso (il PDF scelto veniva ignorato)
-    @State private var importa = Importa.schema
-    @State private var mostraImporta = false
-    @State private var conferma: String?
-    @State private var nuovoPiano: Piano?
-    // BIA lette e in attesa di conferma, e PDF che non si sono letti (più PDF insieme)
-    @State private var nuoveBia: [Misura] = []
-    @State private var nonLetti: [String] = []
-    @State private var backupLetto: Data?
     @State private var errore: String?
-    @State private var protetto: PdfProtetto?
-    @State private var codaProtetti: [PdfProtetto] = []
-    @State private var password = ""
-    @State private var lettura = false
-    @State private var nuovaMisura = false
     @State private var pianoDaEliminare: Piano?
     @State private var nomeProfilo = ""
     @State private var profiloDaRinominare: String?
@@ -43,140 +21,18 @@ struct DatiView: View {
 
     private var lista: some View {
         List {
-            piani
-            misure
             profili
+            piani
             impostazioni
             promemoria
             backup
         }
-        .navigationTitle("Dati")
+        .navigationTitle("Profilo")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-        .overlay {
-            if lettura {
-                ProgressView("Lettura del PDF…")
-                    .padding(24)
-                    .background(.regularMaterial, in: .rect(cornerRadius: 20))
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if let conferma {
-                Label(conferma, systemImage: "checkmark.circle.fill")
-                    .font(.subheadline.weight(.medium))
-                    .symbolRenderingMode(.multicolor)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.regularMaterial, in: .capsule)
-                    .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .onTapGesture { self.conferma = nil }
-            }
-        }
-        .animation(.spring(duration: 0.35), value: conferma)
-        .sensoryFeedback(.success, trigger: conferma) { _, nuovo in nuovo != nil }
-        .task(id: conferma) {
-            guard conferma != nil else { return }
-            try? await Task.sleep(for: .seconds(3))
-            conferma = nil
-        }
-    }
-
-    private var conImporta: some View {
-        lista
-            .fileImporter(
-                isPresented: $mostraImporta,
-                allowedContentTypes: importa == .backup ? [.json] : [.pdf],
-                allowsMultipleSelection: importa == .bia
-            ) { risultato in
-                guard case .success(let urls) = risultato, !urls.isEmpty else {
-                    if case .failure = risultato { errore = "Non riesco ad aprire il file." }
-                    return
-                }
-                let tipo = importa
-                var file: [PdfProtetto] = []
-                for url in urls {
-                    let accesso = url.startAccessingSecurityScopedResource()
-                    defer { if accesso { url.stopAccessingSecurityScopedResource() } }
-                    let nome = url.deletingPathExtension().lastPathComponent
-                    if let dati = try? Data(contentsOf: url) {
-                        file.append(PdfProtetto(tipo: tipo, dati: dati, nome: nome))
-                    } else {
-                        nonLetti.append(nome)
-                    }
-                }
-                // I PDF con password si aprono dopo, uno alla volta
-                let liberi = file.filter { tipo == .backup || !LettorePDF.protetto($0.dati) }
-                codaProtetti = file.filter { tipo != .backup && LettorePDF.protetto($0.dati) }
-                if liberi.isEmpty && codaProtetti.isEmpty {
-                    nonLetti = []
-                    errore = "Non riesco ad aprire il file."
-                    return
-                }
-                lettura = !liberi.isEmpty
-                Task {
-                    for f in liberi { await leggi(f.tipo, f.dati, nome: f.nome) }
-                    lettura = false
-                    prossimoProtetto()
-                }
-            }
-            .sheet(item: $nuovoPiano) { p in
-                FoglioNuovoPiano(piano: p) { conferma = "PDF caricato correttamente: piano «\($0)» salvato" }
-            }
-            .sheet(isPresented: $nuovaMisura) {
-                NavigationStack { EditorMisura(dataEsistente: nil) }
-            }
     }
 
     private var conAvvisi: some View {
-        conImporta
-            .alert(titoloBia, isPresented: Binding(
-                get: { !nuoveBia.isEmpty && !lettura && protetto == nil && codaProtetti.isEmpty },
-                set: { if !$0 { nuoveBia = []; nonLetti = [] } }
-            )) {
-                Button("Aggiungi") {
-                    nuoveBia.forEach { archivio.salvaMisura($0) }
-                    conferma = nuoveBia.count == 1
-                        ? "PDF caricato correttamente: BIA del \(Giorni.breve(nuoveBia[0].data)) aggiunta"
-                        : "\(nuoveBia.count) PDF caricati correttamente"
-                }
-                Button("Annulla", role: .cancel) {}
-            } message: {
-                Text(riassuntoBia())
-            }
-            .alert("Importare il backup?", isPresented: Binding(
-                get: { backupLetto != nil }, set: { if !$0 { backupLetto = nil } }
-            ), presenting: backupLetto) { dati in
-                Button("Importa", role: .destructive) {
-                    do { try archivio.importa(dati); conferma = "Backup importato" } catch { errore = "File non valido: scegli un backup esportato dall'app Dieta." }
-                }
-                Button("Annulla", role: .cancel) {}
-            } message: { _ in
-                Text("Il backup sostituisce tutti i dati attuali.")
-            }
-            .alert("PDF protetto", isPresented: Binding(
-                get: { protetto != nil }, set: { if !$0 { protetto = nil } }
-            ), presenting: protetto) { p in
-                SecureField("Password", text: $password)
-                Button("Apri") {
-                    let pwd = password
-                    protetto = nil
-                    lettura = true
-                    Task {
-                        await leggi(p.tipo, p.dati, nome: p.nome, password: pwd)
-                        lettura = false
-                        prossimoProtetto()
-                    }
-                }
-                Button("Annulla", role: .cancel) {
-                    nonLetti.append(p.nome)
-                    protetto = nil
-                    prossimoProtetto()
-                }
-            } message: { p in
-                Text("«\(p.nome)» si apre solo con la password. Spesso è indicata nell'email o nel messaggio con cui ti è arrivato il referto.")
-            }
+        lista
             .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
             } message: {
@@ -224,92 +80,6 @@ struct DatiView: View {
             }
     }
 
-    private var titoloBia: String {
-        nuoveBia.count == 1 ? "Aggiungo la BIA del \(Giorni.breve(nuoveBia[0].data))?" : "Aggiungo \(nuoveBia.count) misurazioni?"
-    }
-
-    private func riassuntoBia() -> String {
-        var righe: [String]
-        if let m = nuoveBia.first, nuoveBia.count == 1 {
-            righe = ["Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm"]
-            if archivio.profilo.bia.contains(where: { $0.data == m.data }) { righe.append("Sostituisce la misurazione della stessa data.") }
-        } else {
-            righe = nuoveBia.sorted { $0.data < $1.data }.map { m in
-                "\(Giorni.breve(m.data)) · \(num(m.peso)) kg" + (archivio.profilo.bia.contains { $0.data == m.data } ? " (sostituisce)" : "")
-            }
-        }
-        if !nonLetti.isEmpty { righe.append("\nNon letti: " + nonLetti.joined(separator: ", ")) }
-        return righe.joined(separator: "\n")
-    }
-
-    // Mostra la richiesta di password per il prossimo PDF protetto, dopo che si è chiuso l'avviso precedente
-    private func prossimoProtetto() {
-        guard protetto == nil else { return }
-        guard !codaProtetti.isEmpty else {
-            // Finito: se nessuna BIA si è letta non c'è niente da confermare, quindi si spiega l'errore
-            if nuoveBia.isEmpty && !nonLetti.isEmpty {
-                errore = "Non riesco a leggere i valori da: \(nonLetti.joined(separator: ", ")). Controlla che siano referti BIA."
-                nonLetti = []
-            }
-            return
-        }
-        password = ""
-        let prossimo = codaProtetti.removeFirst()
-        Task {
-            try? await Task.sleep(for: .milliseconds(400))
-            protetto = prossimo
-        }
-    }
-
-    private func leggi(_ tipo: Importa, _ dati: Data, nome: String, password: String = "") async {
-        if !password.isEmpty && !LettorePDF.passwordGiusta(dati, password) {
-            if tipo == .bia { nonLetti.append(nome + " (password errata)") } else { errore = "La password non è corretta." }
-            return
-        }
-        switch tipo {
-        case .backup:
-            backupLetto = dati
-        case .schema:
-            lettura = true
-            defer { lettura = false }
-            do {
-                let giorni = try await LettorePDF.condiviso.schema(dati, password: password)
-                guard giorni.count == 7, giorni.allSatisfy({ !$0.pasti.isEmpty }) else {
-                    errore = "Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico."
-                    return
-                }
-                nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: giorni)
-            } catch {
-                errore = messaggio(error)
-            }
-        case .bia:
-            // Il caricamento in corso lo segnala chi chiama: con più PDF la rotellina resta fino all'ultimo
-            do {
-                let m = try await LettorePDF.condiviso.bia(dati, password: password)
-                guard !m.data.isEmpty, m.peso != nil else {
-                    nonLetti.append(nome)
-                    return
-                }
-                nuoveBia.removeAll { $0.data == m.data }
-                nuoveBia.append(m)
-            } catch {
-                nonLetti.append(nome)
-            }
-        }
-    }
-
-    private func apri(_ tipo: Importa) {
-        importa = tipo
-        mostraImporta = true
-    }
-
-    private func messaggio(_ errore: Error) -> String {
-        switch errore {
-        case LettorePDF.Errore.password: "Il PDF è protetto da password e non si riesce ad aprire."
-        case is DecodingError: "Ho letto il PDF ma non ne ricavo i dati: forse non è nel formato atteso."
-        default: "Non riesco a leggere questo PDF. Riprova; se succede ancora, chiudi e riapri l'app."
-        }
-    }
 
     // ---------- Sezioni ----------
 
@@ -326,22 +96,11 @@ struct DatiView: View {
                     Button("Elimina", systemImage: "trash", role: .destructive) { pianoDaEliminare = p }
                 }
             }
-            Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { apri(.schema) }
+            Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { importa(.schema) }
         } header: {
             Text("Piani alimentari")
         } footer: {
             Text("Lo schema in PDF viene letto e diventa il piano di Oggi e Settimana. Scorri a sinistra su un piano per eliminarlo.")
-        }
-    }
-
-    private var misure: some View {
-        Section {
-            Button("Carica referti BIA (PDF)", systemImage: "doc.text.magnifyingglass") { apri(.bia) }
-            Button("Aggiungi misurazione a mano", systemImage: "square.and.pencil") { nuovaMisura = true }
-        } header: {
-            Text("Misurazioni BIA")
-        } footer: {
-            Text("Puoi scegliere più referti insieme. Le misurazioni si vedono, modificano ed eliminano in Andamento.")
         }
     }
 
@@ -362,9 +121,18 @@ struct DatiView: View {
                     }
                 } label: {
                     HStack {
-                        Image(systemName: id == archivio.stato.attivo ? "person.crop.circle.fill" : "person.crop.circle")
-                            .foregroundStyle(Color.accentColor)
-                        Text(nome).foregroundStyle(.primary)
+                        // Iniziale in un cerchio: piena per il profilo attivo
+                        let attivo = id == archivio.stato.attivo
+                        Text(String(nome.prefix(1)).uppercased())
+                            .font(.headline)
+                            .fontDesign(.rounded)
+                            .foregroundStyle(attivo ? Color.white : Color.accentColor)
+                            .frame(width: 34, height: 34)
+                            .background(attivo ? AnyShapeStyle(Color.accentColor.gradient) : AnyShapeStyle(Color.accentColor.opacity(0.14)), in: .circle)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(nome).foregroundStyle(.primary)
+                            if attivo { Text("In uso").font(.caption).foregroundStyle(.secondary) }
+                        }
                         Spacer()
                         if archivio.stato.preferito == id {
                             Image(systemName: "star.fill").foregroundStyle(.yellow)
@@ -446,7 +214,7 @@ struct DatiView: View {
             ) {
                 Label("Esporta backup", systemImage: "square.and.arrow.up")
             }
-            Button("Importa backup", systemImage: "square.and.arrow.down") { apri(.backup) }
+            Button("Importa backup", systemImage: "square.and.arrow.down") { importa(.backup) }
         } header: {
             Text("Backup")
         } footer: {

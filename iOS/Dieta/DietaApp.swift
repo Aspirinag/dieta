@@ -55,10 +55,11 @@ struct Radice: View {
             Tab("Andamento", systemImage: "chart.line.uptrend.xyaxis", value: .andamento) {
                 AndamentoView()
             }
-            Tab("Dati", systemImage: "gearshape", value: .dati) {
+            Tab("Profilo", systemImage: "person.crop.circle", value: .dati) {
                 DatiView()
             }
         }
+        .importatore()
         .task { await archivio.programmaPromemoria() }
         .onChange(of: fase) { _, nuova in
             if nuova != .active { archivio.salvaSubito() }
