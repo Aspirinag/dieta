@@ -51,7 +51,8 @@
   .delta-down { color: #d4ff3f; font-weight: 700; }
   svg.chart { width: 100%; height: auto; display: block; }
   nav { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; background: rgba(255, 255, 255, 0.18); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 26px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 10px 30px rgba(0, 0, 0, 0.4); overflow: hidden; }
-  nav button { flex: 1; background: none; color: rgba(255, 255, 255, 0.75); font-weight: 700; font-size: 12px; padding: 16px 0; }
+  nav button { flex: 1; background: none; color: rgba(255, 255, 255, 0.75); font-weight: 700; font-size: 10px; padding: 9px 0 10px; }
+  nav .ic { display: block; font-size: 20px; line-height: 1.2; margin-bottom: 2px; }
   nav button.active { color: #d4ff3f; }
   .profili { display: flex; gap: 8px; margin-bottom: 4px; }
   .profili button.on { background: #d4ff3f; color: #0a0a0a; }
@@ -77,11 +78,15 @@
   }
   input { background: #ffffff; color: #2d2a3e; border: 1px solid #e6dff0; }
   input::placeholder { color: #a7a3b8; }
+  label.muted { display: block; margin: 6px 0; }
+  label.muted input, textarea { margin-top: 4px; }
+  textarea { width: 100%; font: inherit; font-size: 16px; color: #2d2a3e; background: #fff; border: 1px solid #e6dff0; border-radius: 12px; padding: 10px 12px; box-sizing: border-box; }
   .primary { background: #22a86a; color: #ffffff; box-shadow: 0 8px 20px rgba(34, 168, 106, 0.3); }
   .small, .chip { background: #ffffff; color: #2d2a3e; border: 1px solid #efe6f5; box-shadow: 0 2px 8px rgba(120, 90, 150, 0.08); }
   .chip.on { background: #5fd3b0; color: #1e3b33; border-color: #5fd3b0; }
   .profili button.on { background: #22a86a; color: #ffffff; }
   .badge { background: #9b8cff; color: #ffffff; }
+  .check { color: #2d2a3e; }
   .check .box { border-color: rgba(45, 42, 62, 0.35); }
   .check.on .box { background: #5fd3b0; border-color: #5fd3b0; color: #1e3b33; }
   .link { color: #e5484d; }
@@ -107,17 +112,19 @@
 <body>
 <main id="app"></main>
 <nav>
-  <button data-tab="oggi">🥗 OGGI</button>
-  <button data-tab="settimana">📅 SETTIMANA</button>
-  <button data-tab="andamento">📈 ANDAMENTO</button>
-  <button data-tab="dati">⚙️ DATI</button>
+  <button data-tab="oggi"><span class="ic">🥗</span>OGGI</button>
+  <button data-tab="settimana"><span class="ic">📅</span>SETTIMANA</button>
+  <button data-tab="andamento"><span class="ic">📈</span>ANDAMENTO</button>
+  <button data-tab="dati"><span class="ic">⚙️</span>DATI</button>
 </nav>
 <script src="vendor/pdf.min.js"></script>
 <script>
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
   const DAYS =['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-  const OLIO_TOT = 6;   // cucchiaini al giorno
-  const ACQUA_TOT = 2;  // litri al giorno
+  // Valori iniziali di ogni profilo, modificabili in DATI → Impostazioni
+  const OLIO_DEF = 6;   // cucchiaini al giorno
+  const ACQUA_DEF = 2;  // litri al giorno
+  const NOTE_DEF = 'Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti.';
   const KEY = 'dieta:v1';
 
   const DEFAULT = {
@@ -134,6 +141,8 @@
   let giornoVisto = null; // giorno mostrato in OGGI (null = oggi), per segnare anche i giorni passati
   let biaEdit = null;     // data della BIA che si sta modificando in DATI
   const visto = () => giornoVisto || todayISO();
+  let vistaSett = 'giorni'; // SETTIMANA: 'giorni' oppure 'spesa'
+  let pianoInAttesa = null; // schema letto dal PDF, in attesa della data di inizio
 
   function load() {
     try {
@@ -161,6 +170,7 @@
       if (value) { localStorage.setItem(KEY, value); state = load(); }
     }
     save();
+    programmaPromemoria().catch(() => {});
   }
   // Nel browser scarica il file, nell'app apre il pannello Condividi (Salva su File, AirDrop, ...)
   async function condividiFile(nome, testo) {
@@ -180,6 +190,8 @@
   }
 
   const prof = () => state.profili[state.attivo];
+  const olioTot = () => prof().olio_tot ?? OLIO_DEF;
+  const acquaTot = () => prof().acqua_tot ?? ACQUA_DEF;
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad = (n) => String(n).padStart(2, '0');
   const isoOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -361,7 +373,7 @@ function parseSchema(righe) {
           <strong>Olio extra vergine</strong>
           <div class="stepper">
             <button class="small" data-olio="-1">−</button>
-            <span class="val">${r.olio} / ${OLIO_TOT}</span>
+            <span class="val">${r.olio} / ${olioTot()}</span>
             <button class="small" data-olio="1">+</button>
           </div>
         </div>
@@ -372,13 +384,13 @@ function parseSchema(righe) {
           <strong>Acqua</strong>
           <div class="stepper">
             <button class="small" data-acqua="-0.25">−</button>
-            <span class="val">${r.acqua.toFixed(2)} / ${ACQUA_TOT} L</span>
+            <span class="val">${r.acqua.toFixed(2)} / ${acquaTot()} L</span>
             <button class="small" data-acqua="0.25">+</button>
           </div>
         </div>
         <p class="muted">Un bicchiere è circa 0,25 L</p>
       </div>
-      <p class="muted">Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti.</p>`;
+      ${(prof().note ?? NOTE_DEF) ? `<p class="muted">${esc(prof().note ?? NOTE_DEF)}</p>` : ''}`;
   }
 
   // ---------- SETTIMANA ----------
@@ -395,6 +407,12 @@ function parseSchema(righe) {
           <button class="small" data-tab="dati">Vai a Dati</button>
         </div>`;
     }
+    const viste = `
+      <div class="row">
+        <button class="chip ${vistaSett === 'giorni' ? 'on' : ''}" data-vistasett="giorni">Giorni</button>
+        <button class="chip ${vistaSett === 'spesa' ? 'on' : ''}" data-vistasett="spesa">🛒 Lista della spesa</button>
+      </div>`;
+    if (vistaSett === 'spesa') return `<h1>Settimana</h1>${viste}${listaSpesa()}`;
     const giorno = piano.giorni[giornoSel];
     const chips = DAYS.map((nome, i) => `
       <button class="chip ${i === giornoSel ? 'on' : ''} ${i === oggiIdx ? 'oggi' : ''}" data-giorno="${i}">${nome.slice(0, 3)}</button>`).join('');
@@ -409,11 +427,77 @@ function parseSchema(righe) {
       </div>`).join('');
     return `
       <h1>Settimana</h1>
+      ${viste}
       <p class="muted">${esc(piano.nome)}</p>
       <div class="giorni">${chips}</div>
       <h2>${DAYS[giornoSel]}${giornoSel === oggiIdx ? ' · oggi' : ''}</h2>
       ${giorno.palestra ? '<span class="badge">Giorno di palestra</span>' : ''}
       ${pasti}`;
+  }
+
+  // ---------- LISTA DELLA SPESA ----------
+  // Somma gli alimenti della settimana in corso (da lunedì a domenica): per ogni pasto vale l'alternativa
+  // scelta in OGGI, altrimenti la prima. Le quantità in g, ml, kg o l si sommano, le altre si contano
+  const lunediDi = (iso) => addDays(iso, -dayIdx(iso));
+  function vociSpesa() {
+    const lun = lunediDi(todayISO());
+    const voci = {};
+    for (let i = 0; i < 7; i++) {
+      const iso = addDays(lun, i);
+      const piano = planFor(iso);
+      if (!piano) continue;
+      piano.giorni[i].pasti.forEach((pasto, j) => {
+        const scelta = prof().dieta[iso]?.slot?.[j]?.opt ?? 0;
+        const opz = pasto.opzioni[scelta] || pasto.opzioni[0];
+        opz.alimenti.forEach((a) => {
+          const pulito = a.nome.replace(/^(Contorno|Secondo): /, '').trim();
+          const nome = pulito.charAt(0).toUpperCase() + pulito.slice(1);
+          const k = nome.toLowerCase();
+          const v = (voci[k] = voci[k] || { nome, unita: {}, volte: 0 });
+          v.volte++;
+          const q = String(a.quantita || '').match(/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/i);
+          if (q) { const u = q[2].toLowerCase() === 'gr' ? 'g' : q[2].toLowerCase(); v.unita[u] = (v.unita[u] || 0) + parseFloat(q[1].replace(',', '.')); }
+        });
+      });
+    }
+    return Object.entries(voci).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'it')).map(([k, v]) => {
+      const tot = Object.entries(v.unita).map(([u, n]) => `${String(Math.round(n * 10) / 10).replace('.', ',')} ${u}`).join(' + ');
+      return { k, nome: v.nome, quanto: tot ? `${tot} (${v.volte} ${v.volte === 1 ? 'volta' : 'volte'})` : `${v.volte} ${v.volte === 1 ? 'volta' : 'volte'}` };
+    });
+  }
+  // Spunte della lista: valgono per la settimana in corso, poi ripartono da zero
+  function spuntaSpesa() {
+    const lun = lunediDi(todayISO());
+    if (!prof().spesa || prof().spesa.settimana !== lun) prof().spesa = { settimana: lun, presi: {} };
+    return prof().spesa.presi;
+  }
+  function listaSpesa() {
+    const voci = vociSpesa();
+    if (!voci.length) return '<div class="card"><p class="muted">Nessun piano attivo questa settimana.</p></div>';
+    const presi = spuntaSpesa();
+    const lun = lunediDi(todayISO());
+    return `
+      <p class="muted">Settimana dal ${fmtDate(lun)} al ${fmtDate(addDays(lun, 6))}. Per ogni pasto conta l'alternativa scelta in OGGI, altrimenti la prima.</p>
+      <div class="card">
+        ${voci.map((v) => `
+          <button class="check ${presi[v.k] ? 'on' : ''}" data-preso="${esc(v.k)}">
+            <span class="box">${presi[v.k] ? '✓' : ''}</span>
+            <span>${esc(v.nome)}<br><span class="muted">${esc(v.quanto)}</span></span>
+          </button>`).join('')}
+      </div>
+      <div class="row">
+        <button class="small" data-condividispesa="1">Condividi lista</button>
+        <button class="small" data-azzeraspesa="1">Togli le spunte</button>
+      </div>`;
+  }
+  async function condividiSpesa() {
+    const presi = spuntaSpesa();
+    const testo = 'Lista della spesa\n' + vociSpesa().filter((v) => !presi[v.k]).map((v) => `- ${v.nome}: ${v.quanto}`).join('\n');
+    try {
+      if (NATIVO) await Plugin('Share').share({ title: 'Lista della spesa', text: testo });
+      else if (navigator.share) await navigator.share({ title: 'Lista della spesa', text: testo });
+      else { await navigator.clipboard.writeText(testo); alert('Lista copiata: incollala dove vuoi.'); }
+    } catch (e) { /* condivisione annullata */ }
   }
 
   // ---------- ANDAMENTO ----------
@@ -579,6 +663,57 @@ function parseSchema(righe) {
       </div>`;
   }
 
+  // ---------- IMPOSTAZIONI ----------
+  const ORE_ACQUA = [10, 12, 14, 16, 18, 20];
+  const ID_ACQUA = 10, ID_PASTI = 20; // id delle notifiche: 10–15 acqua, 20 pasti
+  function impostazioni() {
+    const ids = Object.keys(state.profili);
+    const pr = state.promemoria || {};
+    const profili = ids.map((id) => `
+      <div class="between" style="padding: 6px 0">
+        <span><strong>${esc(state.profili[id].nome)}</strong>${id === state.preferito ? ' <span class="muted">· si apre all\'avvio</span>' : ''}</span>
+        <span style="white-space: nowrap">
+          <button class="small mini" data-prefprofilo="${id}" aria-label="Apri all'avvio">${id === state.preferito ? '★' : '☆'}</button>
+          <button class="small mini" data-rinomina="${id}" aria-label="Rinomina">✎</button>
+          ${ids.length > 1 ? `<button class="small mini" data-delprofilo="${id}" aria-label="Elimina">✕</button>` : ''}
+        </span>
+      </div>`).join('');
+    return `
+      <h2>Profili</h2>
+      <div class="card">
+        ${profili}
+        <p class="muted">★ = profilo che si apre all'avvio.</p>
+        <button class="small" data-nuovoprofilo="1">Aggiungi profilo</button>
+      </div>
+      <h2>Impostazioni di ${esc(prof().nome)}</h2>
+      <div class="card">
+        <div class="grid2">
+          <label class="muted">Olio (cucchiaini al giorno)<input inputmode="numeric" id="s_olio" value="${olioTot()}"></label>
+          <label class="muted">Acqua (litri al giorno)<input inputmode="decimal" id="s_acqua" value="${String(acquaTot()).replace('.', ',')}"></label>
+        </div>
+        <label class="muted">Note in fondo a OGGI<textarea id="s_note" rows="4">${esc(prof().note ?? NOTE_DEF)}</textarea></label>
+        <button class="primary" data-salvaimpost="1">Salva impostazioni</button>
+      </div>
+      <h2>Promemoria</h2>
+      <div class="card">
+        ${NATIVO ? `
+          <button class="check ${pr.acqua ? 'on' : ''}" data-promemoria="acqua"><span class="box">${pr.acqua ? '✓' : ''}</span><span>Bevi acqua<br><span class="muted">alle ${ORE_ACQUA.join(', ')}</span></span></button>
+          <button class="check ${pr.pasti ? 'on' : ''}" data-promemoria="pasti"><span class="box">${pr.pasti ? '✓' : ''}</span><span>Segna i pasti<br><span class="muted">ogni sera alle 21</span></span></button>`
+        : '<p class="muted">I promemoria sono disponibili nell\'app per iPhone.</p>'}
+      </div>`;
+  }
+  // Riprogramma le notifiche giornaliere secondo le impostazioni (solo nell'app)
+  async function programmaPromemoria() {
+    if (!NATIVO) return;
+    const LN = Plugin('LocalNotifications');
+    const pr = state.promemoria || {};
+    await LN.cancel({ notifications: [...ORE_ACQUA.map((_, i) => ({ id: ID_ACQUA + i })), { id: ID_PASTI }] });
+    const n = [];
+    if (pr.acqua) ORE_ACQUA.forEach((h, i) => n.push({ id: ID_ACQUA + i, title: 'Acqua 💧', body: 'È il momento di un bicchiere d\'acqua.', schedule: { on: { hour: h, minute: 0 }, allowWhileIdle: true } }));
+    if (pr.pasti) n.push({ id: ID_PASTI, title: 'Dieta', body: 'Hai segnato i pasti di oggi?', schedule: { on: { hour: 21, minute: 0 }, allowWhileIdle: true } });
+    if (n.length) await LN.schedule({ notifications: n });
+  }
+
   // ---------- DATI ----------
   // Campi della misurazione a mano: id del campo, chiave salvata, etichetta, tastiera
   const CAMPI_BIA = [
@@ -605,8 +740,19 @@ function parseSchema(righe) {
       : '<p class="muted">Nessun piano importato.</p>';
     const oggiIso = todayISO();
     const ed = biaEdit ? prof().bia.find((x) => x.data === biaEdit) : null;
+    const attesa = pianoInAttesa ? `
+      <div class="card" id="attesa" style="border: 2px solid #22a86a">
+        <strong>Schema letto: ${esc(pianoInAttesa.nome)}</strong>
+        <p class="muted">Da quale giorno vale? Il piano precedente si chiude il giorno prima.</p>
+        <input type="date" id="dalPiano" value="${oggiIso}">
+        <div class="row">
+          <button class="primary" data-confermapiano="1" style="flex: 1; margin: 0">Salva piano</button>
+          <button class="small" data-annullapiano="1">Annulla</button>
+        </div>
+      </div>` : '';
     return `
       <h1>Dati</h1>
+      ${attesa}
       <h2>Piani alimentari</h2>
       ${piani}
       <h2>Schema dietetico</h2>
@@ -630,6 +776,7 @@ function parseSchema(righe) {
         <button class="primary" data-savebia="1">Salva misurazione</button>
         ${biaEdit ? '<button class="small" data-annullabia="1">Annulla modifica</button>' : ''}
       </div>
+      ${impostazioni()}
       <h2>Backup</h2>
       <div class="card">
         <p class="muted">I dati restano sul telefono. Esporta ogni tanto un backup, e importalo per passare dalla web app all'app (o se cambi telefono).</p>
@@ -683,14 +830,11 @@ function parseSchema(righe) {
   function render(inCima = false) {
     const y = window.scrollY;
     const ordine = Object.keys(state.profili).sort((a, b) => (a === state.preferito ? -1 : b === state.preferito ? 1 : 0));
-    const profili = ordine.map((id) => {
-      const p = state.profili[id];
-      const pref = id === state.preferito;
-      return `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(p.nome)}</button>
-        <button class="chip" data-prefprofilo="${id}" aria-label="Profilo preferito">${pref ? '★' : '☆'}</button>`;
-    }).join('');
+    const profili = ordine.length > 1
+      ? `<div class="profili">${ordine.map((id) => `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(state.profili[id].nome)}</button>`).join('')}</div>`
+      : '';
     const corpo = tab === 'oggi' ? oggi() : tab === 'settimana' ? settimana() : tab === 'andamento' ? andamento() : dati();
-    document.getElementById('app').innerHTML = `<div class="profili">${profili}</div>${corpo}`;
+    document.getElementById('app').innerHTML = `${profili}${corpo}`;
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
     window.scrollTo(0, inCima ? 0 : y);
   }
@@ -724,20 +868,78 @@ function parseSchema(righe) {
     if (d.profilo) { state.attivo = d.profilo; biaEdit = null; save(); return render(true); }
     if (d.prefprofilo) {
       state.preferito = state.preferito === d.prefprofilo ? null : d.prefprofilo;
-      save(); return render(true);
+      save(); return render();
     }
+    if (d.nuovoprofilo) {
+      const nome = (prompt('Nome del nuovo profilo') || '').trim();
+      if (!nome) return;
+      const id = 'p' + Date.now();
+      state.profili[id] = { nome, piani: [], bia: [], dieta: {} };
+      state.attivo = id;
+      save(); return render();
+    }
+    if (d.rinomina) {
+      const nome = (prompt('Nuovo nome', state.profili[d.rinomina].nome) || '').trim();
+      if (!nome) return;
+      state.profili[d.rinomina].nome = nome;
+      save(); return render();
+    }
+    if (d.delprofilo) {
+      const p = state.profili[d.delprofilo];
+      if (!confirm(`Eliminare il profilo ${p.nome} con piani, pasti e misurazioni? Non si può annullare.`)) return;
+      delete state.profili[d.delprofilo];
+      if (state.preferito === d.delprofilo) state.preferito = null;
+      if (state.attivo === d.delprofilo) state.attivo = Object.keys(state.profili)[0];
+      save(); return render();
+    }
+    if (d.salvaimpost) {
+      const olio = parseInt(document.getElementById('s_olio').value, 10);
+      const acqua = parseFloat(document.getElementById('s_acqua').value.replace(',', '.'));
+      if (!(olio >= 0) || !(acqua > 0)) return alert('Controlla olio e acqua: servono numeri validi.');
+      prof().olio_tot = olio;
+      prof().acqua_tot = acqua;
+      prof().note = document.getElementById('s_note').value.trim();
+      save(); render();
+      return alert('Impostazioni salvate.');
+    }
+    if (d.promemoria) {
+      state.promemoria = { ...(state.promemoria || {}), [d.promemoria]: !(state.promemoria || {})[d.promemoria] };
+      if (state.promemoria[d.promemoria]) {
+        const { display } = await Plugin('LocalNotifications').requestPermissions();
+        if (display !== 'granted') {
+          state.promemoria[d.promemoria] = false;
+          return alert('Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Dieta.');
+        }
+      }
+      save(); render();
+      return programmaPromemoria().catch(() => {});
+    }
+    if (d.vistasett) { vistaSett = d.vistasett; return render(true); }
+    if (d.preso) { const pr = spuntaSpesa(); pr[d.preso] = !pr[d.preso]; save(); return render(); }
+    if (d.azzeraspesa) { prof().spesa = null; save(); return render(); }
+    if (d.condividispesa) return condividiSpesa();
+    if (d.confermapiano) {
+      const dal = document.getElementById('dalPiano').value;
+      if (!dal) return alert('Scegli la data di inizio.');
+      addPiano({ ...pianoInAttesa, dal, al: '' });
+      pianoInAttesa = null;
+      save();
+      tab = 'oggi'; giornoVisto = null;
+      return render(true);
+    }
+    if (d.annullapiano) { pianoInAttesa = null; return render(); }
 
     const iso = visto();
     if (d.fatto !== undefined) { const i = Number(d.fatto); return setSlot(iso, i, { fatto: !slotState(iso, i).fatto }); }
     if (d.opt !== undefined) { const [i, j] = d.opt.split(':').map(Number); return setSlot(iso, i, { opt: j }); }
     if (d.olio !== undefined) {
       const r = recFor(iso);
-      r.olio = Math.min(OLIO_TOT, Math.max(0, r.olio + Number(d.olio)));
+      r.olio = Math.min(olioTot(), Math.max(0, r.olio + Number(d.olio)));
       save(); return render();
     }
     if (d.acqua !== undefined) {
       const r = recFor(iso);
-      r.acqua = Math.min(ACQUA_TOT, Math.max(0, Math.round((r.acqua + Number(d.acqua)) * 100) / 100));
+      r.acqua = Math.min(acquaTot(), Math.max(0, Math.round((r.acqua + Number(d.acqua)) * 100) / 100));
       save(); return render();
     }
 
@@ -802,7 +1004,7 @@ function parseSchema(righe) {
     }
   });
 
-  // Carica lo schema PDF, chiede da quando vale e lo trasforma in piano
+  // Carica lo schema PDF: dopo la lettura si sceglie da quando vale
   document.addEventListener('change', async (e) => {
     if (e.target.id !== 'pdfFile') return;
     const file = e.target.files[0];
@@ -813,17 +1015,9 @@ function parseSchema(righe) {
       if (giorni.length !== 7 || giorni.some((g) => !g.pasti.length)) {
         return alert('Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico.');
       }
-      const oggiIt = `${pad(new Date().getDate())}/${pad(new Date().getMonth() + 1)}/${new Date().getFullYear()}`;
-      const risposta = prompt('Da quale giorno vale questo schema? (gg/mm/aaaa)', oggiIt);
-      if (!risposta) return;
-      const m = risposta.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (!m) return alert('Data non valida: usa il formato gg/mm/aaaa.');
-      const dal = `${m[3]}-${m[2]}-${m[1]}`;
-      const nome = file.name.replace(/\.pdf$/i, '');
-      addPiano({ nome, dal, al: '', giorni });
-      save();
-      render();
-      alert('Schema caricato. Lo trovi in OGGI.');
+      // La data di inizio si sceglie nel riquadro in cima a DATI
+      pianoInAttesa = { nome: file.name.replace(/\.pdf$/i, ''), giorni };
+      render(true);
     } catch (err) {
       alert('Non riesco a leggere questo PDF.');
     }
