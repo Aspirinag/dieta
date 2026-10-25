@@ -53,7 +53,7 @@ struct AndamentoView: View {
                         Text("negli ultimi 7 giorni").font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
-                    Anello(valore: Double(a) / 100, testo: "\(a)%", lato: 58)
+                    Anello(valore: Double(a) / 100, testo: "\(a)%", lato: 58, descrizione: "Pasti segnati negli ultimi 7 giorni: \(a) per cento")
                 }
                 .padding(.vertical, 4)
             } else {

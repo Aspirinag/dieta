@@ -24,6 +24,7 @@ enum Scheda: String {
 
 struct Radice: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.scenePhase) private var fase
     @State private var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
 
     var body: some View {
@@ -42,6 +43,16 @@ struct Radice: View {
             }
         }
         .task { await archivio.programmaPromemoria() }
+        .onChange(of: fase) { _, nuova in
+            if nuova != .active { archivio.salvaSubito() }
+        }
+        .alert("Dati non salvati", isPresented: Binding(
+            get: { archivio.erroreSalvataggio != nil }, set: { if !$0 { archivio.erroreSalvataggio = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(archivio.erroreSalvataggio ?? "")
+        }
     }
 }
 

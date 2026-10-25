@@ -131,6 +131,7 @@ struct Anello: View {
     let valore: Double
     let testo: String
     var lato: CGFloat = 52
+    var descrizione = ""     // per VoiceOver, es. «Pasti segnati: 1 su 4»
 
     var body: some View {
         ZStack {
@@ -147,6 +148,8 @@ struct Anello: View {
         }
         .frame(width: lato, height: lato)
         .animation(.spring(duration: 0.4), value: valore)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(descrizione.isEmpty ? testo : descrizione)
     }
 }
 

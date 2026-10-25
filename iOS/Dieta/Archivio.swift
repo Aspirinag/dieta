@@ -1,14 +1,18 @@
 import SwiftUI
 import UserNotifications
 
-// Tiene i dati dell'app e li salva in un file JSON a ogni modifica
+// Tiene i dati dell'app e li salva in un file JSON dopo ogni modifica
 @Observable
 final class Archivio {
     var stato: Stato {
-        didSet { if !demo { salva() } }
+        didSet { if !demo { programmaSalvataggio() } }
     }
 
+    // Messaggio da mostrare se il file dei dati non si riesce a scrivere
+    var erroreSalvataggio: String?
+
     private let demo: Bool
+    @ObservationIgnored private var salvataggio: Task<Void, Never>?
 
     static let oliPredefiniti = 6       // cucchiaini al giorno
     static let acquaPredefinita = 2.0   // litri al giorno
@@ -39,12 +43,30 @@ final class Archivio {
         return .iniziale
     }
 
+    // Le modifiche ravvicinate (es. lo stepper dell'acqua) si salvano insieme, poco dopo l'ultima
+    private func programmaSalvataggio() {
+        salvataggio?.cancel()
+        salvataggio = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            salva()
+        }
+    }
+
+    // Quando l'app va in secondo piano: salva subito ciò che è in attesa
+    func salvaSubito() {
+        guard salvataggio != nil else { return }
+        salvataggio?.cancel()
+        salva()
+    }
+
     private func salva() {
+        salvataggio = nil
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
             try backup().write(to: Self.fileDati, options: .atomic)
         } catch {
-            print("Salvataggio non riuscito: \(error)")
+            erroreSalvataggio = "Non riesco a salvare i dati (\(error.localizedDescription)). Le ultime modifiche potrebbero andare perse: esporta un backup da Dati."
         }
     }
 
@@ -128,20 +150,20 @@ final class Archivio {
 
     // ---------- Lista della spesa ----------
 
-    // Una sola lista per tutti i profili: alimenti sommati e spunte condivise
+    // Una sola lista per tutti i profili: alimenti sommati e spunte condivise.
+    // Una spunta vale 7 giorni da quando è messa, come il periodo della lista
     func spunteSpesa() -> [String: Bool] {
-        let lun = Giorni.lunedi(Giorni.oggi())
-        return stato.spesa?.settimana == lun ? stato.spesa?.presi ?? [:] : [:]
+        let limite = Giorni.aggiungi(Giorni.oggi(), -6)
+        return (stato.spunte ?? [:]).filter { $0.value >= limite }.mapValues { _ in true }
     }
 
     func spunta(_ chiave: String) {
-        let lun = Giorni.lunedi(Giorni.oggi())
-        var s = stato.spesa?.settimana == lun ? stato.spesa! : Spesa(settimana: lun)
-        s.presi[chiave] = !(s.presi[chiave] ?? false)
-        stato.spesa = s
+        var s = (stato.spunte ?? [:]).filter { $0.value >= Giorni.aggiungi(Giorni.oggi(), -6) }
+        s[chiave] = s[chiave] == nil ? Giorni.oggi() : nil
+        stato.spunte = s
     }
 
-    func azzeraSpesa() { stato.spesa = nil }
+    func azzeraSpesa() { stato.spunte = nil }
 
     // Profili che hanno un piano nei 7 giorni della lista, nell'ordine del menu
     var profiliSpesa: [Profilo] {
@@ -201,6 +223,11 @@ extension Profilo {
         piani
             .filter { $0.dal <= iso && ($0.al.isEmpty || iso <= $0.al) && $0.giorni.count == 7 }
             .max { $0.dal < $1.dal }
+    }
+
+    // Il primo piano che inizia dopo questa data (caricato in anticipo)
+    func prossimoPiano(dopo iso: String) -> Piano? {
+        piani.filter { $0.dal > iso && $0.giorni.count == 7 }.min { $0.dal < $1.dal }
     }
 
     // Calorie stimate di un giorno: previste (alternative scelte e olio del piano) e dei pasti segnati (con l'olio segnato)

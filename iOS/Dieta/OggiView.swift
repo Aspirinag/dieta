@@ -50,7 +50,8 @@ struct OggiView: View {
                                 }
                             }
                             Spacer(minLength: 0)
-                            Anello(valore: g.pasti.isEmpty ? 0 : Double(fatti) / Double(g.pasti.count), testo: "\(fatti)/\(g.pasti.count)")
+                            Anello(valore: g.pasti.isEmpty ? 0 : Double(fatti) / Double(g.pasti.count), testo: "\(fatti)/\(g.pasti.count)",
+                                   descrizione: "Pasti segnati: \(fatti) su \(g.pasti.count)")
                         }
                         .padding(.vertical, 4)
                         if g.palestra {
@@ -65,10 +66,12 @@ struct OggiView: View {
                     }
                     SezioneOlioAcqua(giorno: giorno)
                 } else {
+                    let prossimo = archivio.profilo.prossimoPiano(dopo: giorno)
                     ContentUnavailableView(
                         "Nessun piano per questo giorno",
                         systemImage: "fork.knife",
-                        description: Text("Carica lo schema dietetico in PDF dalla scheda Dati.")
+                        description: Text(prossimo.map { "Il piano «\($0.nome)» inizia il \(Giorni.breve($0.dal))." }
+                                          ?? "Carica lo schema dietetico in PDF dalla scheda Dati.")
                     )
                 }
             }

@@ -42,14 +42,15 @@ struct SettimanaView: View {
 
     @ViewBuilder private var giorni: some View {
         let oggi = Giorni.indice(Giorni.oggi())
-        if let piano = archivio.profilo.piano(per: Giorni.oggi()) {
+        // Se oggi non c'è un piano si mostra quello che inizierà
+        if let piano = archivio.profilo.piano(per: Giorni.oggi()) ?? archivio.profilo.prossimoPiano(dopo: Giorni.oggi()) {
             let g = piano.giorni[giorno]
             Section {
                 selettoreGiorni(piano, oggi: oggi)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
             } footer: {
-                Text(piano.nome)
+                Text(piano.dal > Giorni.oggi() ? "\(piano.nome) · inizia il \(Giorni.breve(piano.dal))" : piano.nome)
             }
             Section {
                 // Dal giorno del piano, non dalla data: il piano può iniziare a metà di questa settimana
@@ -150,6 +151,7 @@ struct SettimanaView: View {
         }
         .sensoryFeedback(.selection, trigger: giorno)
         .animation(.snappy(duration: 0.25), value: giorno)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)   // sette colonne: oltre non ci stanno
     }
 
     // Giorno passato (o oggi) con tutti i pasti segnati
@@ -187,7 +189,7 @@ struct SettimanaView: View {
                 Text("Dal \(Giorni.breve(giorni[0])) al \(Giorni.breve(giorni[6]))")
             } footer: {
                 Text((profili.count > 1 ? "Lista unica per \(profili.map(\.nome).formatted(.list(type: .and))): le quantità sono sommate e le spunte valgono per tutti. " : "")
-                     + "Comprende oggi e i 6 giorni successivi. Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte ripartono ogni lunedì.")
+                     + "Comprende oggi e i 6 giorni successivi. Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Ogni spunta dura 7 giorni.")
             }
             if !presi.isEmpty {
                 Section {
