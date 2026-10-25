@@ -31,6 +31,7 @@
   input::placeholder { color: #b0b0bb; }
   button { font: inherit; border: none; cursor: pointer; }
   .primary { display: block; width: 100%; background: linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 55%), #d4ff3f; color: #0a0a0a; font-weight: 700; font-size: 16px; border-radius: 16px; padding: 14px; margin: 12px 0; }
+  .small.mini { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
   .small { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-weight: 600; border-radius: 12px; padding: 10px 14px; }
   .chip { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-weight: 600; border-radius: 999px; padding: 8px 14px; }
   .chip.on { background: #d4ff3f; color: #0a0a0a; border-color: #d4ff3f; }
@@ -130,6 +131,9 @@
   let state = load();
   let tab = 'oggi';
   let giornoSel = (new Date().getDay() + 6) % 7; // giorno scelto in SETTIMANA (Lunedì = 0)
+  let giornoVisto = null; // giorno mostrato in OGGI (null = oggi), per segnare anche i giorni passati
+  let biaEdit = null;     // data della BIA che si sta modificando in DATI
+  const visto = () => giornoVisto || todayISO();
 
   function load() {
     try {
@@ -300,15 +304,28 @@ function parseSchema(righe) {
   }
 
   // ---------- OGGI ----------
+  // Intestazione di OGGI con le frecce per andare ai giorni passati (non oltre oggi)
+  function testaGiorno(iso) {
+    const oggiIso = todayISO();
+    const titolo = iso === oggiIso ? `Oggi, ${DAYS[dayIdx(iso)]}` : iso === addDays(oggiIso, -1) ? `Ieri, ${DAYS[dayIdx(iso)]}` : DAYS[dayIdx(iso)];
+    return `
+      <div class="between">
+        <button class="small" data-sposta="-1" aria-label="Giorno precedente">‹</button>
+        <h1 style="margin: 0; text-align: center">${titolo}</h1>
+        <button class="small" data-sposta="1" aria-label="Giorno successivo" ${iso >= oggiIso ? 'disabled style="visibility: hidden"' : ''}>›</button>
+      </div>
+      ${iso !== oggiIso ? '<button class="link" data-sposta="0" style="color: #22a86a; display: block; margin: 8px auto 0">Torna a oggi</button>' : ''}`;
+  }
+
   function oggi() {
-    const iso = todayISO();
+    const iso = visto();
     const piano = planFor(iso);
     if (!piano) {
       return `
-        <h1>Oggi</h1>
-        <p class="muted">${DAYS[dayIdx(iso)]} ${fmtDate(iso)}</p>
+        ${testaGiorno(iso)}
+        <p class="muted">${fmtDate(iso)}</p>
         <div class="card">
-          <strong>Nessun piano attivo per oggi.</strong>
+          <strong>Nessun piano attivo per questo giorno.</strong>
           <p class="muted">Carica lo schema PDF dalla scheda Dati.</p>
           <button class="small" data-tab="dati">Vai a Dati</button>
         </div>`;
@@ -334,7 +351,7 @@ function parseSchema(righe) {
         </div>`;
     }).join('');
     return `
-      <h1>Oggi, ${DAYS[dayIdx(iso)]}</h1>
+      ${testaGiorno(iso)}
       <p class="muted">${fmtDate(iso)} · ${esc(piano.nome)}</p>
       ${giorno.palestra ? '<span class="badge">Giorno di palestra</span>' : ''}
       ${pasti}
@@ -510,7 +527,10 @@ function parseSchema(righe) {
 
     const righe = [...bia].reverse().map((m) => `
       <tr>
-        <td>${fmtDate(m.data)}</td>
+        <td style="white-space: nowrap">${fmtDate(m.data)}<br>
+          <button class="small mini" data-editbia="${m.data}" aria-label="Modifica">✎</button>
+          <button class="small mini" data-delbia="${m.data}" aria-label="Elimina">✕</button>
+        </td>
         <td>${val(m, 'peso')}</td>
         <td>${val(m, 'grasso_kg')}</td>
         <td>${val(m, 'magra_kg')}</td>
@@ -560,6 +580,19 @@ function parseSchema(righe) {
   }
 
   // ---------- DATI ----------
+  // Campi della misurazione a mano: id del campo, chiave salvata, etichetta, tastiera
+  const CAMPI_BIA = [
+    ['b_peso', 'peso', 'Peso (kg)', 'decimal'],
+    ['b_grasso', 'grasso_kg', 'Massa grassa (kg)', 'decimal'],
+    ['b_magra', 'magra_kg', 'Massa magra (kg)', 'decimal'],
+    ['b_acqua', 'acqua_l', 'Acqua (l)', 'decimal'],
+    ['b_bmr', 'bmr', 'Metabolismo (kcal)', 'numeric'],
+    ['b_vat', 'vat_cm2', 'Grasso viscerale (cm²)', 'numeric'],
+    ['b_vita', 'vita_cm', 'Vita (cm)', 'decimal'],
+    ['b_addome', 'addome_cm', 'Addome (cm)', 'decimal'],
+    ['b_fianchi', 'fianchi_cm', 'Fianchi (cm)', 'decimal'],
+    ['b_torace', 'torace_cm', 'Torace (cm)', 'decimal'],
+  ];
   function dati() {
     const piani = prof().piani.length
       ? prof().piani.map((p, i) => ({ p, i })).sort((a, b) => a.p.dal.localeCompare(b.p.dal)).map(({ p, i }) => `
@@ -571,6 +604,7 @@ function parseSchema(righe) {
           </div>`).join('')
       : '<p class="muted">Nessun piano importato.</p>';
     const oggiIso = todayISO();
+    const ed = biaEdit ? prof().bia.find((x) => x.data === biaEdit) : null;
     return `
       <h1>Dati</h1>
       <h2>Piani alimentari</h2>
@@ -587,19 +621,14 @@ function parseSchema(righe) {
         <button class="primary" data-biaup="1">Carica BIA PDF</button>
         <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
       </div>
-      <h2>Aggiungi misurazione BIA</h2>
+      <h2 id="formBia">${biaEdit ? `Modifica misurazione del ${fmtDate(biaEdit)}` : 'Aggiungi misurazione BIA'}</h2>
       <div class="card">
         <div class="grid2">
-          <input type="date" id="b_data" value="${oggiIso}">
-          <input inputmode="decimal" id="b_peso" placeholder="Peso (kg)">
-          <input inputmode="decimal" id="b_grasso" placeholder="Massa grassa (kg)">
-          <input inputmode="decimal" id="b_magra" placeholder="Massa magra (kg)">
-          <input inputmode="decimal" id="b_acqua" placeholder="Acqua (l)">
-          <input inputmode="numeric" id="b_bmr" placeholder="Metabolismo (kcal)">
-          <input inputmode="numeric" id="b_vat" placeholder="Grasso viscerale (cm²)">
-          <input inputmode="decimal" id="b_vita" placeholder="Vita (cm)">
+          <input type="date" id="b_data" value="${biaEdit || oggiIso}" ${biaEdit ? 'disabled' : ''}>
+          ${CAMPI_BIA.map(([id, k, ph, mode]) => `<input inputmode="${mode}" id="${id}" placeholder="${ph}" value="${ed && ed[k] != null ? String(ed[k]).replace('.', ',') : ''}">`).join('')}
         </div>
         <button class="primary" data-savebia="1">Salva misurazione</button>
+        ${biaEdit ? '<button class="small" data-annullabia="1">Annulla modifica</button>' : ''}
       </div>
       <h2>Backup</h2>
       <div class="card">
@@ -681,16 +710,24 @@ function parseSchema(righe) {
 
     if (d.tab) {
       if (d.tab === 'settimana' && tab !== 'settimana') giornoSel = dayIdx(todayISO());
+      if (d.tab === 'oggi' && tab !== 'oggi') giornoVisto = null;
+      if (d.tab !== 'dati') biaEdit = null;
       tab = d.tab; return render(true);
     }
+    if (d.sposta !== undefined) {
+      const n = Number(d.sposta);
+      const nuovo = n === 0 ? todayISO() : addDays(visto(), n);
+      giornoVisto = nuovo >= todayISO() ? null : nuovo;
+      return render(true);
+    }
     if (d.giorno !== undefined) { giornoSel = Number(d.giorno); return render(); }
-    if (d.profilo) { state.attivo = d.profilo; save(); return render(true); }
+    if (d.profilo) { state.attivo = d.profilo; biaEdit = null; save(); return render(true); }
     if (d.prefprofilo) {
       state.preferito = state.preferito === d.prefprofilo ? null : d.prefprofilo;
       save(); return render(true);
     }
 
-    const iso = todayISO();
+    const iso = visto();
     if (d.fatto !== undefined) { const i = Number(d.fatto); return setSlot(iso, i, { fatto: !slotState(iso, i).fatto }); }
     if (d.opt !== undefined) { const [i, j] = d.opt.split(':').map(Number); return setSlot(iso, i, { opt: j }); }
     if (d.olio !== undefined) {
@@ -711,19 +748,25 @@ function parseSchema(righe) {
       save(); return render();
     }
     if (d.savebia !== undefined) {
-      const v = (id) => num(String(document.getElementById(id).value).replace(',', '.'));
-      const data = document.getElementById('b_data').value;
-      const m = {
-        data, peso: v('b_peso'), grasso_kg: v('b_grasso'), magra_kg: v('b_magra'), acqua_l: v('b_acqua'),
-        bmr: v('b_bmr'), vat_cm2: v('b_vat'), vita_cm: v('b_vita'),
-      };
-      if (!data || m.peso == null) return alert('Inserisci almeno la data e il peso.');
+      const data = biaEdit || document.getElementById('b_data').value;
       const vecchia = prof().bia.find((x) => x.data === data);
-      if (vecchia && !confirm(`C'è già una misurazione del ${fmtDate(data)}: la sostituisco?`)) return;
+      // In modifica si parte dalla misura esistente, così restano i valori letti dal PDF che il modulo non mostra
+      const m = { ...(biaEdit ? vecchia : {}), data };
+      CAMPI_BIA.forEach(([id, k]) => { m[k] = num(String(document.getElementById(id).value).replace(',', '.')); });
+      if (!data || m.peso == null) return alert('Inserisci almeno la data e il peso.');
+      if (!biaEdit && vecchia && !confirm(`C'è già una misurazione del ${fmtDate(data)}: la sostituisco?`)) return;
       mergeBia([m]);
+      biaEdit = null;
       save();
-      render();
-      return alert('Misurazione salvata. La trovi in ANDAMENTO.');
+      tab = 'andamento';
+      return render(true);
+    }
+    if (d.editbia) { biaEdit = d.editbia; tab = 'dati'; render(); document.getElementById('formBia').scrollIntoView(); return; }
+    if (d.annullabia) { biaEdit = null; return render(); }
+    if (d.delbia) {
+      if (!confirm(`Eliminare la misurazione del ${fmtDate(d.delbia)}?`)) return;
+      prof().bia = prof().bia.filter((x) => x.data !== d.delbia);
+      save(); return render();
     }
     if (d.biaup !== undefined) { document.getElementById('biaFile').click(); return; }
     if (d.pdfup !== undefined) { document.getElementById('pdfFile').click(); return; }
