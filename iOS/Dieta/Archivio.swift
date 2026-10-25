@@ -246,6 +246,14 @@ extension Profilo {
         return (previste, segnate)
     }
 
+    // Quota (0…1) dei pasti segnati in un giorno; nil se quel giorno non c'è un piano
+    func quotaSegnata(_ iso: String) -> Double? {
+        guard let p = piano(per: iso) else { return nil }
+        let pasti = p.giorni[Giorni.indice(iso)].pasti
+        guard !pasti.isEmpty else { return nil }
+        return Double(pasti.indices.filter { dieta[iso]?.slot[String($0)]?.fatto == true }.count) / Double(pasti.count)
+    }
+
     // Percentuale di pasti segnati negli ultimi 7 giorni, oggi escluso
     func aderenza() -> Int? {
         var tot = 0, fatti = 0

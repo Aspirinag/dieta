@@ -1,7 +1,8 @@
 import SwiftUI
 import Charts
 
-// Aderenza alla dieta, variazioni delle misure BIA, grafico e storico
+// Cruscotto: costanza nei pasti, una tessera per misura (ultimo valore, variazione, mini grafico),
+// il grafico della misura scelta, consigli e storico delle misurazioni
 struct AndamentoView: View {
     @Environment(Archivio.self) private var archivio
     @State private var metrica: CampoMisura = .peso
@@ -17,23 +18,36 @@ struct AndamentoView: View {
         Voce(campo: .vita, verso: -1), Voce(campo: .addome, verso: -1), Voce(campo: .fianchi, verso: -1),
     ]
 
+    private struct Punto: Identifiable {
+        let data: Date
+        let valore: Double
+        var id: Date { data }
+    }
+
     var body: some View {
         NavigationStack {
-            List {
+            ScrollView {
                 let bia = archivio.profilo.bia.sorted { $0.data < $1.data }
-                riepilogo(bia)
-                if let primo = bia.first, let ultimo = bia.last {
-                    if bia.count > 1 { dallInizio(primo, ultimo) }
-                    grafico(bia)
-                    storico(bia)
-                } else {
-                    ContentUnavailableView(
-                        "Nessuna misurazione",
-                        systemImage: "chart.line.uptrend.xyaxis",
-                        description: Text("Carica la BIA in PDF o aggiungila a mano dalla scheda Dati.")
-                    )
+                VStack(spacing: 14) {
+                    costanza
+                    if bia.isEmpty {
+                        ContentUnavailableView(
+                            "Nessuna misurazione",
+                            systemImage: "chart.line.uptrend.xyaxis",
+                            description: Text("Carica la BIA in PDF o aggiungila a mano dalla scheda Dati.")
+                        )
+                        .scheda()
+                    } else {
+                        tessere(bia)
+                        grafico(bia)
+                        consigli(bia)
+                        storico(bia)
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Andamento")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
             .navigationDestination(for: String.self) { data in
@@ -42,46 +56,102 @@ struct AndamentoView: View {
         }
     }
 
-    // ---------- Riepilogo ----------
+    // ---------- Costanza ----------
 
-    @ViewBuilder private func riepilogo(_ bia: [Misura]) -> some View {
-        Section("Riepilogo") {
-            if let a = archivio.profilo.aderenza() {
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Pasti segnati").font(.headline)
-                        Text("negli ultimi 7 giorni").font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    Anello(valore: Double(a) / 100, testo: "\(a)%", lato: 58, descrizione: "Pasti segnati negli ultimi 7 giorni: \(a) per cento")
+    // Pasti segnati negli ultimi 7 giorni (oggi escluso): anello e una barra per giorno
+    @ViewBuilder private var costanza: some View {
+        let p = archivio.profilo
+        let giorni = (1...7).reversed().map { Giorni.aggiungi(Giorni.oggi(), -$0) }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Costanza").font(.headline)
+                    Text("Pasti segnati negli ultimi 7 giorni").font(.subheadline).foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
-            } else {
-                Text("Nessun piano attivo negli ultimi 7 giorni.").foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                if let a = p.aderenza() {
+                    Anello(valore: Double(a) / 100, testo: "\(a)%", lato: 58,
+                           descrizione: "Pasti segnati negli ultimi 7 giorni: \(a) per cento")
+                }
             }
-            if bia.count > 1 {
-                let prec = bia[bia.count - 2], ultimo = bia[bia.count - 1]
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Dall'ultima misurazione (\(Giorni.breve(prec.data)))").font(.subheadline.weight(.semibold))
-                    HStack {
-                        variazione("Peso", prec.peso, ultimo.peso, "kg", -1)
-                        variazione("Grasso", prec.grassoKg, ultimo.grassoKg, "kg", -1)
-                        variazione("Vita", prec.vitaCm, ultimo.vitaCm, "cm", -1)
+            if p.aderenza() == nil {
+                Text("Nessun piano attivo negli ultimi 7 giorni.").foregroundStyle(.secondary)
+            } else {
+                HStack(alignment: .bottom, spacing: 8) {
+                    ForEach(giorni, id: \.self) { iso in
+                        let quota = p.quotaSegnata(iso)
+                        VStack(spacing: 6) {
+                            ZStack(alignment: .bottom) {
+                                Capsule().fill(Color.accentColor.opacity(0.14))
+                                Capsule()
+                                    .fill(Color.accentColor.gradient)
+                                    .frame(height: max(quota ?? 0, 0.04) * 44)
+                                    .opacity(quota == nil ? 0 : 1)
+                            }
+                            .frame(height: 44)
+                            Text(String(Giorni.nomi[Giorni.indice(iso)].prefix(1)))
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(Giorni.nomi[Giorni.indice(iso)]): \(quota.map { "\(Int(($0 * 100).rounded())) per cento" } ?? "nessun piano")")
                     }
-                }
-                ForEach(consigli(bia), id: \.self) { c in
-                    Label(c, systemImage: "lightbulb").font(.subheadline)
                 }
             }
         }
+        .scheda()
     }
 
-    private func variazione(_ nome: String, _ a: Double?, _ b: Double?, _ unita: String, _ verso: Double) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(nome).font(.caption).foregroundStyle(.secondary)
-            BadgeVariazione(testo: testoDelta(a, b, unita), colore: colore(a, b, verso))
+    // ---------- Tessere ----------
+
+    private func tessere(_ bia: [Misura]) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            ForEach(voci.filter { v in bia.contains { $0[v.campo] != nil } }, id: \.campo) { v in
+                let punti = bia.compactMap { m in m[v.campo].map { Punto(data: Giorni.data(m.data), valore: $0) } }
+                let scelta = v.campo == metrica
+                Button {
+                    withAnimation(.snappy) { metrica = v.campo; selezione = nil }
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(v.campo.nome).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                            Text(num(punti.last?.valore)).font(.title2.weight(.semibold)).fontDesign(.rounded)
+                            Text(v.campo.unita).font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        .monospacedDigit()
+                        if punti.count > 1 {
+                            BadgeVariazione(testo: testoDelta(punti.first?.valore, punti.last?.valore, v.campo.unita),
+                                            colore: colore(punti.first?.valore, punti.last?.valore, v.verso))
+                            Chart(punti) { p in
+                                LineMark(x: .value("Data", p.data), y: .value(v.campo.nome, p.valore))
+                                    .interpolationMethod(.monotone)
+                                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .foregroundStyle(colore(punti.first?.valore, punti.last?.valore, v.verso) == .primary
+                                                     ? Color.secondary : colore(punti.first?.valore, punti.last?.valore, v.verso))
+                            }
+                            .chartXAxis(.hidden)
+                            .chartYAxis(.hidden)
+                            .chartYScale(domain: .automatic(includesZero: false))
+                            .frame(height: 30)
+                        } else {
+                            Text("Una sola misura").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
+                    .overlay {
+                        if scelta { RoundedRectangle(cornerRadius: 20).strokeBorder(Color.accentColor, lineWidth: 2) }
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(scelta ? .isSelected : [])
+                .accessibilityHint("Mostra il grafico di \(v.campo.nome.lowercased())")
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .sensoryFeedback(.selection, trigger: metrica)
     }
 
     private func delta(_ a: Double?, _ b: Double?) -> Double? {
@@ -99,49 +169,7 @@ struct AndamentoView: View {
         return d * verso > 0 ? .green : .red
     }
 
-    private func consigli(_ bia: [Misura]) -> [String] {
-        guard let primo = bia.first, let ultimo = bia.last,
-              let dg = delta(primo.grassoKg, ultimo.grassoKg), let dm = delta(primo.magraKg, ultimo.magraKg) else { return [] }
-        var c: [String] = []
-        if dg < 0 && dm >= -0.5 { c.append("Dall'inizio il calo riguarda soprattutto la massa grassa, e la massa magra è stabile: è il risultato che cerchiamo.") }
-        if dm < -1 { c.append("La massa magra è scesa di più di 1 kg: conviene parlarne con la nutrizionista.") }
-        if dg > 0 { c.append("La massa grassa è salita rispetto all'inizio.") }
-        return c
-    }
-
-    // ---------- Dall'inizio ----------
-
-    private func dallInizio(_ primo: Misura, _ ultimo: Misura) -> some View {
-        Section {
-            ForEach(voci, id: \.campo) { v in
-                LabeledContent(v.campo.nome) {
-                    HStack(spacing: 10) {
-                        Text("\(num(primo[v.campo])) → \(num(ultimo[v.campo])) \(v.campo.unita)")
-                            .foregroundStyle(.secondary)
-                        BadgeVariazione(testo: testoDelta(primo[v.campo], ultimo[v.campo], v.campo.unita),
-                                        colore: colore(primo[v.campo], ultimo[v.campo], v.verso))
-                            .frame(minWidth: 72, alignment: .trailing)
-                    }
-                    .fontDesign(.rounded)
-                    .monospacedDigit()
-                }
-            }
-        } header: {
-            Text("Dall'inizio: \(Giorni.breve(primo.data)) → \(Giorni.breve(ultimo.data))")
-        } footer: {
-            if ultimo.obiettivoPeso != nil || ultimo.obiettivoGrassoPct != nil {
-                Text("Obiettivi: peso \(num(ultimo.obiettivoPeso)) kg, massa grassa \(num(ultimo.obiettivoGrassoPct))%")
-            }
-        }
-    }
-
     // ---------- Grafico ----------
-
-    private struct Punto: Identifiable {
-        let data: Date
-        let valore: Double
-        var id: Date { data }
-    }
 
     private func grafico(_ bia: [Misura]) -> some View {
         let punti = bia.compactMap { m in m[metrica].map { Punto(data: Giorni.data(m.data), valore: $0) } }
@@ -154,9 +182,17 @@ struct AndamentoView: View {
         // Il punto più vicino al dito, mentre si tocca il grafico
         let scelto = selezione.flatMap { s in punti.min { abs($0.data.timeIntervalSince(s)) < abs($1.data.timeIntervalSince(s)) } }
         let minimo = (punti.map(\.valore) + [obiettivo].compactMap { $0 }).min() ?? 0
-        return Section {
-            Picker("Misura", selection: $metrica) {
-                ForEach(voci, id: \.campo) { v in Text(v.campo.nome).tag(v.campo) }
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(metrica.nome).font(.headline)
+                Spacer()
+                Menu {
+                    Picker("Misura", selection: $metrica) {
+                        ForEach(voci, id: \.campo) { v in Text(v.campo.nome).tag(v.campo) }
+                    }
+                } label: {
+                    Label("Cambia", systemImage: "chevron.up.chevron.down").font(.subheadline)
+                }
             }
             if punti.count < 2 {
                 Text("Servono almeno due misurazioni con questo valore.").foregroundStyle(.secondary)
@@ -210,38 +246,79 @@ struct AndamentoView: View {
                     }
                 }
                 .frame(height: 220)
-                .padding(.vertical, 8)
+                Text("Tieni premuto e scorri sul grafico per leggere i valori.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-        } header: {
-            Text("Grafico")
-        } footer: {
-            Text("Tieni premuto e scorri sul grafico per leggere i valori.")
         }
+        .scheda()
+    }
+
+    // ---------- Consigli ----------
+
+    @ViewBuilder private func consigli(_ bia: [Misura]) -> some View {
+        let testi = testiConsigli(bia)
+        if !testi.isEmpty || bia.last?.obiettivoPeso != nil {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(testi, id: \.self) { c in
+                    Label(c, systemImage: "lightbulb.fill")
+                        .symbolRenderingMode(.multicolor)
+                }
+                if let ultimo = bia.last, ultimo.obiettivoPeso != nil || ultimo.obiettivoGrassoPct != nil {
+                    Label("Obiettivi: peso \(num(ultimo.obiettivoPeso)) kg, massa grassa \(num(ultimo.obiettivoGrassoPct))%",
+                          systemImage: "flag.checkered")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.subheadline)
+            .scheda()
+        }
+    }
+
+    private func testiConsigli(_ bia: [Misura]) -> [String] {
+        guard bia.count > 1, let primo = bia.first, let ultimo = bia.last,
+              let dg = delta(primo.grassoKg, ultimo.grassoKg), let dm = delta(primo.magraKg, ultimo.magraKg) else { return [] }
+        var c: [String] = []
+        if dg < 0 && dm >= -0.5 { c.append("Dall'inizio il calo riguarda soprattutto la massa grassa, e la massa magra è stabile: è il risultato che cerchiamo.") }
+        if dm < -1 { c.append("La massa magra è scesa di più di 1 kg: conviene parlarne con la nutrizionista.") }
+        if dg > 0 { c.append("La massa grassa è salita rispetto all'inizio.") }
+        return c
     }
 
     // ---------- Storico ----------
 
     private func storico(_ bia: [Misura]) -> some View {
-        Section {
-            ForEach(bia.reversed()) { m in
-                NavigationLink(value: m.data) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Giorni.breve(m.data)).font(.headline)
-                        Text("Peso \(num(m.peso)) · grasso \(num(m.grassoKg)) · magra \(num(m.magraKg)) · vita \(num(m.vitaCm))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .swipeActions {
-                    Button("Elimina", systemImage: "trash", role: .destructive) {
-                        archivio.profilo.bia.removeAll { $0.data == m.data }
-                    }
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Misurazioni").font(.headline)
+                Spacer()
+                Text("\(bia.count)").foregroundStyle(.secondary).monospacedDigit()
             }
-        } header: {
-            Text("Misurazioni")
-        } footer: {
-            Text("Tocca una misurazione per modificarla, scorri a sinistra per eliminarla.")
+            .padding(.bottom, 8)
+            ForEach(Array(bia.reversed().enumerated()), id: \.element.id) { i, m in
+                if i > 0 { Divider() }
+                NavigationLink(value: m.data) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Giorni.breve(m.data)).font(.body.weight(.medium))
+                            Text("Grasso \(num(m.grassoKg)) kg · magra \(num(m.magraKg)) kg · vita \(num(m.vitaCm)) cm")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text("\(num(m.peso)) kg").font(.body.weight(.semibold)).fontDesign(.rounded).monospacedDigit()
+                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
+                    .padding(.vertical, 10)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            }
+            Text("Tocca una misurazione per modificarla o eliminarla.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
         }
+        .scheda()
     }
 }
