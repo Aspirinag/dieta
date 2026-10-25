@@ -228,7 +228,7 @@ struct DatiView: View {
                 } label: {
                     HStack {
                         Image(systemName: id == archivio.stato.attivo ? "person.crop.circle.fill" : "person.crop.circle")
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(Color.accentColor)
                         Text(nome).foregroundStyle(.primary)
                         Spacer()
                         if archivio.stato.preferito == id {
@@ -236,6 +236,7 @@ struct DatiView: View {
                         }
                     }
                 }
+                .tint(.primary)
             }
             Button("Aggiungi profilo", systemImage: "person.badge.plus") {
                 nomeProfilo = ""
