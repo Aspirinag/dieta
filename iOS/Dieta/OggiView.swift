@@ -15,6 +15,14 @@ struct OggiView: View {
         return nome
     }
 
+    private var notaCalorie: String {
+        var t = "Calorie stimate con valori medi (tabelle CREA), olio compreso: sono un ordine di grandezza."
+        if let bmr = archivio.profilo.bia.max(by: { $0.data < $1.data })?.bmr {
+            t += " Metabolismo basale dall'ultima BIA: \(numeroKcal(bmr)) kcal."
+        }
+        return t
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -27,6 +35,14 @@ struct OggiView: View {
                                 Text(Giorni.nomi[Giorni.indice(giorno)] + " " + Giorni.breve(giorno))
                                     .font(.headline)
                                 Text(piano.nome).font(.subheadline).foregroundStyle(.secondary)
+                                if let c = archivio.profilo.calorie(giorno) {
+                                    Text("≈ \(numeroKcal(c.segnate)) / \(numeroKcal(c.previste)) kcal")
+                                        .font(.subheadline.weight(.medium))
+                                        .fontDesign(.rounded)
+                                        .monospacedDigit()
+                                        .contentTransition(.numericText())
+                                        .animation(.default, value: c.segnate)
+                                }
                                 if fatti == g.pasti.count {
                                     Label("Tutti i pasti segnati", systemImage: "star.fill")
                                         .font(.caption.weight(.medium))
@@ -41,6 +57,8 @@ struct OggiView: View {
                             Label("Giorno di palestra", systemImage: "dumbbell.fill")
                                 .foregroundStyle(.tint)
                         }
+                    } footer: {
+                        Text(notaCalorie)
                     }
                     ForEach(Array(g.pasti.enumerated()), id: \.offset) { i, pasto in
                         SezionePasto(giorno: giorno, indice: i, pasto: pasto)
@@ -90,6 +108,7 @@ struct SezionePasto: View {
     var body: some View {
         let s = archivio.slot(giorno, indice)
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
+        let calorieScelte = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta].calorie : nil
         Section {
             if pasto.opzioni.count > 1 {
                 let scelte = Picker("Alternativa", selection: Binding(
@@ -125,12 +144,19 @@ struct SezionePasto: View {
             HStack {
                 Label(pasto.nome, systemImage: iconaPasto(pasto.nome))
                 Spacer()
+                if let c = calorieScelte, c.kcal > 0 {
+                    Text(kcal(c.kcal, incompleto: !c.ignoti.isEmpty)).monospacedDigit().textCase(nil)
+                }
                 if s.fatto {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
                         .transition(.scale.combined(with: .opacity))
                 }
             }
             .animation(.spring(duration: 0.3), value: s.fatto)
+        } footer: {
+            if let c = calorieScelte, !c.ignoti.isEmpty {
+                Text("Calorie non stimate per: \(c.ignoti.joined(separator: ", ")).")
+            }
         }
     }
 }

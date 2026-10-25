@@ -52,7 +52,10 @@ struct SettimanaView: View {
                 Text(piano.nome)
             }
             Section {
-                LabeledContent(Giorni.nomi[giorno], value: giorno == oggi ? "oggi" : "")
+                let previste = archivio.profilo.calorie(Giorni.aggiungi(Giorni.lunedi(Giorni.oggi()), giorno))?.previste
+                LabeledContent(Giorni.nomi[giorno] + (giorno == oggi ? " (oggi)" : "")) {
+                    if let previste { Text(kcal(previste)).monospacedDigit() }
+                }
                 if g.palestra {
                     Label("Giorno di palestra", systemImage: "dumbbell.fill").foregroundStyle(.tint)
                 }
@@ -61,9 +64,13 @@ struct SettimanaView: View {
                 Section {
                     ForEach(Array(pasto.opzioni.enumerated()), id: \.offset) { j, o in
                         if pasto.opzioni.count > 1 {
-                            Text(o.titolo ?? "Opzione \(j + 1)")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.tint)
+                            HStack {
+                                Text(o.titolo ?? "Opzione \(j + 1)")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.tint)
+                                Spacer()
+                                if o.kcal > 0 { Text(kcal(o.kcal)).font(.caption).foregroundStyle(.secondary).monospacedDigit() }
+                            }
                         }
                         ForEach(Array(o.alimenti.enumerated()), id: \.offset) { _, a in
                             HStack(alignment: .firstTextBaseline) {
@@ -74,7 +81,13 @@ struct SettimanaView: View {
                         }
                     }
                 } header: {
-                    Label(pasto.nome, systemImage: iconaPasto(pasto.nome))
+                    HStack {
+                        Label(pasto.nome, systemImage: iconaPasto(pasto.nome))
+                        Spacer()
+                        if pasto.opzioni.count == 1, let o = pasto.opzioni.first, o.kcal > 0 {
+                            Text(kcal(o.kcal)).monospacedDigit().textCase(nil)
+                        }
+                    }
                 }
             }
         } else {

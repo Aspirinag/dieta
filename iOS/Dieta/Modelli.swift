@@ -33,6 +33,10 @@ struct Opzione: Codable, Hashable {
         titolo = c.valore(.titolo, nil)
         alimenti = c.valore(.alimenti, [])
     }
+
+    // Calorie stimate e alimenti non riconosciuti (vedi Calorie.swift)
+    var calorie: (kcal: Double, ignoti: [String]) { Calorie.opzione(titolo: titolo, alimenti: alimenti.map { ($0.nome, $0.quantita) }) }
+    var kcal: Double { calorie.kcal }
 }
 
 struct Pasto: Codable, Hashable {

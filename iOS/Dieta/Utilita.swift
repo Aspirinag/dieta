@@ -51,6 +51,15 @@ func num(_ v: Double?) -> String {
     return String(arrotondato).replacingOccurrences(of: ".", with: ",")
 }
 
+// Calorie stimate, arrotondate alla decina: ≈ 1.650 kcal
+func kcal(_ v: Double, incompleto: Bool = false) -> String {
+    "≈ " + numeroKcal(v) + (incompleto ? "+" : "") + " kcal"
+}
+
+func numeroKcal(_ v: Double) -> String {
+    Int((v / 10).rounded() * 10).formatted(.number.locale(Locale(identifier: "it_IT")))
+}
+
 // Legge un numero scritto con la virgola o con il punto
 func leggiNumero(_ testo: String) -> Double? {
     Double(testo.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))

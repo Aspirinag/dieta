@@ -204,6 +204,21 @@ extension Profilo {
             .max { $0.dal < $1.dal }
     }
 
+    // Calorie stimate di un giorno: previste (alternative scelte e olio del piano) e dei pasti segnati (con l'olio segnato)
+    func calorie(_ iso: String) -> (previste: Double, segnate: Double)? {
+        guard let p = piano(per: iso) else { return nil }
+        let r = dieta[iso] ?? Registro()
+        var previste = Double(olio) * Calorie.kcalCucchiainoOlio
+        var segnate = Double(r.olio) * Calorie.kcalCucchiainoOlio
+        for (i, pasto) in p.giorni[Giorni.indice(iso)].pasti.enumerated() {
+            let s = r.slot[String(i)] ?? Slot()
+            guard let o = pasto.opzioni.indices.contains(s.opt) ? pasto.opzioni[s.opt] : pasto.opzioni.first else { continue }
+            previste += o.kcal
+            if s.fatto { segnate += o.kcal }
+        }
+        return (previste, segnate)
+    }
+
     // Percentuale di pasti segnati negli ultimi 7 giorni, oggi escluso
     func aderenza() -> Int? {
         var tot = 0, fatti = 0
