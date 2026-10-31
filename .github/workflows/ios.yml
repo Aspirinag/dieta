@@ -57,7 +57,7 @@ jobs:
           xcodebuild -project iOS/Dieta.xcodeproj -target Dieta -configuration Debug -sdk iphonesimulator
           ARCHS=arm64 SYMROOT="$PWD/build" build
       - name: Schermate
-        run: bash scripts/schermate.sh build/Debug-iphonesimulator/Dieta.app io.github.aspirinag.dieta "oggi settimana settimana:spesa andamento dati"
+        run: bash scripts/schermate.sh build/Debug-iphonesimulator/Dieta.app io.github.aspirinag.dieta "oggi dieta dieta:spesa allenamento progressi profilo"
       - name: Pubblica le schermate nel branch "schermate"
         run: |
           cd schermate

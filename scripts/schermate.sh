@@ -1,6 +1,7 @@
 #!/bin/bash
-# Fa le schermate dell'app nel simulatore iPhone, in modalità chiara e scura, con i dati di prova (-demo).
+# Fa le schermate dell'app nel simulatore iPhone, nei temi Halloween e Giorno, con i dati di prova (-demo).
 # Uso: scripts/schermate.sh <App.app> <bundle id> "<scheda[:vista]> ..."
+# Schede: oggi dieta allenamento progressi profilo; vista: dieta:spesa
 set -euo pipefail
 APP=$1; BUNDLE=$2; SCHEDE=$3
 
@@ -19,15 +20,14 @@ xcrun simctl bootstatus "$UDID" -b
 xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100
 xcrun simctl install "$UDID" "$APP"
 mkdir -p schermate
-for aspetto in light dark; do
-  xcrun simctl ui "$UDID" appearance $aspetto
+for tema in halloween giorno; do
   for s in $SCHEDE; do
     scheda=${s%%:*}; vista=${s#*:}
-    args=(-demo -tab "$scheda")
+    args=(-demo -tab "$scheda" -tema "$tema")
     [ "$vista" != "$s" ] && args+=(-vista "$vista")
     xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" "${args[@]}" > /dev/null
     sleep 5
-    nome="schermate/$aspetto-${s/:/-}.png"
+    nome="schermate/$tema-${s/:/-}.png"
     xcrun simctl io "$UDID" screenshot "$nome" > /dev/null
     sips -Z 1100 "$nome" > /dev/null
   done

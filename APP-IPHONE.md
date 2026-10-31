@@ -38,5 +38,5 @@ Con l'Apple ID gratuito si possono avere al massimo 3 app installate così (Side
 
 ## Schermate di prova
 
-Sugli altri branch GitHub Actions compila l'app per il simulatore e salva le schermate (chiaro e scuro, con dati di prova)
+Sugli altri branch GitHub Actions compila l'app per il simulatore e salva le schermate (temi Halloween e Giorno, con dati di prova)
 nel branch `schermate`. Per vedere l'app con i dati di prova dal Mac: in Xcode, *Product → Scheme → Edit Scheme → Run → Arguments*, aggiungi `-demo`.
