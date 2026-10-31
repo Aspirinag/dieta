@@ -55,10 +55,10 @@ Se sul telefono ci sono già dati, questa schermata non compare e nulla viene ca
 Cinque schede: **Oggi, Dieta, Allenamento, Progressi, Profilo**.
 
 - **Oggi:** tre anelli (calorie, pasti, acqua), prossimo pasto con «Mangiato» e «Altro», allenamento del giorno con «Inizia allenamento». Nei giorni di riposo mostra il riposo e un accesso all'allenamento libero. Il promemoria del pagamento compare sotto, mai sopra.
-- **Dieta:** settimana in alto; ogni pasto su una riga con alimenti, calorie e spunta; un tocco apre alternative e «Ho mangiato altro». Acqua e olio aumentano con un tasto e possono superare l'obiettivo. Lista della spesa da un tasto in alto.
+- **Dieta:** settimana in alto; ogni pasto su una riga con alimenti, calorie e spunta; un tocco apre alternative e «Ho mangiato altro». Dopo «Mangiato» compare per pochi secondi «Annulla», anche in Oggi. Acqua e olio aumentano con un tasto e possono superare l'obiettivo. Lista della spesa da un tasto in alto.
 - **Allenamento:** routine, allenamento libero, storico, cardio.
-- **Progressi:** peso, misurazioni, costanza e record degli esercizi.
-- **Profilo:** profili, piani alimentari, tema, promemoria, backup, pagamento palestra.
+- **Progressi:** peso, misurazioni, costanza e record degli esercizi. Per ogni esercizio un grafico del carico e il massimale stimato.
+- **Profilo:** profili, piani alimentari, tema, promemoria, backup con la data dell'ultimo, pagamento palestra, elenco esercizi con rinomina e unione, versione dell'app.
 
 ### Allenamento in corso
 
@@ -66,7 +66,10 @@ Schermata a tutto schermo, senza schede.
 
 - In alto durata e «Termina».
 - Per ogni esercizio una tabella: serie, valore precedente, kg, ripetizioni, spunta. I campi partono dai valori precedenti.
-- La spunta salva la serie e avvia il recupero. Il recupero ha una durata per esercizio, tasti −15, +15 e «Salta», e una notifica se l'app è in secondo piano.
+- La spunta salva la serie e avvia il recupero. Il recupero ha una durata per esercizio, tasti −15, +15 e «Salta», e una notifica se l'app è in secondo piano. Il tempo si calcola dall'orario di fine, così resta giusto dopo il secondo piano.
+- Dopo una spunta compare per pochi secondi «Annulla».
+- Ogni esercizio può avere una nota, riproposta la volta successiva.
+- Gli esercizi si scelgono dall'elenco di quelli già usati; un nome nuovo entra nell'elenco.
 - Tipi di serie: riscaldamento, normale, cedimento.
 - Si possono aggiungere e togliere serie ed esercizi.
 - Avviso discreto quando si supera il carico massimo.
@@ -77,9 +80,12 @@ Schermata a tutto schermo, senza schede.
 
 Un solo file, `dieta.json` come oggi, con la protezione già realizzata per i file illeggibili. `Stato` mantiene i campi attuali e aggiunge per ogni profilo:
 
-- `routine`: nome, esercizi, serie previste, recupero, giorni previsti;
+- `routine`: nome, esercizi con serie previste e recupero, giorni previsti;
 - `allenamenti`: inizio, fine, routine di partenza, esercizi con le serie (tipo, kg, ripetizioni);
-- `cardio`, `pagamenti`, spunte di riscaldamento e defaticamento.
+- `cardio`, `pagamenti`, spunte di riscaldamento e defaticamento;
+- `note` per esercizio e data dell'ultimo backup.
+
+L'esercizio è identificato dal nome. Rinominare o unire due esercizi aggiorna routine, allenamenti e note, quindi precedenti e record restano uniti.
 
 Il formato cresce solo aggiungendo campi, con decodifica tollerante come oggi.
 
@@ -93,12 +99,22 @@ Il formato cresce solo aggiungendo campi, con decodifica tollerante come oggi.
 - Palestra si elimina solo dopo aver verificato i dati nell'app nuova.
 - Prima dell'importazione viene conservata una copia del file dati.
 
+## Rinnovo e backup
+
+L'avviso di scadenza dei 7 giorni offre anche «Esporta backup», perché i dati stanno solo sul telefono.
+
+## Versioni
+
+- Numero `maggiore.minore.correzione`, una sola fonte in `MARKETING_VERSION`.
+- Ogni tappa del piano è una versione minore, con le sue voci in `CHANGELOG.md`. Dieta era 2.0; la prima versione completa di èffort è la 3.0.0.
+- Una release si pubblica solo quando su `main` arriva un numero nuovo, con le note prese dal changelog.
+
 ## Aspetto
 
 - Temi: **Halloween** (predefinito), **Giorno** (la sua versione chiara), **Notte** (viola), **Ossidiana** (quasi nero). Tutti con gradienti su fondo e schede.
 - Il tema si sceglie in Profilo e viene salvato. Il tema predefinito resta scuro anche con iPhone in modalità chiara.
 - Sul tema chiaro il verde neon compare solo su tasti e spunte; testi, anelli e timer usano il verde scuro.
-- Font: Georgia in tutta l'app, numeri compresi, per scelta del proprietario. Fanno eccezione solo gli elementi di sistema che iOS non lascia cambiare, come avvisi e selettori file. La lettura di kg, ripetizioni e timer va controllata sul telefono.
+- Font: Georgia in tutta l'app, numeri compresi, per scelta del proprietario. Fanno eccezione solo gli elementi di sistema che iOS non lascia cambiare, come avvisi e selettori file. Le cifre di Georgia hanno altezze e larghezze diverse: nel timer e nelle colonne di kg e ripetizioni ogni cifra sta in una casella di larghezza fissa. La lettura va controllata sul telefono.
 - Viola come terzo colore anche nel tema Halloween.
 - Testo grande di iOS supportato in tutte le schermate, contrasto minimo 4.5:1, tasti di almeno 44 punti.
 
@@ -128,6 +144,10 @@ Unit test per conversione, record, recupero dell'allenamento interrotto e format
 - Nome: **èffort**, sempre minuscolo con l'accento.
 - Icona: **Anello**, con varianti per i temi.
 - Allenamento: nessun profilo condiviso, solo Raffaele lo usa oggi.
+
+## Dopo la prima versione
+
+Superserie, calcolo dei dischi, widget.
 
 ## Da decidere più avanti
 
