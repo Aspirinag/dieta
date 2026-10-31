@@ -190,7 +190,7 @@ private struct SchedaEsercizio: View {
                     .accessibilityLabel("Altro per \(e.nome)")
                 }
                 CampoNota(nome: e.nome)
-                if !testo.isAccessibilitySize { intestazione }
+                if !testo.aDueLivelli { intestazione }
                 // L'identità della riga è della serie, non la sua posizione: togliendone una i campi non passano a un'altra
                 ForEach(Array(e.serie.enumerated()), id: \.element.idLocale) { s, dato in
                     RigaSerie(esercizio: indice, serie: s, dato: dato, conta: contaNormali(e, fino: s),
@@ -293,7 +293,7 @@ private struct RigaSerie: View {
     var body: some View {
         let m = Metriche(scala)
         Group {
-            if testo.isAccessibilitySize {
+            if testo.aDueLivelli {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
                         tipo.frame(width: m.serie)
@@ -359,7 +359,7 @@ private struct RigaSerie: View {
     }
 
     private var campoRip: some View {
-        CampoCifre(testo: $rip, titolo: "Ripetizioni", segnaposto: precedente.map { String($0.ripetizioni) } ?? "", decimale: false, fatto: dato.fatta)
+        CampoCifre(testo: $rip, titolo: "Ripetizioni", segnaposto: precedente.map { String($0.ripetizioni) } ?? "–", decimale: false, fatto: dato.fatta)
     }
 
     private var spunta: some View {
@@ -398,6 +398,11 @@ private struct RigaSerie: View {
     }
 }
 
+private extension DynamicTypeSize {
+    // Dalle ultime dimensioni normali le colonne non stanno più in una riga sui telefoni stretti
+    var aDueLivelli: Bool { self >= .xxLarge }
+}
+
 extension TipoSerie {
     var nome: String {
         switch self {
@@ -417,6 +422,7 @@ private struct CampoCifre: View {
     let decimale: Bool
     let fatto: Bool
     @Environment(\.palette) private var palette
+    @FocusState private var attivo: Bool
 
     var body: some View {
         TextField("", text: $testo, prompt: Text(segnaposto).foregroundStyle(palette.secondario))
@@ -427,10 +433,13 @@ private struct CampoCifre: View {
             .foregroundStyle(fatto ? palette.suAccento : palette.testo)
             .tint(palette.accento)
             .disabled(fatto)
+            .focused($attivo)
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(fatto ? palette.accento : palette.riempimento, in: .rect(cornerRadius: 10))
             .contentShape(.rect(cornerRadius: 10))
+            // Il campo prende il tocco solo sul testo: così vale tutta la casella
+            .onTapGesture { if !fatto { attivo = true } }
             .accessibilityLabel(titolo)
             .onChange(of: testo) { _, nuovo in
                 // Solo cifre e una virgola o un punto
