@@ -111,10 +111,14 @@ struct OggiView: View {
             StatoVuoto(titolo: "Pasti segnati", icona: "checkmark.circle",
                        descrizione: "Non resta nessun pasto da segnare in questo giorno.")
         }
-        Button("Vedi tutti i pasti") { apriDieta(giorno) }
-            .font(.georgia(.subheadline, grassetto: true))
-            .foregroundStyle(palette.accento)
-            .frame(minHeight: 44)
+        Button { apriDieta(giorno) } label: {
+            Text("Vedi tutti i pasti")
+                .font(.georgia(.subheadline, grassetto: true))
+                .foregroundStyle(palette.accento)
+                .frame(minHeight: 44)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
         VStack(alignment: .leading, spacing: 8) {
             if !archivio.profilo.testoNote.isEmpty {
                 Label(archivio.profilo.testoNote, systemImage: "lightbulb")

@@ -21,10 +21,14 @@ struct DietaView: View {
                     intestazione
                     selettoreGiorni
                     if Giorni.lunedi(giorno) != Giorni.lunedi(Giorni.oggi()) {
-                        Button("Torna a oggi") { giorno = Giorni.oggi() }
-                            .font(.georgia(.subheadline, grassetto: true))
-                            .foregroundStyle(palette.accento)
-                            .frame(minHeight: 44)
+                        Button { giorno = Giorni.oggi() } label: {
+                            Text("Torna a oggi")
+                                .font(.georgia(.subheadline, grassetto: true))
+                                .foregroundStyle(palette.accento)
+                                .frame(minHeight: 44)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
                     }
                     if let piano = archivio.profilo.piano(per: giorno) {
                         pasti(piano)
@@ -51,15 +55,17 @@ struct DietaView: View {
                 .minimumScaleFactor(0.5)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            Button("Spesa") { mostraSpesa = true }
-                .font(.georgia(.subheadline, grassetto: true))
-                .foregroundStyle(palette.testo)
-                .padding(.horizontal, 16)
-                .frame(minHeight: 44)
-                .background(palette.riempimento, in: .capsule)
-                .contentShape(.capsule)
-                .buttonStyle(.plain)
-                .accessibilityLabel("Lista della spesa")
+            Button { mostraSpesa = true } label: {
+                Text("Spesa")
+                    .font(.georgia(.subheadline, grassetto: true))
+                    .foregroundStyle(palette.testo)
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 44)
+                    .background(palette.riempimento, in: .capsule)
+                    .contentShape(.capsule)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Lista della spesa")
         }
     }
 
