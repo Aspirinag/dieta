@@ -83,4 +83,18 @@ final class SalvataggioTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: file), prima)
         XCTAssertNotNil(a.erroreSalvataggio)
     }
+
+    // Un file che esiste ma non si legge (es. dati protetti a dispositivo bloccato) non va mai sovrascritto
+    func testUnFileCheEsisteMaNonSiLeggeNonVieneSovrascritto() throws {
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
+
+        let a = archivio()
+        a.stato.profili[a.stato.attivo]?.nome = "Nuovo"
+        a.salvaSubito()
+
+        var eCartella: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: file.path, isDirectory: &eCartella))
+        XCTAssertTrue(eCartella.boolValue)
+        XCTAssertNotNil(a.avvisoDati)
+    }
 }

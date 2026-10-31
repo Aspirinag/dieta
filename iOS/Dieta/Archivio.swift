@@ -28,13 +28,19 @@ final class Archivio {
         demo = Avvio.demo
         fileDati = file
         cartellaCopie = copie
-        let rotto = !demo && Self.illeggibile(file)
+        let esito: Lettura = demo ? .assente : Self.lettura(file)
+        let rotto = esito != .assente && esito != .valido
         let copia = rotto ? Self.conserva(file, in: copie) : nil
         var s = demo ? Stato.demo : Self.carica(file)
         if let p = s.preferito, s.profili[p] != nil { s.attivo = p }
         stato = s
         if rotto {
-            if let copia {
+            if esito == .nonLetto {
+                // Il file esiste ma non si è potuto leggere (es. dati protetti a dispositivo bloccato):
+                // in questa apertura non va mai sovrascritto, anche se la copia è riuscita
+                salvaBloccato = true
+                avvisoDati = "Non sono riuscito a leggere i dati salvati (forse il dispositivo è bloccato). Per non sovrascriverli, le modifiche di questa apertura non verranno salvate: chiudi e riapri l'app."
+            } else if let copia {
                 avvisoDati = "Non sono riuscito a leggere i dati salvati e l'app è ripartita senza. Il file originale è conservato in File → Dieta → \(copia). Se hai un backup, usa Importa backup."
             } else {
                 salvaBloccato = true
@@ -62,9 +68,12 @@ final class Archivio {
     }
 
     // Un file che non si legge non va mai sovrascritto: resta una copia, visibile nell'app File
-    private static func illeggibile(_ file: URL) -> Bool {
-        guard let d = try? Data(contentsOf: file) else { return false }
-        return (try? JSONDecoder().decode(Stato.self, from: d)) == nil
+    private enum Lettura { case assente, valido, corrotto, nonLetto }
+
+    private static func lettura(_ file: URL) -> Lettura {
+        guard FileManager.default.fileExists(atPath: file.path) else { return .assente }
+        guard let d = try? Data(contentsOf: file) else { return .nonLetto }
+        return (try? JSONDecoder().decode(Stato.self, from: d)) == nil ? .corrotto : .valido
     }
 
     private static func conserva(_ file: URL, in cartella: URL) -> String? {
