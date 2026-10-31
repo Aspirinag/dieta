@@ -28,6 +28,7 @@ struct ProfiloView: View {
             impostazioni
             promemoria
             backup
+            versione
         }
         .navigationTitle("Profilo")
         .sfondoTema()
@@ -260,6 +261,13 @@ struct ProfiloView: View {
             IntestazioneSezione(testo: "Backup")
         } footer: {
             PiedeSezione(testo: "Il backup è lo stesso della web app: esportalo dalla web app e importalo qui per portare i dati nell'app.")
+        }
+        .sezioneTema()
+    }
+
+    private var versione: some View {
+        Section {
+            LabeledContent("Versione", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
         }
         .sezioneTema()
     }

@@ -13,15 +13,15 @@ permissions:
 jobs:
   build:
     runs-on: macos-26
-    env:
-      VERSIONE: 2.0.${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
+      - name: Legge la versione dal progetto
+        run: echo "VERSIONE=$(bash scripts/versione.sh)" >> "$GITHUB_ENV"
       - name: Compila l'app
         run: >
           xcodebuild -project iOS/Dieta.xcodeproj -target Dieta -configuration Release -sdk iphoneos
           SYMROOT="$PWD/build" CODE_SIGNING_ALLOWED=NO
-          MARKETING_VERSION=$VERSIONE CURRENT_PROJECT_VERSION=${{ github.run_number }}
+          CURRENT_PROJECT_VERSION=${{ github.run_number }}
           build
       - name: Crea la .ipa
         run: |
@@ -34,8 +34,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG=v$VERSIONE
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG esiste già: si pubblica solo con un numero nuovo"
+            exit 0
+          fi
           node scripts/sidestore-source.mjs $VERSIONE Dieta.ipa "https://github.com/${{ github.repository }}/releases/download/$TAG/Dieta.ipa"
-          gh release create $TAG Dieta.ipa sidestore.json --title "Dieta $VERSIONE" --notes "App per SideStore" --latest
+          bash scripts/versione.sh --note > note.md
+          gh release create $TAG Dieta.ipa sidestore.json --title "Dieta $VERSIONE" --notes-file note.md --latest
 
   test:
     runs-on: macos-26

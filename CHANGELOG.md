@@ -20,7 +20,10 @@ Dopo la 3.0.0: superserie, calcolo dei dischi, widget. Apple Watch e web app son
 
 ### 2.2.0
 
-- Cinque schede: Oggi, Dieta, Allenamento, Progressi, Profilo.
+- Cinque schede: Oggi, Dieta, Allenamento, Progressi, Profilo. Allenamento è ancora vuota.
+- Oggi riassume la giornata; Dieta mostra la settimana, i pasti e la spesa.
+- Georgia e colori del tema in tutte le schermate, compresa la barra in basso.
+- Il numero di versione si vede in Profilo.
 
 ## 2.1.0
 
