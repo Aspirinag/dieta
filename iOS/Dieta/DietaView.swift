@@ -495,7 +495,7 @@ struct FoglioPasto: View {
             .buttonStyle(TastoTema(principale: false))
         } else {
             Button("Mangiato") {
-                archivio.cambiaSlot(giorno, indice) { $0.fatto = true }
+                archivio.segnaMangiato(giorno, indice)
                 chiudi()
             }
             .buttonStyle(TastoTema())

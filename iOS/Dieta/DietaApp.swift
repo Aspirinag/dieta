@@ -108,6 +108,7 @@ struct Radice: View {
             }
         }
         .importatore()
+        .schermataAllenamento(schema: tema.schemaColori)
         .environment(\.palette, palette)
         .tint(palette.accento)
         .font(.georgia())
@@ -170,6 +171,13 @@ struct Radice: View {
         .overlay(alignment: .bottom) {
             BarraSchede(scheda: $scheda).ignoresSafeArea(edges: .bottom)
         }
+        .overlay(alignment: .bottom) {
+            // «Annulla» dopo «Mangiato», sopra la barra e visibile da Oggi e da Dieta
+            BannerAnnulla(tipo: .pasto)
+                .padding(.horizontal, 12)
+                .padding(.bottom, BarraSchede.altezza + BarraSchede.staccoDalFondo + 8)
+        }
+        .animation(.snappy, value: archivio.richiestaAnnulla)
     }
 }
 

@@ -271,7 +271,7 @@ struct SchedaProssimoPasto: View {
 
     @ViewBuilder private var tasti: some View {
         let mangiato = Button("Mangiato") {
-            archivio.cambiaSlot(giorno, indice) { $0.fatto = true; $0.altro = nil }
+            archivio.segnaMangiato(giorno, indice, azzeraAltro: true)
             segnati += 1
         }
         .buttonStyle(TastoTema())

@@ -14,6 +14,14 @@ final class Archivio {
     // Messaggio da mostrare se all'avvio il file dei dati non si è riusciti a leggerlo
     var avvisoDati: String?
 
+    // Allenamento in corso (vedi InCorso.swift): recupero, annulla e schermata a tutto schermo
+    var recupero = TimerRecupero()
+    var richiestaAnnulla: RichiestaAnnulla?
+    var allenamentoAperto = false
+    @ObservationIgnored var spuntaPrecedente: SpuntaPrecedente?
+    @ObservationIgnored var pastoPrecedente: PastoPrecedente?
+    @ObservationIgnored var scadenzaAnnulla: Task<Void, Never>?
+
     private let demo: Bool
     private let fileDati: URL
     private let cartellaCopie: URL
@@ -453,6 +461,22 @@ struct VoceSpesa: Identifiable {
 enum Notifiche {
     static func permesso() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+    }
+
+    static let idRecupero = "recupero"
+
+    // Avvisa a fine recupero quando l'app è in secondo piano
+    static func recupero(fra secondi: TimeInterval) async {
+        let c = UNMutableNotificationContent()
+        c.title = "Recupero finito"
+        c.body = "Puoi fare la prossima serie."
+        c.sound = .default
+        let quando = UNTimeIntervalNotificationTrigger(timeInterval: max(1, secondi), repeats: false)
+        try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: idRecupero, content: c, trigger: quando))
+    }
+
+    static func annullaRecupero() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [idRecupero])
     }
 
     static func giornaliera(id: String, titolo: String, testo: String, ora: Int) async {
