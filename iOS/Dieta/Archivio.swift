@@ -11,29 +11,47 @@ final class Archivio {
     // Messaggio da mostrare se il file dei dati non si riesce a scrivere
     var erroreSalvataggio: String?
 
+    // Messaggio da mostrare se all'avvio il file dei dati non si è riusciti a leggerlo
+    var avvisoDati: String?
+
     private let demo: Bool
+    private let fileDati: URL
+    private let cartellaCopie: URL
+    @ObservationIgnored private var salvaBloccato = false
     @ObservationIgnored private var salvataggio: Task<Void, Never>?
 
     static let oliPredefiniti = 6       // cucchiaini al giorno
     static let acquaPredefinita = 2.0   // litri al giorno
     static let notePredefinite = "Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti."
 
-    init() {
+    init(file: URL = Archivio.fileDati, copie: URL = URL.documentsDirectory) {
         demo = Avvio.demo
-        var s = demo ? Stato.demo : Self.carica()
+        fileDati = file
+        cartellaCopie = copie
+        let rotto = !demo && Self.illeggibile(file)
+        let copia = rotto ? Self.conserva(file, in: copie) : nil
+        var s = demo ? Stato.demo : Self.carica(file)
         if let p = s.preferito, s.profili[p] != nil { s.attivo = p }
         stato = s
+        if rotto {
+            if let copia {
+                avvisoDati = "Non sono riuscito a leggere i dati salvati e l'app è ripartita senza. Il file originale è conservato in File → Dieta → \(copia). Se hai un backup, usa Importa backup."
+            } else {
+                salvaBloccato = true
+                avvisoDati = "Non sono riuscito a leggere i dati salvati né a farne una copia. Per non sovrascriverli, le modifiche di questa apertura non verranno salvate."
+            }
+        }
     }
 
     // ---------- File ----------
 
-    private static var fileDati: URL {
+    static var fileDati: URL {
         URL.applicationSupportDirectory.appending(path: "dieta.json")
     }
 
     // Ordine: file dell'app, poi i dati della prima versione dell'app (Capacitor), poi i profili iniziali
-    private static func carica() -> Stato {
-        if let d = try? Data(contentsOf: fileDati), let s = try? JSONDecoder().decode(Stato.self, from: d) {
+    private static func carica(_ file: URL) -> Stato {
+        if let d = try? Data(contentsOf: file), let s = try? JSONDecoder().decode(Stato.self, from: d) {
             return s
         }
         if let j = UserDefaults.standard.string(forKey: "CapacitorStorage.dieta:v1"),
@@ -41,6 +59,23 @@ final class Archivio {
             return s
         }
         return .iniziale
+    }
+
+    // Un file che non si legge non va mai sovrascritto: resta una copia, visibile nell'app File
+    private static func illeggibile(_ file: URL) -> Bool {
+        guard let d = try? Data(contentsOf: file) else { return false }
+        return (try? JSONDecoder().decode(Stato.self, from: d)) == nil
+    }
+
+    private static func conserva(_ file: URL, in cartella: URL) -> String? {
+        let nome = "dieta-illeggibile-\(Int(Date().timeIntervalSince1970)).json"
+        do {
+            try FileManager.default.createDirectory(at: cartella, withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: file, to: cartella.appending(path: nome))
+            return nome
+        } catch {
+            return nil
+        }
     }
 
     // Le modifiche ravvicinate (es. lo stepper dell'acqua) si salvano insieme, poco dopo l'ultima
@@ -62,19 +97,26 @@ final class Archivio {
 
     private func salva() {
         salvataggio = nil
+        guard !salvaBloccato else {
+            erroreSalvataggio = "Le modifiche non vengono salvate per non sovrascrivere i dati che non riesco a leggere."
+            return
+        }
         do {
-            try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
-            try backup().write(to: Self.fileDati, options: .atomic)
+            let dati = try codifica()
+            try FileManager.default.createDirectory(at: fileDati.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try dati.write(to: fileDati, options: .atomic)
         } catch {
             erroreSalvataggio = "Non riesco a salvare i dati (\(error.localizedDescription)). Le ultime modifiche potrebbero andare perse: esporta un backup da Profilo."
         }
     }
 
-    func backup() -> Data {
+    private func codifica() throws -> Data {
         let e = JSONEncoder()
         e.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return (try? e.encode(stato)) ?? Data()
+        return try e.encode(stato)
     }
+
+    func backup() -> Data { (try? codifica()) ?? Data() }
 
     func importa(_ dati: Data) throws {
         stato = try JSONDecoder().decode(Stato.self, from: dati)
@@ -220,8 +262,10 @@ extension Profilo {
     var testoNote: String { note ?? Archivio.notePredefinite }
 
     // Piano valido in una data: se più piani la coprono vince quello iniziato più di recente
+    // e, a parità di data, l'ultimo caricato (reversed: max tiene il primo tra gli uguali)
     func piano(per iso: String) -> Piano? {
         piani
+            .reversed()
             .filter { $0.dal <= iso && ($0.al.isEmpty || iso <= $0.al) && $0.giorni.count == 7 }
             .max { $0.dal < $1.dal }
     }

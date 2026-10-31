@@ -152,8 +152,9 @@ struct RiepilogoGiorno: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.6)
         }
         .frame(maxWidth: .infinity)
     }
@@ -169,8 +170,11 @@ struct SchedaPasto: View {
     @State private var aperto = false
     @State private var chiediAltro = false
     @State private var notaAltro = ""
+    @Environment(\.dynamicTypeSize) private var testo
 
     var body: some View {
+        // Con il testo molto grande le calorie vanno sotto il nome: accanto lo spezzerebbero
+        let kcalSotto = testo.isAccessibilitySize
         let s = archivio.slot(giorno, indice)
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
         let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : nil
@@ -185,7 +189,12 @@ struct SchedaPasto: View {
                 HStack(spacing: 12) {
                     IconaPasto(nome: pasto.nome)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(pasto.nome).font(.headline)
+                        Text(pasto.nome).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
+                        if kcalSotto, let calorie, calorie.kcal > 0, !fuori {
+                            Text(kcal(calorie.kcal, incompleto: !calorie.ignoti.isEmpty))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                         if let nota = s.altro {
                             Text(nota.isEmpty ? "Fuori piano" : "Fuori piano: \(nota)")
                                 .font(.subheadline.weight(.medium))
@@ -198,7 +207,7 @@ struct SchedaPasto: View {
                         }
                     }
                     Spacer(minLength: 8)
-                    if let calorie, calorie.kcal > 0, !fuori {
+                    if !kcalSotto, let calorie, calorie.kcal > 0, !fuori {
                         Text(kcal(calorie.kcal, incompleto: !calorie.ignoti.isEmpty))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

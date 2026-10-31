@@ -37,6 +37,16 @@ jobs:
           node scripts/sidestore-source.mjs $VERSIONE Dieta.ipa "https://github.com/${{ github.repository }}/releases/download/$TAG/Dieta.ipa"
           gh release create $TAG Dieta.ipa sidestore.json --title "Dieta $VERSIONE" --notes "App per SideStore" --latest
 
+  test:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Esegue i test
+        run: >
+          xcodebuild test -project iOS/Dieta.xcodeproj -scheme Dieta
+          -destination 'platform=iOS Simulator,name=iPhone 17'
+          CODE_SIGNING_ALLOWED=NO
+
   schermate:
     if: github.ref != 'refs/heads/main'
     runs-on: macos-26

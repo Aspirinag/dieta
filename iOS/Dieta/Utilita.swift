@@ -167,6 +167,10 @@ struct Anello: View {
     var lato: CGFloat = 52
     var descrizione = ""     // per VoiceOver, es. «Pasti segnati: 1 su 4»
     var colore = Color.accentColor
+    @ScaledMetric(relativeTo: .subheadline) private var scala = 1.0
+
+    // Cresce con il testo, ma ne devono stare tre in una riga
+    private var latoScalato: CGFloat { lato * min(scala, 1.6) }
 
     var body: some View {
         ZStack {
@@ -180,8 +184,11 @@ struct Anello: View {
                 .fontDesign(.rounded)
                 .monospacedDigit()
                 .contentTransition(.numericText())
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+                .padding(.horizontal, 9)
         }
-        .frame(width: lato, height: lato)
+        .frame(width: latoScalato, height: latoScalato)
         .animation(.spring(duration: 0.4), value: valore)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(descrizione.isEmpty ? testo : descrizione)

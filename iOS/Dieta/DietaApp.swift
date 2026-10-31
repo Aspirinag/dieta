@@ -43,6 +43,7 @@ struct Radice: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.scenePhase) private var fase
     @State private var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
+    @State private var avvisoScadenza = Scadenza.avvisoApertura()
 
     var body: some View {
         TabView(selection: $scheda) {
@@ -60,7 +61,10 @@ struct Radice: View {
             }
         }
         .importatore()
-        .task { await archivio.programmaPromemoria() }
+        .task {
+            await archivio.programmaPromemoria()
+            await Scadenza.programma()
+        }
         .onChange(of: fase) { _, nuova in
             if nuova != .active { archivio.salvaSubito() }
         }
@@ -70,6 +74,20 @@ struct Radice: View {
             Button("OK") {}
         } message: {
             Text(archivio.erroreSalvataggio ?? "")
+        }
+        .alert("Dati non letti", isPresented: Binding(
+            get: { archivio.avvisoDati != nil }, set: { if !$0 { archivio.avvisoDati = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(archivio.avvisoDati ?? "")
+        }
+        .alert("App in scadenza", isPresented: Binding(
+            get: { avvisoScadenza != nil }, set: { if !$0 { avvisoScadenza = nil } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text(avvisoScadenza ?? "")
         }
     }
 }
