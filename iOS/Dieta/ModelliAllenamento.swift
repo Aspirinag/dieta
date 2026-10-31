@@ -17,6 +17,18 @@ struct SerieFatta: Codable, Hashable {
     var kg: Double
     var ripetizioni: Int
     var fatta: Bool
+    // Serve solo alla vista per riconoscere la riga: non si salva e non conta nel confronto
+    var idLocale = UUID()
+
+    private enum CodingKeys: String, CodingKey { case tipo, kg, ripetizioni, fatta }
+
+    static func == (a: SerieFatta, b: SerieFatta) -> Bool {
+        a.tipo == b.tipo && a.kg == b.kg && a.ripetizioni == b.ripetizioni && a.fatta == b.fatta
+    }
+
+    func hash(into h: inout Hasher) {
+        h.combine(tipo); h.combine(kg); h.combine(ripetizioni); h.combine(fatta)
+    }
 
     init(tipo: TipoSerie = .normale, kg: Double = 0, ripetizioni: Int = 0, fatta: Bool = true) {
         self.tipo = tipo

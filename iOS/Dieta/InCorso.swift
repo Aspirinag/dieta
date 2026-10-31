@@ -59,10 +59,10 @@ extension Archivio {
 
     // ---------- Valori ----------
 
-    // Solo cifre con una virgola o un punto: niente vuoti, zero, esponenti, nan o inf
+    // Solo cifre con una virgola o un punto: niente vuoti, esponenti, nan o inf. Zero vale: esercizi a corpo libero
     static func kgValidi(_ testo: String) -> Double? {
         let t = testo.trimmingCharacters(in: .whitespaces)
-        guard t.wholeMatch(of: #/\d+([.,]\d+)?/#) != nil, let v = leggiNumero(t), v.isFinite, v > 0, v <= massimoValore else { return nil }
+        guard t.wholeMatch(of: #/\d+([.,]\d+)?/#) != nil, let v = leggiNumero(t), v.isFinite, v >= 0, v <= massimoValore else { return nil }
         return v
     }
 
@@ -102,11 +102,13 @@ extension Archivio {
 
     // ---------- Serie ----------
 
+    enum EsitoSpunta { case fatta, giaFatta, valoriNonValidi, nonTrovata }
+
     @discardableResult
-    func spuntaSerie(esercizio e: Int, serie s: Int, kg: String, ripetizioni: String, adesso: Date = Date()) -> Bool {
-        guard var a = profilo.allenamentoInCorso, a.esercizi.indices.contains(e), a.esercizi[e].serie.indices.contains(s),
-              !a.esercizi[e].serie[s].fatta,
-              let k = Self.kgValidi(kg), let r = Self.ripetizioniValide(ripetizioni) else { return false }
+    func spuntaSerie(esercizio e: Int, serie s: Int, kg: String, ripetizioni: String, adesso: Date = Date()) -> EsitoSpunta {
+        guard var a = profilo.allenamentoInCorso, a.esercizi.indices.contains(e), a.esercizi[e].serie.indices.contains(s) else { return .nonTrovata }
+        guard !a.esercizi[e].serie[s].fatta else { return .giaFatta }
+        guard let k = Self.kgValidi(kg), let r = Self.ripetizioniValide(ripetizioni) else { return .valoriNonValidi }
         let prima = a.esercizi[e].serie[s]
         a.esercizi[e].serie[s].kg = k
         a.esercizi[e].serie[s].ripetizioni = r
@@ -116,7 +118,7 @@ extension Archivio {
         recupero.avvia(recuperoPrevisto(a.esercizi[e].nome), adesso: adesso)
         salvaSubito()
         offriAnnulla(.spunta, "Serie segnata")
-        return true
+        return .fatta
     }
 
     // Riapre una serie già segnata, senza annulla: serve a correggerla
@@ -155,6 +157,7 @@ extension Archivio {
         modifica { a in
             guard a.esercizi.indices.contains(e), a.esercizi[e].serie.indices.contains(s) else { return false }
             a.esercizi[e].serie.remove(at: s)
+            invalidaAnnulla()
             return true
         }
     }
@@ -174,6 +177,7 @@ extension Archivio {
         guard !pulito.isEmpty else { return }
         modifica { a in
             a.esercizi.append(EsercizioFatto(nome: pulito, serie: serieIniziali(pulito, quante: 3)))
+            invalidaAnnulla()
             return true
         }
     }
@@ -182,6 +186,7 @@ extension Archivio {
         modifica { a in
             guard a.esercizi.indices.contains(i) else { return false }
             a.esercizi.remove(at: i)
+            invalidaAnnulla()
             return true
         }
     }
@@ -266,6 +271,12 @@ extension Archivio {
             self.pastoPrecedente = nil
             self.richiestaAnnulla = nil
         }
+    }
+
+    // Dopo una modifica della struttura gli indici della spunta non valgono più: niente annulla
+    private func invalidaAnnulla() {
+        spuntaPrecedente = nil
+        chiudiAnnulla(.spunta)
     }
 
     private func chiudiAnnulla(_ tipo: TipoAnnulla) {

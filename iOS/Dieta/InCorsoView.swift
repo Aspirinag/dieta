@@ -1,67 +1,5 @@
 import SwiftUI
 
-// Georgia ha cifre proporzionali (altezze e larghezze diverse): ogni cifra sta in una casella
-// larga quanto la cifra più larga, così timer e colonne non ballano
-struct CifreFisse: View {
-    let testo: String
-    var stile: Font.TextStyle = .body
-    var grassetto = false
-    var colore: Color?
-    @Environment(\.palette) private var palette
-    @Environment(\.dynamicTypeSize) private var dimensioneTesto
-
-    private static var larghezze: [String: CGFloat] = [:]
-
-    private var larghezza: CGFloat {
-        let font = UIFont.georgia(Self.stileUIKit(stile), grassetto: grassetto)
-        let chiave = "\(font.fontName)-\(font.pointSize)"
-        if let w = Self.larghezze[chiave] { return w }
-        let w = ceil("0123456789".map { String($0).size(withAttributes: [.font: font]).width }.max() ?? font.pointSize / 2)
-        Self.larghezze[chiave] = w
-        return w
-    }
-
-    var body: some View {
-        let w = larghezza
-        HStack(spacing: 0) {
-            ForEach(Array(testo.enumerated()), id: \.offset) { _, c in
-                if c.isASCII, c.isNumber {
-                    Text(String(c)).frame(width: w)
-                } else {
-                    Text(String(c))
-                }
-            }
-        }
-        .font(.georgia(stile, grassetto: grassetto))
-        .foregroundStyle(colore ?? palette.testo)
-        .lineLimit(1)
-        .fixedSize()
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(testo)
-    }
-
-    static func stileUIKit(_ s: Font.TextStyle) -> UIFont.TextStyle {
-        switch s {
-        case .largeTitle: .largeTitle
-        case .title: .title1
-        case .title2: .title2
-        case .title3: .title3
-        case .headline: .headline
-        case .callout: .callout
-        case .subheadline: .subheadline
-        case .footnote: .footnote
-        case .caption: .caption1
-        case .caption2: .caption2
-        default: .body
-        }
-    }
-}
-
-func formatoDurata(_ secondi: TimeInterval) -> String {
-    let s = max(0, Int(secondi))
-    return s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, s % 3600 / 60, s % 60) : String(format: "%02d:%02d", s / 60, s % 60)
-}
-
 // ---------- Schermata a tutto schermo ----------
 
 extension View {
@@ -175,28 +113,43 @@ struct InCorsoView: View {
     }
 
     private func barra(_ a: Allenamento) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(a.routine ?? "Allenamento libero")
-                    .font(.georgia(.footnote))
-                    .foregroundStyle(palette.secondario)
-                TimelineView(.periodic(from: .now, by: 1)) { c in
-                    CifreFisse(testo: formatoDurata(c.date.timeIntervalSince(a.dataInizio ?? c.date)), stile: .title2, grassetto: true)
-                }
+        let tempo = VStack(alignment: .leading, spacing: 2) {
+            Text(a.routine ?? "Allenamento libero")
+                .font(.georgia(.footnote))
+                .foregroundStyle(palette.secondario)
+            TimelineView(.periodic(from: .now, by: 1)) { c in
+                CifreFisse(testo: formatoDurata(c.date.timeIntervalSince(a.dataInizio ?? c.date)), stile: .title2, grassetto: true)
             }
-            Spacer()
-            Button {
-                chiediTermina = true
-            } label: {
-                Text("Termina")
-                    .font(.georgia(.callout, grassetto: true))
-                    .foregroundStyle(palette.suTasto)
-                    .padding(.horizontal, 18)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .background(palette.tasto, in: .rect(cornerRadius: 14))
-                    .contentShape(.rect(cornerRadius: 14))
+        }
+        let riduci = Button(action: chiudi) {
+            Label("Riduci", systemImage: "chevron.down")
+                .font(.georgia(.callout, grassetto: true))
+                .foregroundStyle(palette.testo)
+                .padding(.horizontal, 14)
+                .frame(minWidth: 44, minHeight: 44)
+                .background(palette.riempimento, in: .rect(cornerRadius: 14))
+                .contentShape(.rect(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Chiude la schermata senza terminare: l'allenamento continua")
+        let termina = Button {
+            chiediTermina = true
+        } label: {
+            Text("Termina")
+                .font(.georgia(.callout, grassetto: true))
+                .foregroundStyle(palette.suTasto)
+                .padding(.horizontal, 18)
+                .frame(minWidth: 44, minHeight: 44)
+                .background(palette.tasto, in: .rect(cornerRadius: 14))
+                .contentShape(.rect(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { tempo; Spacer(minLength: 4); riduci; termina }
+            VStack(alignment: .leading, spacing: 8) {
+                tempo
+                HStack(spacing: 8) { riduci; Spacer(minLength: 4); termina }
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -210,6 +163,8 @@ private struct SchedaEsercizio: View {
     @Binding var messaggio: String?
     @Environment(Archivio.self) private var archivio
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var testo
+    @ScaledMetric(relativeTo: .body) private var scala = 1.0
 
     var body: some View {
         if let a = archivio.profilo.allenamentoInCorso, a.esercizi.indices.contains(indice) {
@@ -235,9 +190,10 @@ private struct SchedaEsercizio: View {
                     .accessibilityLabel("Altro per \(e.nome)")
                 }
                 CampoNota(nome: e.nome)
-                intestazione
-                ForEach(e.serie.indices, id: \.self) { s in
-                    RigaSerie(esercizio: indice, serie: s, dato: e.serie[s], conta: contaNormali(e, fino: s),
+                if !testo.isAccessibilitySize { intestazione }
+                // L'identità della riga è della serie, non la sua posizione: togliendone una i campi non passano a un'altra
+                ForEach(Array(e.serie.enumerated()), id: \.element.idLocale) { s, dato in
+                    RigaSerie(esercizio: indice, serie: s, dato: dato, conta: contaNormali(e, fino: s),
                               precedente: prima.indices.contains(s) ? prima[s] : nil, messaggio: $messaggio)
                 }
                 Button {
@@ -263,11 +219,12 @@ private struct SchedaEsercizio: View {
 
     private var intestazione: some View {
         HStack(spacing: 6) {
-            Text("Serie").frame(width: Colonne.serie)
+            let m = Metriche(scala)
+            Text("Serie").frame(width: m.serie)
             Text("Prima").frame(maxWidth: .infinity)
-            Text("Kg").frame(width: Colonne.valore)
-            Text("Rip.").frame(width: Colonne.valore)
-            Color.clear.frame(width: Colonne.spunta, height: 1)
+            Text("Kg").frame(width: m.valore)
+            Text("Rip.").frame(width: m.valore)
+            Color.clear.frame(width: m.spunta, height: 1)
         }
         .font(.georgia(.caption, grassetto: true))
         .foregroundStyle(palette.secondario)
@@ -277,10 +234,13 @@ private struct SchedaEsercizio: View {
     }
 }
 
-private enum Colonne {
-    static let serie: CGFloat = 40
-    static let valore: CGFloat = 66
-    static let spunta: CGFloat = 44
+// Larghezze delle colonne: crescono con il testo, senza esagerare (oltre si passa alla riga su due livelli)
+private struct Metriche {
+    let k: CGFloat
+    init(_ scala: CGFloat) { k = min(scala, 1.3) }
+    var serie: CGFloat { 40 * k }
+    var valore: CGFloat { 66 * k }
+    let spunta: CGFloat = 44
 }
 
 private struct CampoNota: View {
@@ -310,6 +270,8 @@ private struct RigaSerie: View {
     @Binding var messaggio: String?
     @Environment(Archivio.self) private var archivio
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var testo
+    @ScaledMetric(relativeTo: .body) private var scala = 1.0
     @State private var kg: String
     @State private var rip: String
 
@@ -324,81 +286,116 @@ private struct RigaSerie: View {
         _rip = State(initialValue: Self.testoRip(dato))
     }
 
-    private static func testoKg(_ s: SerieFatta) -> String { s.kg > 0 ? num(s.kg) : "" }
+    // Un kg vuoto non è zero: 0 vale (corpo libero) ma va scritto
+    private static func testoKg(_ s: SerieFatta) -> String { s.fatta || s.kg > 0 ? num(s.kg) : "" }
     private static func testoRip(_ s: SerieFatta) -> String { s.ripetizioni > 0 ? String(s.ripetizioni) : "" }
 
     var body: some View {
-        HStack(spacing: 6) {
-            Menu {
-                ForEach(TipoSerie.allCases, id: \.self) { t in
-                    Button(t.nome) { archivio.cambiaTipo(esercizio: esercizio, serie: serie, t) }
+        let m = Metriche(scala)
+        Group {
+            if testo.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) {
+                        tipo.frame(width: m.serie)
+                        prima.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    HStack(alignment: .bottom, spacing: 8) {
+                        VStack(spacing: 2) { etichetta("Kg"); campoKg }
+                        VStack(spacing: 2) { etichetta("Rip."); campoRip }
+                        spunta
+                    }
                 }
-                Button("Togli serie", systemImage: "trash", role: .destructive) { archivio.togliSerie(esercizio: esercizio, serie: serie) }
-            } label: {
-                CifreFisse(testo: dato.tipo == .normale ? "\(conta)" : dato.tipo == .riscaldamento ? "R" : "C\(conta)",
-                           colore: dato.tipo == .normale ? palette.testo : palette.caldo)
-                    .frame(width: Colonne.serie, height: 44)
-                    .contentShape(.rect)
-            }
-            .accessibilityLabel("Serie \(serie + 1), \(dato.tipo.nome)")
-            .accessibilityHint("Cambia tipo o togli la serie")
-
-            Group {
-                if let p = precedente {
-                    CifreFisse(testo: "\(num(p.kg))×\(p.ripetizioni)", stile: .footnote, colore: palette.secondario)
-                } else {
-                    Text("–").font(.georgia(.footnote)).foregroundStyle(palette.secondario)
+            } else {
+                HStack(spacing: 6) {
+                    tipo.frame(width: m.serie)
+                    prima.frame(maxWidth: .infinity)
+                    campoKg.frame(width: m.valore)
+                    campoRip.frame(width: m.valore)
+                    spunta
                 }
             }
-            .frame(maxWidth: .infinity)
-            .minimumScaleFactor(0.6)
-
-            CampoCifre(testo: $kg, titolo: "Chilogrammi", decimale: true, fatto: dato.fatto)
-                .frame(width: Colonne.valore)
-            CampoCifre(testo: $rip, titolo: "Ripetizioni", decimale: false, fatto: dato.fatto)
-                .frame(width: Colonne.valore)
-
-            Button {
-                spunta()
-            } label: {
-                Image(systemName: "checkmark")
-                    .font(.georgia(.body, grassetto: true))
-                    .foregroundStyle(dato.fatto ? palette.suTasto : palette.secondario)
-                    .frame(width: Colonne.spunta, height: 44)
-                    .background(dato.fatto ? palette.tasto : palette.riempimento, in: .rect(cornerRadius: 10))
-                    .contentShape(.rect(cornerRadius: 10))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(dato.fatto ? "Serie \(serie + 1) segnata" : "Segna la serie \(serie + 1)")
-            .accessibilityAddTraits(dato.fatto ? .isSelected : [])
-            .sensoryFeedback(.success, trigger: dato.fatta)
         }
-        // Se la serie cambia sotto (tolta un'altra, annullata) i campi la seguono
-        .onChange(of: dato) { _, nuova in
-            kg = Self.testoKg(nuova)
-            rip = Self.testoRip(nuova)
+        // Se i valori cambiano sotto (annulla) i campi li seguono; il cambio di tipo non li tocca
+        .onChange(of: dato.kg) { _, _ in kg = Self.testoKg(dato) }
+        .onChange(of: dato.ripetizioni) { _, _ in rip = Self.testoRip(dato) }
+        .onChange(of: dato.fatta) { _, _ in
+            kg = Self.testoKg(dato)
+            rip = Self.testoRip(dato)
         }
     }
 
-    private func spunta() {
-        if dato.fatto {
+    private func etichetta(_ t: String) -> some View {
+        Text(t).font(.georgia(.caption, grassetto: true)).foregroundStyle(palette.secondario).accessibilityHidden(true)
+    }
+
+    private var tipo: some View {
+        Menu {
+            ForEach(TipoSerie.allCases, id: \.self) { t in
+                Button(t.nome) { archivio.cambiaTipo(esercizio: esercizio, serie: serie, t) }
+            }
+            Button("Togli serie", systemImage: "trash", role: .destructive) { archivio.togliSerie(esercizio: esercizio, serie: serie) }
+        } label: {
+            CifreFisse(testo: dato.tipo == .normale ? "\(conta)" : dato.tipo == .riscaldamento ? "R" : "C\(conta)",
+                       colore: dato.tipo == .normale ? palette.testo : palette.caldo)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(.rect)
+        }
+        .accessibilityLabel("Serie \(serie + 1), \(dato.tipo.nome)")
+        .accessibilityHint("Cambia tipo o togli la serie")
+    }
+
+    @ViewBuilder private var prima: some View {
+        if let p = precedente {
+            CifreFisse(testo: "\(num(p.kg))×\(p.ripetizioni)", stile: .footnote, colore: palette.secondario)
+                .minimumScaleFactor(0.6)
+                .accessibilityLabel("Volta scorsa \(num(p.kg)) chili per \(p.ripetizioni) ripetizioni")
+        } else {
+            Text("–").font(.georgia(.footnote)).foregroundStyle(palette.secondario).accessibilityHidden(true)
+        }
+    }
+
+    private var campoKg: some View {
+        CampoCifre(testo: $kg, titolo: "Chilogrammi", segnaposto: precedente.map { num($0.kg) } ?? "0", decimale: true, fatto: dato.fatta)
+    }
+
+    private var campoRip: some View {
+        CampoCifre(testo: $rip, titolo: "Ripetizioni", segnaposto: precedente.map { String($0.ripetizioni) } ?? "", decimale: false, fatto: dato.fatta)
+    }
+
+    private var spunta: some View {
+        Button {
+            premi()
+        } label: {
+            Image(systemName: "checkmark")
+                .font(.georgia(.body, grassetto: true))
+                .foregroundStyle(dato.fatta ? palette.suTasto : palette.secondario)
+                .frame(width: 44, height: 44)
+                .background(dato.fatta ? palette.tasto : palette.riempimento, in: .rect(cornerRadius: 10))
+                .contentShape(.rect(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(dato.fatta ? "Serie \(serie + 1) segnata" : "Segna la serie \(serie + 1)")
+        .accessibilityAddTraits(dato.fatta ? .isSelected : [])
+        .sensoryFeedback(.success, trigger: dato.fatta)
+    }
+
+    private func premi() {
+        if dato.fatta {
             archivio.riapriSerie(esercizio: esercizio, serie: serie)
             return
         }
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         // L'avviso va calcolato prima: dopo la spunta il massimo di oggi è già questo carico
         let nuovoMassimo = dato.tipo != .riscaldamento && archivio.superaIlMassimo(esercizio: esercizio, kg: kg)
-        if archivio.spuntaSerie(esercizio: esercizio, serie: serie, kg: kg, ripetizioni: rip) {
+        switch archivio.spuntaSerie(esercizio: esercizio, serie: serie, kg: kg, ripetizioni: rip) {
+        case .fatta:
             if nuovoMassimo { messaggio = "Nuovo massimo: \(kg.replacingOccurrences(of: ".", with: ",")) kg" }
-        } else {
-            messaggio = "Scrivi kg e ripetizioni maggiori di zero"
+        case .valoriNonValidi:
+            messaggio = "Scrivi i kg (anche 0) e le ripetizioni (almeno 1)"
+        case .giaFatta, .nonTrovata:
+            break   // un secondo tocco veloce: niente errore
         }
     }
-}
-
-private extension SerieFatta {
-    var fatto: Bool { fatta }
-    var fatta_: Bool { fatta }
 }
 
 extension TipoSerie {
@@ -411,37 +408,40 @@ extension TipoSerie {
     }
 }
 
-// Il valore si legge con le cifre di larghezza fissa; il campo vero sta sopra, con il testo invisibile
+// Un campo normale, con cursore e selezione al loro posto. Le cifre sono quelle di Georgia con spaziatura
+// uniforme se il carattere la offre, altrimenti proporzionali: nelle colonne si leggono comunque bene
 private struct CampoCifre: View {
     @Binding var testo: String
     let titolo: String
+    let segnaposto: String
     let decimale: Bool
     let fatto: Bool
     @Environment(\.palette) private var palette
 
     var body: some View {
-        ZStack {
-            CifreFisse(testo: testo, colore: fatto ? palette.suTasto : palette.testo)
-            TextField("", text: $testo)
-                .keyboardType(decimale ? .decimalPad : .numberPad)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Color.clear)   // invisibile: le cifre le disegna CifreFisse
-                .tint(palette.accento)
-                .disabled(fatto)
-                .accessibilityLabel(titolo)
-        }
-        .frame(maxWidth: .infinity, minHeight: 44)
-        .background(fatto ? palette.accento : palette.riempimento, in: .rect(cornerRadius: 10))
-        .onChange(of: testo) { _, nuovo in
-            // Solo cifre e una virgola o un punto
-            var visto = false
-            let pulito = String(nuovo.filter { c in
-                if c.isASCII, c.isNumber { return true }
-                if decimale, c == "," || c == ".", !visto { visto = true; return true }
-                return false
-            }.prefix(6))
-            if pulito != nuovo { testo = pulito }
-        }
+        TextField("", text: $testo, prompt: Text(segnaposto).foregroundStyle(palette.secondario))
+            .font(.georgia(.body))
+            .monospacedDigit()
+            .keyboardType(decimale ? .decimalPad : .numberPad)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(fatto ? palette.suAccento : palette.testo)
+            .tint(palette.accento)
+            .disabled(fatto)
+            .padding(.horizontal, 4)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(fatto ? palette.accento : palette.riempimento, in: .rect(cornerRadius: 10))
+            .contentShape(.rect(cornerRadius: 10))
+            .accessibilityLabel(titolo)
+            .onChange(of: testo) { _, nuovo in
+                // Solo cifre e una virgola o un punto
+                var visto = false
+                let pulito = String(nuovo.filter { c in
+                    if c.isASCII, c.isNumber { return true }
+                    if decimale, c == "," || c == ".", !visto { visto = true; return true }
+                    return false
+                }.prefix(6))
+                if pulito != nuovo { testo = pulito }
+            }
     }
 }
 
@@ -456,15 +456,19 @@ private struct BarraRecupero: View {
             TimelineView(.periodic(from: .now, by: 0.5)) { c in
                 let r = archivio.recupero.rimanenti(adesso: c.date)
                 if r > 0 {
-                    HStack(spacing: 8) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("Recupero").font(.georgia(.caption)).foregroundStyle(palette.secondario)
-                            CifreFisse(testo: formatoDurata(TimeInterval(r)), stile: .title2, grassetto: true, colore: palette.accento)
-                        }
-                        Spacer(minLength: 4)
+                    let tempo = VStack(alignment: .leading, spacing: 0) {
+                        Text("Recupero").font(.georgia(.caption)).foregroundStyle(palette.secondario)
+                        CifreFisse(testo: formatoDurata(TimeInterval(r)), stile: .title2, grassetto: true, colore: palette.accento)
+                    }
+                    let tasti = HStack(spacing: 8) {
                         tasto("−15") { archivio.recupero.aggiungi(-15) }
                         tasto("+15") { archivio.recupero.aggiungi(15) }
                         tasto("Salta") { archivio.recupero.salta() }
+                    }
+                    // A testo grande i tasti vanno sotto il tempo
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 8) { tempo; Spacer(minLength: 4); tasti }
+                        VStack(alignment: .leading, spacing: 6) { tempo; tasti }
                     }
                     .padding(10)
                     .background(palette.barra, in: .rect(cornerRadius: 16))
@@ -486,39 +490,6 @@ private struct BarraRecupero: View {
                 .contentShape(.rect(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-    }
-}
-
-// «Annulla» per qualche secondo dopo una spunta o dopo «Mangiato»
-struct BannerAnnulla: View {
-    let tipo: TipoAnnulla
-    @Environment(Archivio.self) private var archivio
-    @Environment(\.palette) private var palette
-
-    var body: some View {
-        if let r = archivio.richiestaAnnulla, r.tipo == tipo {
-            HStack {
-                Text(r.testo)
-                    .font(.georgia(.subheadline))
-                Spacer()
-                Button {
-                    if tipo == .spunta { archivio.annullaSpunta() } else { archivio.annullaUltimoPasto() }
-                } label: {
-                    Text("Annulla")
-                        .font(.georgia(.subheadline, grassetto: true))
-                        .foregroundStyle(palette.accento)
-                        .padding(.horizontal, 12)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.leading, 14)
-            .padding(.trailing, 4)
-            .background(palette.barra, in: .capsule)
-            .overlay { Capsule().strokeBorder(palette.traccia) }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
     }
 }
 

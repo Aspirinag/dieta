@@ -36,7 +36,7 @@ final class InCorsoTests: XCTestCase {
     func testSpuntaSalvaSubito() {
         let a = archivio()
         a.iniziaAllenamento(routine)
-        XCTAssertTrue(a.spuntaSerie(esercizio: 0, serie: 0, kg: "60", ripetizioni: "8"))
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: "60", ripetizioni: "8"), .fatta)
         // Nessuna attesa: il file è già scritto
         let letto = Archivio(file: file, copie: copie).profilo.allenamentoInCorso
         XCTAssertEqual(letto?.esercizi[0].serie[0], SerieFatta(kg: 60, ripetizioni: 8, fatta: true))
@@ -73,24 +73,24 @@ final class InCorsoTests: XCTestCase {
         let a = archivio()
         a.iniziaAllenamento(routine)
         let prima = try Data(contentsOf: file)
-        for (kg, rip) in [("", "8"), ("60", ""), ("0", "8"), ("60", "0"), ("-5", "8"), ("abc", "8"), ("nan", "8"),
+        for (kg, rip) in [("", "8"), ("60", ""), ("60", "0"), ("0", "0"), ("-5", "8"), ("abc", "8"), ("nan", "8"),
                           ("inf", "8"), ("60", "8,5"), ("1e3", "8"), ("60", "x"), ("  ", "8"), ("5000", "8")] {
-            XCTAssertFalse(a.spuntaSerie(esercizio: 0, serie: 0, kg: kg, ripetizioni: rip), "\(kg) × \(rip)")
+            XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: kg, ripetizioni: rip), .valoriNonValidi, "\(kg) × \(rip)")
         }
         XCTAssertFalse(a.profilo.allenamentoInCorso!.esercizi[0].serie[0].fatta)
         XCTAssertEqual(a.recupero.rimanenti(adesso: Date()), 0)
         XCTAssertNil(a.richiestaAnnulla)
         XCTAssertEqual(try Data(contentsOf: file), prima)
         // Indici fuori dall'allenamento
-        XCTAssertFalse(a.spuntaSerie(esercizio: 9, serie: 0, kg: "60", ripetizioni: "8"))
-        XCTAssertFalse(a.spuntaSerie(esercizio: 0, serie: 9, kg: "60", ripetizioni: "8"))
+        XCTAssertEqual(a.spuntaSerie(esercizio: 9, serie: 0, kg: "60", ripetizioni: "8"), .nonTrovata)
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 9, kg: "60", ripetizioni: "8"), .nonTrovata)
     }
 
     func testVirgolaAccettata() {
         let a = archivio()
         a.iniziaAllenamento(routine)
-        XCTAssertTrue(a.spuntaSerie(esercizio: 0, serie: 0, kg: "62,5", ripetizioni: "8"))
-        XCTAssertTrue(a.spuntaSerie(esercizio: 0, serie: 1, kg: " 62.5 ", ripetizioni: "8"))
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: "62,5", ripetizioni: "8"), .fatta)
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 1, kg: " 62.5 ", ripetizioni: "8"), .fatta)
         XCTAssertEqual(a.profilo.allenamentoInCorso?.esercizi[0].serie[0].kg, 62.5)
         XCTAssertEqual(a.profilo.allenamentoInCorso?.esercizi[0].serie[1].kg, 62.5)
     }
@@ -257,5 +257,53 @@ final class InCorsoTests: XCTestCase {
         XCTAssertEqual(a.recupero.rimanenti(adesso: adesso), 90)
         a.annullaSpunta()
         XCTAssertEqual(a.recupero.rimanenti(adesso: adesso), 0)
+    }
+
+    func testZeroKgValeESenzaRecord() {
+        let a = archivio()
+        precedente(a, 60)
+        a.iniziaAllenamento(routine)
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: "0", ripetizioni: "12"), .fatta)
+        XCTAssertEqual(a.profilo.allenamentoInCorso?.esercizi[0].serie[0].kg, 0)
+        XCTAssertFalse(a.superaIlMassimo(esercizio: 0, kg: "0"))
+        // Corpo libero mai fatto prima: con massimo 0 il peso 0 non è un record
+        XCTAssertEqual(a.spuntaSerie(esercizio: 1, serie: 0, kg: "0", ripetizioni: "10"), .fatta)
+        let r = a.terminaAllenamento()
+        XCTAssertEqual(r.serie, 2)
+        XCTAssertEqual(r.volume, 0)
+        XCTAssertEqual(r.record, [])
+    }
+
+    func testDoppiaSpuntaNonEUnErrore() {
+        let a = archivio()
+        a.iniziaAllenamento(routine)
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: "60", ripetizioni: "8"), .fatta)
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: "60", ripetizioni: "8"), .giaFatta)
+        XCTAssertEqual(a.spuntaSerie(esercizio: 0, serie: 0, kg: "", ripetizioni: ""), .giaFatta)
+    }
+
+    func testAnnullaSpuntaNonTocchiSeCambiaLaStruttura() {
+        for modifica in [{ (a: Archivio) in a.togliSerie(esercizio: 0, serie: 1) },
+                         { (a: Archivio) in a.togliEsercizio(1) },
+                         { (a: Archivio) in a.aggiungiEsercizio("Curl") }] {
+            let a = archivio()
+            a.iniziaAllenamento(routine)
+            a.spuntaSerie(esercizio: 0, serie: 2, kg: "60", ripetizioni: "8")
+            modifica(a)
+            let dopo = a.profilo.allenamentoInCorso
+            XCTAssertNil(a.richiestaAnnulla)
+            XCTAssertFalse(a.annullaSpunta())
+            XCTAssertEqual(a.profilo.allenamentoInCorso, dopo)
+            XCTAssertTrue(a.profilo.allenamentoInCorso!.esercizi[0].serie.last!.fatta)
+        }
+    }
+
+    func testIdentitaDellaSerieNonSiSalvaENonConta() throws {
+        let uno = SerieFatta(kg: 5, ripetizioni: 5), due = SerieFatta(kg: 5, ripetizioni: 5)
+        XCTAssertNotEqual(uno.idLocale, due.idLocale)
+        XCTAssertEqual(uno, due)
+        XCTAssertEqual(uno.hashValue, due.hashValue)
+        let json = String(decoding: try JSONEncoder().encode(uno), as: UTF8.self)
+        XCTAssertFalse(json.contains("idLocale"))
     }
 }
