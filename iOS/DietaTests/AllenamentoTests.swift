@@ -126,6 +126,28 @@ final class AllenamentoTests: XCTestCase {
         XCTAssertEqual(p.eserciziUsati(), ["Panca piana"])
     }
 
+    func testUnireDueEserciziNonLasciaDoppioniNellaRoutine() {
+        var p = Profilo(nome: "Prova")
+        p.routine = [Routine(nome: "A", esercizi: [
+            EsercizioPrevisto(nome: "Panca", serie: 3, recupero: 90),
+            EsercizioPrevisto(nome: "Squat", serie: 4, recupero: 120),
+            EsercizioPrevisto(nome: "Panca piana", serie: 4, recupero: 60),
+        ])]
+        p.rinomina(esercizio: "Panca piana", in: "Panca")
+        XCTAssertEqual(p.routine[0].esercizi.map(\.nome), ["Panca", "Squat"])
+        XCTAssertEqual(p.routine[0].esercizi[0].serie, 4)
+        XCTAssertEqual(p.routine[0].esercizi[0].recupero, 90)
+    }
+
+    func testLaSerieNonSpuntataNonFaRecord() {
+        var p = Profilo(nome: "Prova")
+        var nonFatta = serie(100)
+        nonFatta.fatta = false
+        p.allenamenti = [allenamento("1", "2026-10-01", "Panca", [serie(80), nonFatta])]
+        XCTAssertEqual(p.massimo("Panca"), 80)
+        XCTAssertEqual(p.precedente("Panca").map(\.kg), [80])
+    }
+
     func testUnireDueEserciziUnisceRecordEPrecedenti() {
         var p = Profilo(nome: "x")
         p.allenamenti = [allenamento("1", "2026-10-01T10:00:00", "Panca", [serie(80)]),

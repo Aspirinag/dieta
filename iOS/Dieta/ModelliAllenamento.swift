@@ -100,7 +100,7 @@ struct EsercizioPrevisto: Codable, Hashable {
 struct Routine: Codable, Hashable, Identifiable {
     var nome: String
     var esercizi: [EsercizioPrevisto]
-    var giorni: [Int]       // giorni previsti: 1 = lunedì … 7 = domenica
+    var giorni: [Int]       // giorni previsti, come Giorni.indice: 0 = lunedì … 6 = domenica
 
     var id: String { nome }
 
@@ -172,7 +172,7 @@ extension Profilo {
     }
 
     // Rinomina un esercizio ovunque. Se il nuovo nome esiste già i due esercizi si uniscono:
-    // nello stesso allenamento le serie si sommano, la nota già presente vince.
+    // nello stesso allenamento le serie si sommano, nella routine resta una voce sola, la nota già presente vince.
     mutating func rinomina(esercizio: String, in nuovo: String) {
         let nuovo = nuovo.trimmingCharacters(in: .whitespaces)
         guard !nuovo.isEmpty, nuovo != esercizio else { return }
@@ -181,6 +181,16 @@ extension Profilo {
             for e in routine[r].esercizi.indices where routine[r].esercizi[e].nome == esercizio {
                 routine[r].esercizi[e].nome = nuovo
             }
+            // Una volta sola per routine: resta il primo, con il numero di serie più alto
+            var unici: [EsercizioPrevisto] = []
+            for e in routine[r].esercizi {
+                if e.nome == nuovo, let k = unici.firstIndex(where: { $0.nome == nuovo }) {
+                    unici[k].serie = max(unici[k].serie, e.serie)
+                } else {
+                    unici.append(e)
+                }
+            }
+            routine[r].esercizi = unici
         }
         for i in allenamenti.indices { allenamenti[i].esercizi = Self.unisci(allenamenti[i].esercizi, esercizio, nuovo) }
         if var inCorso = allenamentoInCorso {
