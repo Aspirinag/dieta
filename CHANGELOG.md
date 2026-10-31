@@ -7,7 +7,7 @@ Le novità di èffort, dalla più recente. Il numero è `maggiore.minore.correzi
 | Versione | Tappa | Stato |
 |---|---|---|
 | 2.1.0 | Dati protetti, temi, prima apertura | Fatta |
-| 2.2.0 | Cinque schede, Oggi e Dieta | In revisione |
+| 2.2.0 | Cinque schede, Oggi e Dieta | Fatta, sull'iPhone |
 | 2.3.0 | Modello degli allenamenti e importazione da Palestra | Da fare |
 | 2.4.0 | Allenamento in corso | Da fare |
 | 2.5.0 | Scheda Allenamento, routine, storico e cardio | Da fare |
