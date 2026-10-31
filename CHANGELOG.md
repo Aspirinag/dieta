@@ -7,16 +7,22 @@ Le novità di èffort, dalla più recente. Il numero è `maggiore.minore.correzi
 | Versione | Tappa | Stato |
 |---|---|---|
 | 2.1.0 | Dati protetti, temi, prima apertura | Fatta |
-| 2.2.0 | Cinque schede, Oggi e Dieta | Fatta, sull'iPhone |
+| 2.2.1 | Nome èffort e icona Anello provvisoria | Fatta, sull'iPhone |
+| 2.2.0 | Cinque schede, Oggi e Dieta | Fatta |
 | 2.3.0 | Modello degli allenamenti e importazione da Palestra | Da fare |
 | 2.4.0 | Allenamento in corso | Da fare |
 | 2.5.0 | Scheda Allenamento, routine, storico e cardio | Da fare |
 | 2.6.0 | Progressi, record e grafici | Da fare |
-| 3.0.0 | Nome, icona e prova sull'iPhone con i dati veri | Da fare |
+| 3.0.0 | Icona definitiva e prova sull'iPhone con i dati veri | Da fare |
 
 Dopo la 3.0.0: superserie, calcolo dei dischi, widget. Apple Watch e web app sono da valutare.
 
 ## Non ancora pubblicato
+
+### 2.2.1
+
+- Sull'iPhone l'app si chiama èffort.
+- Icona Anello provvisoria.
 
 ### 2.2.0
 

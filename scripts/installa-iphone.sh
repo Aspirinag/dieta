@@ -89,10 +89,17 @@ for app in $APP_SCELTE; do
 
   passo "$NOME: compilo e firmo (la prima volta ci vuole qualche minuto)"
   # Identificativo con il tuo team: con l'Apple ID gratuito deve essere unico
+  ID="io.github.aspirinag.$app.$(echo "$TEAM" | tr 'A-Z' 'a-z')"
+  # Xcode riusa un profilo ancora valido: senza toglierlo la scadenza resterebbe quella vecchia
+  for profilo in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+    if [ -e "$profilo" ] && security cms -D -i "$profilo" 2>/dev/null | grep -q "<string>iOS Team Provisioning Profile: $ID</string>"; then
+      rm -f "$profilo"
+    fi
+  done
   xcodebuild -project "$LAVORO/$REPO/iOS/$NOME.xcodeproj" -scheme "$NOME" -configuration Release \
     -destination "id=$UDID" -derivedDataPath "$LAVORO/$REPO/build" -allowProvisioningUpdates \
     DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
-    PRODUCT_BUNDLE_IDENTIFIER="io.github.aspirinag.$app.$(echo "$TEAM" | tr 'A-Z' 'a-z')" \
+    PRODUCT_BUNDLE_IDENTIFIER="$ID" \
     -quiet build \
     || errore "$NOME: la compilazione non è riuscita. Copia le righe rosse qui sopra e mandamele."
 
