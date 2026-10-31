@@ -1,6 +1,6 @@
-# Èffort: app unica Dieta + Palestra
+# èffort: app unica Dieta + Palestra
 
-Il nome si pronuncia come «è forte» in napoletano. Sul telefono si scrive **Èffort**, con la È accentata; nei nomi tecnici e nei file si usa `Effort`.
+Il nome si pronuncia come «è forte» in napoletano. Sul telefono e dentro l'app si scrive sempre **èffort**, tutto minuscolo con l'accento; nei nomi tecnici e nei file si usa `Effort`.
 
 Stato: bozza da approvare. Disegni di riferimento: <https://claude.ai/artifact/EgifRgb69bfWhvT98WAJTq>
 
@@ -45,7 +45,7 @@ Feed social, account e sincronizzazione online, Apple Watch, Live Activity, Heal
 
 Su una nuova installazione non ci sono profili predefiniti: Raffaele e Alessandra escono dai valori iniziali del codice. La prima schermata offre due scelte:
 
-- **Carica il tuo profilo:** importa un backup di Èffort, Dieta o Palestra;
+- **Carica il tuo profilo:** importa un backup di èffort, Dieta o Palestra;
 - **Crea un profilo:** chiede il nome, poi propone di caricare il piano alimentare in PDF, saltabile.
 
 Se sul telefono ci sono già dati, questa schermata non compare e nulla viene cancellato: chi aggiorna da Dieta ritrova i profili che ha, compresa Alessandra, e può eliminarla da Profilo. L'app continua a gestire più profili.
@@ -98,7 +98,7 @@ Il formato cresce solo aggiungendo campi, con decodifica tollerante come oggi.
 - Temi: **Halloween** (predefinito), **Giorno** (la sua versione chiara), **Notte** (viola), **Ossidiana** (quasi nero). Tutti con gradienti su fondo e schede.
 - Il tema si sceglie in Profilo e viene salvato. Il tema predefinito resta scuro anche con iPhone in modalità chiara.
 - Sul tema chiaro il verde neon compare solo su tasti e spunte; testi, anelli e timer usano il verde scuro.
-- Font: Georgia per titoli e nomi principali, SF Pro Rounded per numeri, tabelle, tasti e testi piccoli. Nessun numero in Georgia.
+- Font: Georgia in tutta l'app, numeri compresi, per scelta del proprietario. Fanno eccezione solo gli elementi di sistema che iOS non lascia cambiare, come avvisi e selettori file. La lettura di kg, ripetizioni e timer va controllata sul telefono.
 - Viola come terzo colore anche nel tema Halloween.
 - Testo grande di iOS supportato in tutte le schermate, contrasto minimo 4.5:1, tasti di almeno 44 punti.
 
@@ -125,7 +125,7 @@ Unit test per conversione, record, recupero dell'allenamento interrotto e format
 
 ## Decisioni prese
 
-- Nome: **Èffort**.
+- Nome: **èffort**, sempre minuscolo con l'accento.
 - Icona: **Anello**, con varianti per i temi.
 - Allenamento: nessun profilo condiviso, solo Raffaele lo usa oggi.
 
