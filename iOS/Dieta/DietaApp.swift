@@ -174,12 +174,12 @@ struct Radice: View {
 }
 
 private extension View {
-    // Nasconde la barra di sistema e lascia in fondo il posto per quella del tema, che le sta sopra
+    // Nasconde la barra di sistema e fa finire lo scorrimento sopra quella del tema: un safeAreaInset
+    // qui non arriva agli scroll dentro il NavigationStack e le ultime righe restano nascoste
     func sottoLaBarra() -> some View {
         toolbar(.hidden, for: .tabBar)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: BarraSchede.altezza + BarraSchede.staccoDalFondo)
-            }
+            .contentMargins(.bottom, BarraSchede.altezza, for: .scrollContent)
+            .contentMargins(.bottom, BarraSchede.altezza, for: .scrollIndicators)
     }
 }
 

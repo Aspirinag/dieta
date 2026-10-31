@@ -9,7 +9,8 @@ Le novità di èffort, dalla più recente. Il numero è `maggiore.minore.correzi
 | 2.1.0 | Dati protetti, temi, prima apertura | Fatta |
 | 2.2.1 | Nome èffort e icona Anello provvisoria | Fatta |
 | 2.2.0 | Cinque schede, Oggi e Dieta | Fatta |
-| 2.3.0 | Modello degli allenamenti | Fatta, sull'iPhone |
+| 2.3.1 | Fondo delle pagine leggibile | Fatta, sull'iPhone |
+| 2.3.0 | Modello degli allenamenti | Fatta |
 | 2.4.0 | Allenamento in corso | Da fare |
 | 2.5.0 | Scheda Allenamento, routine, storico e cardio | Da fare |
 | 2.6.0 | Progressi, record e grafici | Da fare |
@@ -20,6 +21,10 @@ L'importazione da Palestra si fa solo se si trova un file esportato: l'app è st
 Dopo la 3.0.0: superserie, calcolo dei dischi, widget. Apple Watch e web app sono da valutare.
 
 ## Non ancora pubblicato
+
+### 2.3.1
+
+- In tutte le schede la pagina scorre fino all'ultima riga: il fondo non resta più nascosto dietro la barra e non rimbalza.
 
 ### 2.3.0
 
