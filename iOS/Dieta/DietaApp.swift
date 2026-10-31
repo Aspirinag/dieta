@@ -49,18 +49,12 @@ struct Radice: View {
 
     var body: some View {
         let palette = tema.palette
-        TabView(selection: $scheda) {
-            Tab("Oggi", systemImage: "fork.knife", value: .oggi) {
-                OggiView()
-            }
-            Tab("Settimana", systemImage: "calendar", value: .settimana) {
-                SettimanaView()
-            }
-            Tab("Andamento", systemImage: "chart.line.uptrend.xyaxis", value: .andamento) {
-                AndamentoView()
-            }
-            Tab("Profilo", systemImage: "person.crop.circle", value: .dati) {
-                DatiView()
+        Group {
+            // Senza profili le altre schermate non hanno dati su cui lavorare: si vede solo la prima apertura
+            if archivio.senzaProfili {
+                PrimaApertura()
+            } else {
+                schede
             }
         }
         .importatore()
@@ -97,6 +91,23 @@ struct Radice: View {
             Button("OK") {}
         } message: {
             Text(avvisoScadenza ?? "")
+        }
+    }
+
+    private var schede: some View {
+        TabView(selection: $scheda) {
+            Tab("Oggi", systemImage: "fork.knife", value: .oggi) {
+                OggiView()
+            }
+            Tab("Settimana", systemImage: "calendar", value: .settimana) {
+                SettimanaView()
+            }
+            Tab("Andamento", systemImage: "chart.line.uptrend.xyaxis", value: .andamento) {
+                AndamentoView()
+            }
+            Tab("Profilo", systemImage: "person.crop.circle", value: .dati) {
+                DatiView()
+            }
         }
     }
 }

@@ -18,8 +18,8 @@ final class TemaTests: XCTestCase {
 
     func testTemaAssenteEHalloween() {
         XCTAssertEqual(Tema.scelto(nil), .halloween)
-        XCTAssertEqual(Stato.iniziale.tema, nil)
-        XCTAssertEqual(Tema.scelto(Stato.iniziale.tema), .halloween)
+        XCTAssertEqual(Stato.vuoto.tema, nil)
+        XCTAssertEqual(Tema.scelto(Stato.vuoto.tema), .halloween)
     }
 
     func testTemaSconosciutoEHalloween() {

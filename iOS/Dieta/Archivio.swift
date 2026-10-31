@@ -55,7 +55,7 @@ final class Archivio {
         URL.applicationSupportDirectory.appending(path: "dieta.json")
     }
 
-    // Ordine: file dell'app, poi i dati della prima versione dell'app (Capacitor), poi i profili iniziali
+    // Ordine: file dell'app, poi i dati della prima versione dell'app (Capacitor), poi lo stato vuoto (prima apertura)
     private static func carica(_ file: URL) -> Stato {
         if let d = try? Data(contentsOf: file), let s = try? JSONDecoder().decode(Stato.self, from: d) {
             return s
@@ -64,7 +64,7 @@ final class Archivio {
            let s = try? JSONDecoder().decode(Stato.self, from: Data(j.utf8)) {
             return s
         }
-        return .iniziale
+        return .vuoto
     }
 
     // Un file che non si legge non va mai sovrascritto: resta una copia, visibile nell'app File
@@ -106,6 +106,8 @@ final class Archivio {
 
     private func salva() {
         salvataggio = nil
+        // Senza profili non si scrive: Stato non si rilegge con zero profili e il file sembrerebbe rotto
+        guard !senzaProfili else { return }
         guard !salvaBloccato else {
             erroreSalvataggio = "Le modifiche non vengono salvate per non sovrascrivere i dati che non riesco a leggere."
             return
@@ -135,7 +137,22 @@ final class Archivio {
 
     var profilo: Profilo {
         get { stato.profili[stato.attivo] ?? stato.profili.values.first ?? Profilo(nome: "") }
-        set { stato.profili[stato.attivo] = newValue }
+        set {
+            guard stato.profili[stato.attivo] != nil else { return }
+            stato.profili[stato.attivo] = newValue
+        }
+    }
+
+    // Nuova installazione: finché non c'è un profilo si vede solo la schermata di prima apertura
+    var senzaProfili: Bool { stato.profili.isEmpty }
+
+    // Crea il primo profilo e lo rende attivo; un nome vuoto o di soli spazi non crea nulla
+    @discardableResult
+    func creaPrimoProfilo(_ nome: String) -> Bool {
+        let pulito = nome.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard senzaProfili, !pulito.isEmpty else { return false }
+        aggiungiProfilo(pulito)
+        return true
     }
 
     // Il preferito per primo, poi in ordine di nome

@@ -134,12 +134,12 @@ struct Importatore: ViewModifier {
         .alert("Importare il backup?", isPresented: Binding(
             get: { backupLetto != nil }, set: { if !$0 { backupLetto = nil } }
         ), presenting: backupLetto) { dati in
-            Button("Importa", role: .destructive) {
+            Button("Importa", role: archivio.senzaProfili ? nil : .destructive) {
                 do { try archivio.importa(dati); conferma = "Backup importato" } catch { errore = "File non valido: scegli un backup esportato dall'app Dieta." }
             }
             Button("Annulla", role: .cancel) {}
         } message: { _ in
-            Text("Il backup sostituisce tutti i dati attuali.")
+            Text(archivio.senzaProfili ? "Il backup diventa il tuo profilo." : "Il backup sostituisce tutti i dati attuali.")
         }
         .alert("PDF protetto", isPresented: Binding(
             get: { protetto != nil }, set: { if !$0 { protetto = nil } }

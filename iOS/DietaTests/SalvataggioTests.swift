@@ -15,7 +15,12 @@ final class SalvataggioTests: XCTestCase {
         try FileManager.default.removeItem(at: cartella)
     }
 
-    private func archivio() -> Archivio { Archivio(file: file, copie: copie) }
+    // Un'installazione con un profilo già creato
+    private func archivio() -> Archivio {
+        let a = Archivio(file: file, copie: copie)
+        if a.senzaProfili { a.creaPrimoProfilo("Prova") }
+        return a
+    }
 
     private func copieConservate() -> [URL] {
         (try? FileManager.default.contentsOfDirectory(at: copie, includingPropertiesForKeys: nil)) ?? []

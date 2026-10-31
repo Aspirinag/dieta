@@ -308,13 +308,8 @@ struct Stato: Codable, Hashable {
     var spunte: [String: String]?   // lista della spesa, comune a tutti i profili: alimento → giorno della spunta
     var tema: String?               // nome del tema scelto; assente = Halloween
 
-    static let iniziale = Stato(
-        profili: [
-            "raffaele": Profilo(nome: "Raffaele"),
-            "alessandra": Profilo(nome: "Alessandra"),
-        ],
-        attivo: "raffaele"
-    )
+    // Nuova installazione: nessun profilo, lo si crea (o si importa un backup) alla prima apertura
+    static let vuoto = Stato(profili: [:], attivo: "")
 
     init(profili: [String: Profilo], attivo: String, preferito: String? = nil, promemoria: Promemoria? = nil) {
         self.profili = profili
