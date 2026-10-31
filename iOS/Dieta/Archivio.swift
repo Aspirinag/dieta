@@ -41,7 +41,7 @@ final class Archivio {
                 salvaBloccato = true
                 avvisoDati = "Non sono riuscito a leggere i dati salvati (forse il dispositivo è bloccato). Per non sovrascriverli, le modifiche di questa apertura non verranno salvate: chiudi e riapri l'app."
             } else if let copia {
-                avvisoDati = "Non sono riuscito a leggere i dati salvati e l'app è ripartita senza. Il file originale è conservato in File → Dieta → \(copia). Se hai un backup, usa Importa backup."
+                avvisoDati = "Non sono riuscito a leggere i dati salvati e l'app è ripartita senza. Il file originale è conservato in File → èffort → \(copia). Se hai un backup, usa Importa backup."
             } else {
                 salvaBloccato = true
                 avvisoDati = "Non sono riuscito a leggere i dati salvati né a farne una copia. Per non sovrascriverli, le modifiche di questa apertura non verranno salvate."
@@ -197,6 +197,25 @@ final class Archivio {
         profilo.dieta[iso] = r
     }
 
+    // Acqua e olio salgono a passi fissi e possono superare l'obiettivo; togli corregge un tocco di troppo
+    static let passoAcqua = 0.25
+
+    func aggiungiAcqua(_ iso: String) {
+        cambiaRegistro(iso) { $0.acqua += Self.passoAcqua }
+    }
+
+    func togliAcqua(_ iso: String) {
+        cambiaRegistro(iso) { $0.acqua = max(0, $0.acqua - Self.passoAcqua) }
+    }
+
+    func aggiungiOlio(_ iso: String) {
+        cambiaRegistro(iso) { $0.olio += 1 }
+    }
+
+    func togliOlio(_ iso: String) {
+        cambiaRegistro(iso) { $0.olio = max(0, $0.olio - 1) }
+    }
+
     // ---------- Piani ----------
 
     // Un nuovo piano chiude quelli aperti il giorno prima della sua data di inizio
@@ -209,7 +228,7 @@ final class Archivio {
         profilo.piani = piani
     }
 
-    // ---------- BIA ----------
+    // ---------- Misurazioni ----------
 
     // Aggiunge o sostituisce la misura della stessa data
     func salvaMisura(_ m: Misura) {
@@ -277,7 +296,7 @@ final class Archivio {
             }
         }
         if p.pasti {
-            await Notifiche.giornaliera(id: "pasti", titolo: "Dieta", testo: "Hai segnato i pasti di oggi?", ora: 21)
+            await Notifiche.giornaliera(id: "pasti", titolo: "èffort", testo: "Hai segnato i pasti di oggi?", ora: 21)
         }
     }
 }

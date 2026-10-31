@@ -50,15 +50,44 @@ final class TemaTests: XCTestCase {
         XCTAssertEqual(Tema.halloween.palette.esadecimali.tasto, 0x39FF14)
     }
 
+    // Le tappe del fondo vengono dai disegni: 52% per tutti, 60% per Ossidiana
+    func testTappeDelFondo() {
+        XCTAssertEqual(Tema.halloween.palette.esadecimali.tappaFondo, 0.52)
+        XCTAssertEqual(Tema.giorno.palette.esadecimali.tappaFondo, 0.52)
+        XCTAssertEqual(Tema.notte.palette.esadecimali.tappaFondo, 0.52)
+        XCTAssertEqual(Tema.ossidiana.palette.esadecimali.tappaFondo, 0.60)
+    }
+
+    // Etichette della barra delle schede e testi a colori sulle schede
+    func testContrastoDiBarraEColori() {
+        for tema in Tema.allCases {
+            let p = tema.palette.esadecimali
+            XCTAssertGreaterThanOrEqual(contrasto(p.secondario, p.barra), 4.5, tema.nome)
+            XCTAssertGreaterThanOrEqual(contrasto(p.accento, p.barra), 4.5, tema.nome)
+            XCTAssertGreaterThanOrEqual(contrasto(p.testo, p.riempimento), 4.5, tema.nome)
+            for sfondo in [p.schedaDa, p.schedaA] {
+                XCTAssertGreaterThanOrEqual(contrasto(p.caldo, sfondo), 4.5, tema.nome)
+                XCTAssertGreaterThanOrEqual(contrasto(p.freddo, sfondo), 4.5, tema.nome)
+            }
+        }
+    }
+
     func testSoloGiornoEChiaro() {
         XCTAssertEqual(Tema.allCases.filter { $0.schemaColori == .light }, [.giorno])
     }
 }
 
-final class FontTitoliTests: XCTestCase {
+final class FontTests: XCTestCase {
     // Se il nome non si risolve, SwiftUI ripiega in silenzio sul carattere di sistema
-    func testIlFontDeiTitoliEsiste() {
-        XCTAssertNotNil(UIFont(name: Text.nomeFontTitoli, size: 34))
+    func testIFontEsistono() {
+        XCTAssertNotNil(UIFont(name: Font.nomeGeorgia, size: 34))
+        XCTAssertNotNil(UIFont(name: Font.nomeGeorgiaGrassetto, size: 34))
+    }
+
+    // Barra del titolo e selettori segmentati: UIKit, fuori dalla portata di SwiftUI
+    func testIFontUIKitSonoGeorgia() {
+        XCTAssertEqual(UIFont.georgia(.largeTitle, grassetto: true).familyName, "Georgia")
+        XCTAssertEqual(UIFont.georgia(.caption2).familyName, "Georgia")
     }
 }
 

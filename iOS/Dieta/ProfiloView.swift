@@ -1,11 +1,12 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Profilo: profili, piani alimentari, impostazioni, promemoria e backup.
-// Le misurazioni si caricano e si gestiscono in Andamento
-struct DatiView: View {
+// Profilo: profili, piani alimentari, tema, impostazioni, promemoria e backup.
+// Le misurazioni si caricano e si gestiscono in Progressi
+struct ProfiloView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.importa) private var importa
+    @Environment(\.palette) private var palette
 
     @State private var errore: String?
     @State private var pianoDaEliminare: Piano?
@@ -23,13 +24,14 @@ struct DatiView: View {
         List {
             profili
             piani
+            tema
             impostazioni
             promemoria
             backup
         }
         .navigationTitle("Profilo")
         .sfondoTema()
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo(conSfondo: false) } }
     }
 
     private var conAvvisi: some View {
@@ -88,21 +90,22 @@ struct DatiView: View {
         Section {
             ForEach(archivio.profilo.piani.sorted { $0.dal > $1.dal }) { p in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(p.nome).font(.headline)
+                    Text(p.nome).font(.georgia(.headline))
                     Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? "in corso" : Giorni.breve(p.al))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.georgia(.subheadline))
+                        .foregroundStyle(palette.secondario)
                 }
                 .swipeActions {
                     Button("Elimina", systemImage: "trash", role: .destructive) { pianoDaEliminare = p }
                 }
             }
-            Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { importa(.schema) }
+            Button("Carica piano alimentare (PDF)", systemImage: "doc.badge.plus") { importa(.schema) }
         } header: {
-            Text("Piani alimentari")
+            IntestazioneSezione(testo: "Piani alimentari")
         } footer: {
-            Text("Lo schema in PDF viene letto e diventa il piano di Oggi e Settimana. Scorri a sinistra su un piano per eliminarlo.")
+            PiedeSezione(testo: "Il PDF viene letto e diventa il piano di Oggi e Dieta. Scorri a sinistra su un piano per eliminarlo.")
         }
+        .sezioneTema()
     }
 
     private var profili: some View {
@@ -125,32 +128,32 @@ struct DatiView: View {
                         // Iniziale in un cerchio: piena per il profilo attivo
                         let attivo = id == archivio.stato.attivo
                         Text(String(nome.prefix(1)).uppercased())
-                            .font(.headline)
-                            .fontDesign(.rounded)
-                            .foregroundStyle(attivo ? Color.white : Color.accentColor)
+                            .font(.georgiaFissa(17, grassetto: true))
+                            .foregroundStyle(attivo ? palette.suTasto : palette.testo)
                             .frame(width: 34, height: 34)
-                            .background(attivo ? AnyShapeStyle(Color.accentColor.gradient) : AnyShapeStyle(Color.accentColor.opacity(0.14)), in: .circle)
+                            .background(attivo ? palette.tasto : palette.riempimento, in: .circle)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(nome).foregroundStyle(.primary)
-                            if attivo { Text("In uso").font(.caption).foregroundStyle(.secondary) }
+                            Text(nome).foregroundStyle(palette.testo)
+                            if attivo { Text("In uso").font(.georgia(.caption)).foregroundStyle(palette.secondario) }
                         }
                         Spacer()
                         if archivio.stato.preferito == id {
-                            Image(systemName: "star.fill").foregroundStyle(.yellow)
+                            Image(systemName: "star.fill").foregroundStyle(palette.caldo)
                         }
                     }
                 }
-                .tint(.primary)
+                .tint(palette.testo)
             }
             Button("Aggiungi profilo", systemImage: "person.badge.plus") {
                 nomeProfilo = ""
                 aggiungiProfilo = true
             }
         } header: {
-            Text("Profili")
+            IntestazioneSezione(testo: "Profili")
         } footer: {
-            Text("★ si apre all'avvio. Il profilo si cambia dal menu in alto a destra.")
+            PiedeSezione(testo: "★ si apre all'avvio. Il profilo si cambia dal menu in alto a destra.")
         }
+        .sezioneTema()
     }
 
     private var impostazioni: some View {
@@ -168,8 +171,44 @@ struct DatiView: View {
             ), axis: .vertical)
             .lineLimit(3...8)
         } header: {
-            Text("Impostazioni di \(p.nome)")
+            IntestazioneSezione(testo: "Impostazioni di \(p.nome)")
         }
+        .sezioneTema()
+    }
+
+    // Il nome del tema con i suoi colori: la scelta si vede e resta salvata
+    private var tema: some View {
+        let scelto = Tema.scelto(archivio.stato.tema)
+        return Section {
+            ForEach(Tema.allCases) { t in
+                let colori = t.palette
+                Button {
+                    archivio.stato.tema = t.rawValue
+                } label: {
+                    HStack(spacing: 12) {
+                        HStack(spacing: -6) {
+                            Circle().fill(colori.fondo).frame(width: 24, height: 24)
+                                .overlay { Circle().strokeBorder(palette.traccia) }
+                            Circle().fill(colori.accento).frame(width: 24, height: 24)
+                            Circle().fill(colori.caldo).frame(width: 24, height: 24)
+                        }
+                        .accessibilityHidden(true)
+                        Text(t.nome).foregroundStyle(palette.testo)
+                        Spacer()
+                        if t == scelto {
+                            Image(systemName: "checkmark").foregroundStyle(palette.accento)
+                        }
+                    }
+                    .frame(minHeight: 32)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(t == scelto ? .isSelected : [])
+            }
+        } header: {
+            IntestazioneSezione(testo: "Tema")
+        }
+        .sezioneTema()
     }
 
     private var promemoria: some View {
@@ -179,7 +218,7 @@ struct DatiView: View {
                 Label {
                     VStack(alignment: .leading) {
                         Text("Bevi acqua")
-                        Text("alle " + Archivio.oreAcqua.map(String.init).joined(separator: ", ")).font(.caption).foregroundStyle(.secondary)
+                        Text("alle " + Archivio.oreAcqua.map(String.init).joined(separator: ", ")).font(.georgia(.caption)).foregroundStyle(palette.secondario)
                     }
                 } icon: { Image(systemName: "drop.fill") }
             }
@@ -187,20 +226,21 @@ struct DatiView: View {
                 Label {
                     VStack(alignment: .leading) {
                         Text("Segna i pasti")
-                        Text("ogni sera alle 21").font(.caption).foregroundStyle(.secondary)
+                        Text("ogni sera alle 21").font(.georgia(.caption)).foregroundStyle(palette.secondario)
                     }
                 } icon: { Image(systemName: "checklist") }
             }
         } header: {
-            Text("Promemoria")
+            IntestazioneSezione(testo: "Promemoria")
         }
+        .sezioneTema()
     }
 
     private func cambiaPromemoria(_ modifica: (inout Promemoria) -> Void) async {
         var p = archivio.stato.promemoria ?? Promemoria()
         modifica(&p)
         if (p.acqua || p.pasti), !(await Notifiche.permesso()) {
-            errore = "Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Dieta."
+            errore = "Per i promemoria consenti le notifiche in Impostazioni → Notifiche → èffort."
             return
         }
         archivio.stato.promemoria = p
@@ -211,16 +251,17 @@ struct DatiView: View {
         Section {
             ShareLink(
                 item: FileBackup(dati: archivio.backup(), nome: "dieta-backup-\(Giorni.oggi()).json"),
-                preview: SharePreview("Backup Dieta")
+                preview: SharePreview("Backup èffort")
             ) {
                 Label("Esporta backup", systemImage: "square.and.arrow.up")
             }
             Button("Importa backup", systemImage: "square.and.arrow.down") { importa(.backup) }
         } header: {
-            Text("Backup")
+            IntestazioneSezione(testo: "Backup")
         } footer: {
-            Text("Il backup è lo stesso della web app: esportalo dalla web app e importalo qui per portare i dati nell'app.")
+            PiedeSezione(testo: "Il backup è lo stesso della web app: esportalo dalla web app e importalo qui per portare i dati nell'app.")
         }
+        .sezioneTema()
     }
 }
 
@@ -239,6 +280,7 @@ struct FileBackup: Transferable {
 struct FoglioNuovoPiano: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dismiss) private var chiudi
+    @Environment(\.palette) private var palette
     @State var piano: Piano
     var salvato: (String) -> Void = { _ in }
     @State private var dal = Date()
@@ -250,16 +292,21 @@ struct FoglioNuovoPiano: View {
                     TextField("Nome", text: $piano.nome)
                     DatePicker("Valido dal", selection: $dal, displayedComponents: .date)
                 } footer: {
-                    Text("Il piano precedente si chiude il giorno prima.")
+                    PiedeSezione(testo: "Il piano precedente si chiude il giorno prima.")
                 }
-                Section("Anteprima: \(piano.giorni.first?.nome ?? "")") {
+                .sezioneTema()
+                Section {
                     ForEach(Array((piano.giorni.first?.pasti ?? []).enumerated()), id: \.offset) { _, pasto in
                         LabeledContent(pasto.nome, value: pasto.opzioni.first?.alimenti.map(\.nome).joined(separator: ", ") ?? "")
                     }
+                } header: {
+                    IntestazioneSezione(testo: "Anteprima: \(piano.giorni.first?.nome ?? "")")
                 }
+                .sezioneTema()
             }
             .navigationTitle("Nuovo piano")
             .navigationBarTitleDisplayMode(.inline)
+            .sfondoTema()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annulla", role: .cancel) { chiudi() }
@@ -275,5 +322,6 @@ struct FoglioNuovoPiano: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .presentationBackground(palette.fondo)
     }
 }

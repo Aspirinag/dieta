@@ -37,6 +37,14 @@ struct Opzione: Codable, Hashable {
     // Calorie stimate e alimenti non riconosciuti (vedi Calorie.swift)
     var calorie: (kcal: Double, ignoti: [String]) { Calorie.opzione(titolo: titolo, alimenti: alimenti.map { ($0.nome, $0.quantita) }) }
     var kcal: Double { calorie.kcal }
+
+    // Gli alimenti in una riga: «Riso basmati 70 g · Spinaci 200 g»
+    var descrizione: String {
+        alimenti.map { a in
+            let q = a.quantita.trimmingCharacters(in: .whitespaces)
+            return q.isEmpty ? a.nome : a.nome + " " + q
+        }.joined(separator: " · ")
+    }
 }
 
 struct Pasto: Codable, Hashable {
@@ -52,6 +60,11 @@ struct Pasto: Codable, Hashable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         nome = c.valore(.nome, "")
         opzioni = c.valore(.opzioni, [])
+    }
+
+    // L'alternativa scelta; se non c'è più (piano cambiato) vale la prima
+    func opzione(_ s: Slot) -> Opzione? {
+        opzioni.indices.contains(s.opt) ? opzioni[s.opt] : opzioni.first
     }
 }
 
@@ -130,6 +143,14 @@ struct Registro: Codable, Hashable {
         slot = c.valore(.slot, [:])
         olio = c.valore(.olio, 0)
         acqua = c.valore(.acqua, 0.0)
+    }
+
+    // Il primo pasto né segnato né fuori piano
+    func prossimoPasto(_ pasti: [Pasto]) -> Int? {
+        pasti.indices.first { i in
+            let s = slot[String(i)] ?? Slot()
+            return !s.fatto && s.altro == nil
+        }
     }
 }
 

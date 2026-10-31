@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Caricamento di schema dietetico, referti BIA (PDF) e backup, da qualsiasi scheda:
+// Caricamento di piano alimentare, referti delle misurazioni (PDF) e backup, da qualsiasi scheda:
 // la radice applica .importatore() e le schermate chiamano @Environment(\.importa) — es. importa(.bia)
 enum TipoImportazione { case schema, bia, backup }
 
@@ -20,6 +20,7 @@ extension View {
 
 struct Importatore: ViewModifier {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.palette) private var palette
 
     private typealias Importa = TipoImportazione
 
@@ -53,17 +54,16 @@ struct Importatore: ViewModifier {
         if lettura {
             ProgressView("Lettura del PDF…")
                 .padding(24)
-                .background(.regularMaterial, in: .rect(cornerRadius: 20))
+                .background(palette.riempimento, in: .rect(cornerRadius: 20))
         }
     }
     .overlay(alignment: .bottom) {
         if let conferma {
             Label(conferma, systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.medium))
-                .symbolRenderingMode(.multicolor)
+                .font(.georgia(.subheadline))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(.regularMaterial, in: .capsule)
+                .background(palette.riempimento, in: .capsule)
                 .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 64)   // sopra la barra delle schede
@@ -124,7 +124,7 @@ struct Importatore: ViewModifier {
             Button("Aggiungi") {
                 nuoveBia.forEach { archivio.salvaMisura($0) }
                 conferma = nuoveBia.count == 1
-                    ? "PDF caricato correttamente: BIA del \(Giorni.breve(nuoveBia[0].data)) aggiunta"
+                    ? "PDF caricato correttamente: misurazione del \(Giorni.breve(nuoveBia[0].data)) aggiunta"
                     : "\(nuoveBia.count) PDF caricati correttamente"
             }
             Button("Annulla", role: .cancel) {}
@@ -135,7 +135,7 @@ struct Importatore: ViewModifier {
             get: { backupLetto != nil }, set: { if !$0 { backupLetto = nil } }
         ), presenting: backupLetto) { dati in
             Button("Importa", role: archivio.senzaProfili ? nil : .destructive) {
-                do { try archivio.importa(dati); conferma = "Backup importato" } catch { errore = "File non valido: scegli un backup esportato dall'app Dieta." }
+                do { try archivio.importa(dati); conferma = "Backup importato" } catch { errore = "File non valido: scegli un backup esportato da èffort o da Dieta." }
             }
             Button("Annulla", role: .cancel) {}
         } message: { _ in
@@ -171,7 +171,7 @@ struct Importatore: ViewModifier {
     }
 
     private var titoloBia: String {
-        nuoveBia.count == 1 ? "Aggiungo la BIA del \(Giorni.breve(nuoveBia[0].data))?" : "Aggiungo \(nuoveBia.count) misurazioni?"
+        nuoveBia.count == 1 ? "Aggiungo la misurazione del \(Giorni.breve(nuoveBia[0].data))?" : "Aggiungo \(nuoveBia.count) misurazioni?"
     }
 
     private func riassuntoBia() -> String {
@@ -194,7 +194,7 @@ struct Importatore: ViewModifier {
         guard !codaProtetti.isEmpty else {
             // Finito: se nessuna BIA si è letta non c'è niente da confermare, quindi si spiega l'errore
             if nuoveBia.isEmpty && !nonLetti.isEmpty {
-                errore = "Non riesco a leggere i valori da: \(nonLetti.joined(separator: ", ")). Controlla che siano referti BIA."
+                errore = "Non riesco a leggere i valori da: \(nonLetti.joined(separator: ", ")). Controlla che siano referti delle misurazioni."
                 nonLetti = []
             }
             return
@@ -221,7 +221,7 @@ struct Importatore: ViewModifier {
             do {
                 let giorni = try await LettorePDF.condiviso.schema(dati, password: password)
                 guard giorni.count == 7, giorni.allSatisfy({ !$0.pasti.isEmpty }) else {
-                    errore = "Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico."
+                    errore = "Non riesco a leggere il piano da questo PDF. Controlla che sia il piano alimentare."
                     return
                 }
                 nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: giorni)

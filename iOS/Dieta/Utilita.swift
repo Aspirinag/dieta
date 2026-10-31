@@ -3,6 +3,7 @@ import SwiftUI
 // Date come nella web app: stringhe yyyy-MM-dd nel fuso del telefono, settimana da lunedì
 enum Giorni {
     static let nomi = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
+    static let mesi = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
 
     static let calendario: Calendar = {
         var c = Calendar(identifier: .gregorian)
@@ -38,6 +39,13 @@ enum Giorni {
     // Oggi e i 6 giorni successivi: il periodo della lista della spesa
     static func prossimi7() -> [String] { (0..<7).map { aggiungi(oggi(), $0) } }
 
+    // «Sabato 31 ottobre»
+    static func estesa(_ iso: String) -> String {
+        let p = iso.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3, mesi.indices.contains(p[1] - 1) else { return iso }
+        return "\(nomi[indice(iso)]) \(p[2]) \(mesi[p[1] - 1])"
+    }
+
     // gg/mm/aaaa
     static func breve(_ iso: String) -> String {
         let p = iso.split(separator: "-")
@@ -68,7 +76,7 @@ func leggiNumero(_ testo: String) -> Double? {
     Double(testo.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
 }
 
-// Argomenti di avvio usati per le schermate di prova nel simulatore (es. -tab andamento -demo)
+// Argomenti di avvio usati per le schermate di prova nel simulatore (es. -tab progressi -demo)
 enum Avvio {
     static let argomenti = ProcessInfo.processInfo.arguments
     static var demo: Bool { argomenti.contains("-demo") }
@@ -79,101 +87,46 @@ enum Avvio {
     }
 }
 
-extension View {
-    // Pulsanti Liquid Glass su iOS 26, pulsanti classici sulle versioni precedenti
-    @ViewBuilder
-    func pulsanteVetro(evidente: Bool = false) -> some View {
-        if #available(iOS 26.0, *) {
-            if evidente { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
-        } else {
-            if evidente { buttonStyle(.borderedProminent) } else { buttonStyle(.bordered) }
-        }
-    }
-}
+// Nome che va a capo tra le parole e mai dentro una parola: una riga per parola al massimo,
+// poi rimpicciolisce (è il limite di righe che fa scattare minimumScaleFactor)
+struct TestoIntero: View {
+    let testo: String
 
-// Voce di una checklist: cerchio pieno quando è fatta
-struct RigaSpunta<Etichetta: View>: View {
-    let fatto: Bool
-    let azione: () -> Void
-    @ViewBuilder let etichetta: Etichetta
+    static func righe(_ testo: String) -> Int {
+        max(1, testo.split(whereSeparator: \.isWhitespace).count)
+    }
 
     var body: some View {
-        Button(action: azione) {
-            HStack(spacing: 12) {
-                Image(systemName: fatto ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(fatto ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                    .contentTransition(.symbolEffect(.replace))
-                etichetta
-                    .foregroundStyle(.primary)
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .sensoryFeedback(trigger: fatto) { _, nuovo in nuovo ? .success : .selection }
+        Text(testo)
+            .lineLimit(Self.righe(testo))
+            .minimumScaleFactor(0.5)
     }
 }
 
-// Icona di un pasto dal suo nome nello schema
-func iconaPasto(_ nome: String) -> String {
-    switch nome.lowercased() {
-    case let n where n.hasPrefix("colazione"): "cup.and.saucer.fill"
-    case let n where n.hasPrefix("pranzo"): "sun.max.fill"
-    case let n where n.hasPrefix("cena"): "moon.stars.fill"
-    case let n where n.hasPrefix("spuntino") || n.hasPrefix("merenda"): "carrot.fill"
-    default: "fork.knife"
-    }
-}
-
-// Colore di un pasto: ritmo alla giornata (colazione ambra, pranzo verde, spuntino corallo, cena indaco)
-func colorePasto(_ nome: String) -> Color {
-    switch nome.lowercased() {
-    case let n where n.hasPrefix("colazione"): Color(red: 0.95, green: 0.62, blue: 0.13)
-    case let n where n.hasPrefix("pranzo"): Color(red: 0.20, green: 0.66, blue: 0.42)
-    case let n where n.hasPrefix("cena"): Color(red: 0.36, green: 0.38, blue: 0.85)
-    case let n where n.hasPrefix("spuntino") || n.hasPrefix("merenda"): Color(red: 0.96, green: 0.45, blue: 0.36)
-    default: .accentColor
-    }
-}
-
-// Icona del pasto bianca su un quadratino del suo colore, come nelle Impostazioni di iOS
-struct IconaPasto: View {
-    let nome: String
-    var lato: CGFloat = 36
-
-    var body: some View {
-        Image(systemName: iconaPasto(nome))
-            .font(.system(size: lato * 0.47, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: lato, height: lato)
-            .background(colorePasto(nome).gradient, in: .rect(cornerRadius: lato * 0.28))
-    }
-}
-
-// Riquadro delle schede: sfondo della lista raggruppata, angoli ampi
+// Riquadro delle schede: gradiente del tema, angoli ampi
 extension View {
     func scheda() -> some View {
         modifier(StileScheda())
     }
 
-    // Pulsante principale: il tasto del tema (nel Giorno resta neon, con testo scuro)
-    func tastoPrincipale() -> some View {
-        modifier(StileTasto())
-    }
+    // Sfondo a gradiente del tema dentro una NavigationStack
+    func sfondoTema() -> some View { modifier(SfondoTema()) }
+
+    // Righe di List e Form nei colori del tema
+    func sezioneTema() -> some View { modifier(StileSezione()) }
+
+    // Se l'app resta aperta oltre la mezzanotte, chi guardava oggi passa al nuovo giorno
+    func seguiMezzanotte(_ giorno: Binding<String>) -> some View { modifier(SeguiMezzanotte(giorno: giorno)) }
 }
 
 private struct SfondoTema: ViewModifier {
     @Environment(\.palette) private var palette
 
     func body(content: Content) -> some View {
-        content.background(palette.fondo.ignoresSafeArea())
+        content
+            .scrollContentBackground(.hidden)   // nei fogli quello della radice non arriva
+            .background(palette.fondo.ignoresSafeArea())
     }
-}
-
-extension View {
-    // Sfondo a gradiente del tema dentro una NavigationStack
-    func sfondoTema() -> some View { modifier(SfondoTema()) }
 }
 
 private struct StileScheda: ViewModifier {
@@ -187,14 +140,109 @@ private struct StileScheda: ViewModifier {
     }
 }
 
-private struct StileTasto: ViewModifier {
+private struct StileSezione: ViewModifier {
     @Environment(\.palette) private var palette
 
     func body(content: Content) -> some View {
         content
-            .buttonStyle(.borderedProminent)
-            .tint(palette.tasto)
-            .foregroundStyle(palette.suTasto)
+            .listRowBackground(palette.scheda)
+            .listRowSeparatorTint(palette.traccia)
+            .id(palette.esadecimali.traccia)   // cambiando tema le linee già disegnate resterebbero nere
+    }
+}
+
+private struct SeguiMezzanotte: ViewModifier {
+    @Environment(\.scenePhase) private var fase
+    @Binding var giorno: String
+    @State private var ultimoOggi = Giorni.oggi()
+
+    func body(content: Content) -> some View {
+        content.onChange(of: fase) { _, nuova in
+            guard nuova == .active else { return }
+            if giorno == ultimoOggi { giorno = Giorni.oggi() }
+            ultimoOggi = Giorni.oggi()
+        }
+    }
+}
+
+// Intestazioni e piedi delle sezioni di List e Form: da soli userebbero il carattere di sistema
+struct IntestazioneSezione: View {
+    let testo: String
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        Text(testo)
+            .font(.georgia(.subheadline))
+            .foregroundStyle(palette.secondario)
+            .textCase(nil)
+    }
+}
+
+struct PiedeSezione: View {
+    let testo: String
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        Text(testo)
+            .font(.georgia(.footnote))
+            .foregroundStyle(palette.secondario)
+    }
+}
+
+// Tasti dell'app. Principale: il colore del tasto del tema (nel Giorno resta neon, con testo scuro).
+// Secondario: stessa forma sul riempimento del tema. Sempre almeno 48 punti di altezza
+struct TastoTema: ButtonStyle {
+    var principale = true
+    @Environment(\.palette) private var palette
+    @Environment(\.isEnabled) private var attivo
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.georgia(.callout, grassetto: true))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(principale ? palette.suTasto : palette.testo)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 4)
+            .background(principale ? palette.tasto : palette.riempimento, in: .rect(cornerRadius: 14))
+            .contentShape(.rect(cornerRadius: 14))
+            .opacity(configuration.isPressed ? 0.75 : attivo ? 1 : 0.5)
+    }
+}
+
+// Scheda per quando non c'è ancora niente da mostrare, con i tasti per rimediare
+struct StatoVuoto<Azioni: View>: View {
+    let titolo: String
+    let icona: String
+    var descrizione: String?
+    @ViewBuilder let azioni: Azioni
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: icona)
+                .font(.georgia(.largeTitle))
+                .foregroundStyle(palette.secondario)
+            Text(titolo)
+                .font(.georgia(.title3, grassetto: true))
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
+            if let descrizione {
+                Text(descrizione)
+                    .font(.georgia(.subheadline))
+                    .foregroundStyle(palette.secondario)
+                    .multilineTextAlignment(.center)
+            }
+            VStack(spacing: 8) { azioni }.padding(.top, 6)
+        }
+        .frame(maxWidth: .infinity)
+        .scheda()
+    }
+}
+
+extension StatoVuoto where Azioni == EmptyView {
+    init(titolo: String, icona: String, descrizione: String? = nil) {
+        self.init(titolo: titolo, icona: icona, descrizione: descrizione) { EmptyView() }
     }
 }
 
@@ -202,31 +250,30 @@ private struct StileTasto: ViewModifier {
 struct Anello: View {
     let valore: Double
     let testo: String
-    var lato: CGFloat = 52
+    var lato: CGFloat = 76
     var descrizione = ""     // per VoiceOver, es. «Pasti segnati: 1 su 4»
     var colore: Color?      // senza indicazione, l'accento del tema
     @Environment(\.palette) private var palette
     @ScaledMetric(relativeTo: .subheadline) private var scala = 1.0
 
-    // Cresce con il testo, ma ne devono stare tre in una riga
+    // Cresce con il testo, senza esagerare
     private var latoScalato: CGFloat { lato * min(scala, 1.6) }
 
     var body: some View {
         let colore = colore ?? palette.accento
+        let spessore = latoScalato * 8 / 76
         ZStack {
-            Circle().stroke(colore.opacity(0.18), lineWidth: 6)
+            Circle().stroke(palette.traccia, lineWidth: spessore)
             Circle()
                 .trim(from: 0, to: max(0.001, min(valore, 1)))
-                .stroke(colore, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(colore, style: StrokeStyle(lineWidth: spessore, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text(testo)
-                .font(.subheadline.weight(.semibold))
-                .fontDesign(.rounded)
-                .monospacedDigit()
+                .font(.georgia(.headline))
                 .contentTransition(.numericText())
                 .lineLimit(1)
                 .minimumScaleFactor(0.4)
-                .padding(.horizontal, 9)
+                .padding(.horizontal, spessore + 3)
         }
         .frame(width: latoScalato, height: latoScalato)
         .animation(.spring(duration: 0.4), value: valore)
@@ -235,19 +282,18 @@ struct Anello: View {
     }
 }
 
-// Variazione di una misura in una capsula verde (bene), rossa (male) o grigia
+// Variazione di una misura in una capsula: accento (bene), caldo (male) o neutra
 struct BadgeVariazione: View {
     let testo: String
-    let colore: Color
+    let colore: Color?
+    @Environment(\.palette) private var palette
 
     var body: some View {
         Text(testo)
-            .font(.subheadline.weight(.semibold))
-            .fontDesign(.rounded)
-            .monospacedDigit()
-            .foregroundStyle(colore == .primary ? .secondary : colore)
+            .font(.georgia(.subheadline, grassetto: true))
+            .foregroundStyle(colore ?? palette.secondario)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background((colore == .primary ? Color.secondary : colore).opacity(0.14), in: .capsule)
+            .background(palette.riempimento, in: .capsule)
     }
 }

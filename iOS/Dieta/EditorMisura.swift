@@ -1,10 +1,11 @@
 import SwiftUI
 
-// Nuova misurazione BIA a mano, oppure modifica di una esistente.
+// Nuova misurazione a mano, oppure modifica di una esistente.
 // In modifica restano anche i valori letti dal PDF che il modulo non mostra
 struct EditorMisura: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dismiss) private var chiudi
+    @Environment(\.palette) private var palette
     let dataEsistente: String?
 
     @State private var data = Date()
@@ -25,6 +26,7 @@ struct EditorMisura: View {
                     DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
                 }
             }
+            .sezioneTema()
             Section {
                 ForEach(CampoMisura.allCases) { c in
                     LabeledContent(c.nome) {
@@ -32,24 +34,28 @@ struct EditorMisura: View {
                             TextField("–", text: Binding(get: { valori[c] ?? "" }, set: { valori[c] = $0 }))
                                 .keyboardType(c == .bmr || c == .vat ? .numberPad : .decimalPad)
                                 .multilineTextAlignment(.trailing)
-                            Text(c.unita).foregroundStyle(.secondary).frame(width: 40, alignment: .leading)
+                            Text(c.unita).foregroundStyle(palette.secondario).frame(width: 40, alignment: .leading)
                         }
                     }
                 }
             } footer: {
-                Text("Serve almeno il peso.")
+                PiedeSezione(testo: "Serve almeno il peso.")
             }
+            .sezioneTema()
             if dataEsistente != nil {
                 Section {
                     Button("Elimina misurazione", role: .destructive) {
                         archivio.profilo.bia.removeAll { $0.data == dataEsistente }
                         chiudi()
                     }
+                    .foregroundStyle(palette.caldo)
                 }
+                .sezioneTema()
             }
         }
         .navigationTitle(dataEsistente == nil ? "Nuova misurazione" : "Modifica misurazione")
         .navigationBarTitleDisplayMode(.inline)
+        .sfondoTema()
         .toolbar {
             if dataEsistente == nil {
                 ToolbarItem(placement: .cancellationAction) {
@@ -87,10 +93,11 @@ struct EditorMisura: View {
     }
 }
 
-// Pesata a casa (solo il peso), tra una BIA e l'altra: nuova o da modificare
+// Pesata a casa (solo il peso), tra una misurazione e l'altra: nuova o da modificare
 struct EditorPesata: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dismiss) private var chiudi
+    @Environment(\.palette) private var palette
     let dataEsistente: String?
 
     @State private var data = Date()
@@ -112,23 +119,27 @@ struct EditorPesata: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .focused($attivo)
-                            Text("kg").foregroundStyle(.secondary)
+                            Text("kg").foregroundStyle(palette.secondario)
                         }
                     }
                 } footer: {
-                    Text("Meglio sempre alla stessa ora, al mattino a digiuno. Le pesate si vedono nel grafico del peso insieme alle BIA.")
+                    PiedeSezione(testo: "Meglio sempre alla stessa ora, al mattino a digiuno. Le pesate si vedono nel grafico del peso insieme alle misurazioni.")
                 }
+                .sezioneTema()
                 if let d = dataEsistente {
                     Section {
                         Button("Elimina pesata", role: .destructive) {
                             archivio.profilo.pesate[d] = nil
                             chiudi()
                         }
+                        .foregroundStyle(palette.caldo)
                     }
+                    .sezioneTema()
                 }
             }
             .navigationTitle(dataEsistente == nil ? "Pesata rapida" : "Modifica pesata")
             .navigationBarTitleDisplayMode(.inline)
+            .sfondoTema()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annulla", role: .cancel) { chiudi() }
@@ -148,5 +159,6 @@ struct EditorPesata: View {
             }
         }
         .presentationDetents([.medium])
+        .presentationBackground(palette.fondo)
     }
 }

@@ -20,29 +20,79 @@ struct DietaApp: App {
     }
 }
 
-// Titoli delle schermate con il font arrotondato: più morbido, senza diventare giocoso.
 // Va fatto qui e non in DietaApp.init: là UIKit parte troppo presto e l'app perde il colore principale
 final class AvvioApp: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions opzioni: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        let barra = UINavigationBar.appearance()
-        for (stile, peso) in [(UIFont.TextStyle.largeTitle, UIFont.Weight.bold), (.headline, .semibold)] {
-            let base = UIFont.preferredFont(forTextStyle: stile)
-            let descrittore = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
-            let font = UIFont(descriptor: descrittore.addingAttributes([.traits: [UIFontDescriptor.TraitKey.weight: peso]]), size: base.pointSize)
-            if stile == .largeTitle { barra.largeTitleTextAttributes = [.font: font] } else { barra.titleTextAttributes = [.font: font] }
-        }
+        AspettoUIKit.applica()
         return true
     }
 }
 
-enum Scheda: String {
-    case oggi, settimana, andamento, dati
+enum Scheda: String, CaseIterable {
+    case oggi, dieta, allenamento, progressi, profilo
+
+    var titolo: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
+
+    var icona: String {
+        switch self {
+        case .oggi: "house"
+        case .dieta: "fork.knife"
+        case .allenamento: "dumbbell"
+        case .progressi: "chart.line.uptrend.xyaxis"
+        case .profilo: "person"
+        }
+    }
+}
+
+// Barra delle schede del tema. Quella di sistema da iOS 26 è di vetro e ignora sfondo e colori:
+// il tema non la raggiungerebbe, né cambierebbe colore scegliendone un altro in Profilo
+struct BarraSchede: View {
+    static let altezza: CGFloat = 64
+    static let staccoDalFondo: CGFloat = 18
+
+    @Binding var scheda: Scheda
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Scheda.allCases, id: \.self) { s in
+                let scelta = s == scheda
+                Button {
+                    scheda = s
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: s.icona)
+                            .font(.system(size: 20))
+                            .frame(height: 24)
+                        Text(s.titolo)
+                            .font(.georgiaFissa(10, grassetto: true))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .foregroundStyle(scelta ? palette.accento : palette.secondario)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(s.titolo)
+                .accessibilityAddTraits(scelta ? .isSelected : [])
+                .accessibilityShowsLargeContentViewer { Label(s.titolo, systemImage: s.icona) }
+            }
+        }
+        .frame(height: Self.altezza)
+        .background(palette.barra, in: .capsule)
+        .overlay { Capsule().strokeBorder(palette.traccia) }   // staccata dalle schede che le scorrono sotto
+        .padding(.horizontal, 12)
+        .padding(.bottom, Self.staccoDalFondo)
+        .sensoryFeedback(.selection, trigger: scheda)
+    }
 }
 
 struct Radice: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.scenePhase) private var fase
     @State private var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
+    @State private var giornoDieta = Giorni.oggi()   // sta qui perché Oggi apre Dieta sul giorno che sta guardando
     @State private var avvisoScadenza = Scadenza.avvisoApertura()
 
     private var tema: Tema { Tema.scelto(Avvio.valore("-tema") ?? archivio.stato.tema) }
@@ -60,7 +110,8 @@ struct Radice: View {
         .importatore()
         .environment(\.palette, palette)
         .tint(palette.accento)
-        .fontDesign(.rounded)
+        .font(.georgia())
+        .foregroundStyle(palette.testo)
         .scrollContentBackground(.hidden)
         .background(palette.fondo.ignoresSafeArea())
         .preferredColorScheme(tema.schemaColori)
@@ -96,25 +147,47 @@ struct Radice: View {
 
     private var schede: some View {
         TabView(selection: $scheda) {
-            Tab("Oggi", systemImage: "fork.knife", value: .oggi) {
-                OggiView()
+            Tab(Scheda.oggi.titolo, systemImage: Scheda.oggi.icona, value: .oggi) {
+                OggiView { giorno in
+                    giornoDieta = giorno
+                    scheda = .dieta
+                }
+                .sottoLaBarra()
             }
-            Tab("Settimana", systemImage: "calendar", value: .settimana) {
-                SettimanaView()
+            Tab(Scheda.dieta.titolo, systemImage: Scheda.dieta.icona, value: .dieta) {
+                DietaView(giorno: $giornoDieta).sottoLaBarra()
             }
-            Tab("Andamento", systemImage: "chart.line.uptrend.xyaxis", value: .andamento) {
-                AndamentoView()
+            Tab(Scheda.allenamento.titolo, systemImage: Scheda.allenamento.icona, value: .allenamento) {
+                AllenamentoView().sottoLaBarra()
             }
-            Tab("Profilo", systemImage: "person.crop.circle", value: .dati) {
-                DatiView()
+            Tab(Scheda.progressi.titolo, systemImage: Scheda.progressi.icona, value: .progressi) {
+                ProgressiView().sottoLaBarra()
             }
+            Tab(Scheda.profilo.titolo, systemImage: Scheda.profilo.icona, value: .profilo) {
+                ProfiloView().sottoLaBarra()
+            }
+        }
+        .overlay(alignment: .bottom) {
+            BarraSchede(scheda: $scheda).ignoresSafeArea(edges: .bottom)
         }
     }
 }
 
-// Scelta del profilo nella barra in alto (solo se ce n'è più di uno)
+private extension View {
+    // Nasconde la barra di sistema e lascia in fondo il posto per quella del tema, che le sta sopra
+    func sottoLaBarra() -> some View {
+        toolbar(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: BarraSchede.altezza + BarraSchede.staccoDalFondo)
+            }
+    }
+}
+
+// Scelta del profilo in alto: un cerchio con l'iniziale (solo se c'è più di un profilo)
 struct MenuProfilo: View {
+    var conSfondo = true   // nella barra in alto il cerchio c'è già: da iOS 26 le voci hanno un fondo di vetro
     @Environment(Archivio.self) private var archivio
+    @Environment(\.palette) private var palette
 
     var body: some View {
         if archivio.stato.profili.count > 1 {
@@ -128,8 +201,12 @@ struct MenuProfilo: View {
                     }
                 }
             } label: {
-                Label(archivio.profilo.nome, systemImage: "person.crop.circle")
-                    .labelStyle(.titleAndIcon)
+                Text(String(archivio.profilo.nome.prefix(1)).uppercased())
+                    .font(.georgiaFissa(17, grassetto: true))
+                    .foregroundStyle(palette.testo)
+                    .frame(width: 44, height: 44)
+                    .background(conSfondo ? palette.riempimento : .clear, in: .circle)
+                    .accessibilityLabel("Cambia profilo, ora \(archivio.profilo.nome)")
             }
         }
     }

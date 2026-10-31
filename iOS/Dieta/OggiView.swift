@@ -1,26 +1,27 @@
 import SwiftUI
 
-// Pasti del giorno, olio e acqua; con le frecce si torna ai giorni passati.
-// Schede invece di un elenco: riepilogo con tre anelli, un pasto per scheda (quelli fatti si richiudono)
+// Cosa fare oggi: tre anelli e il prossimo pasto. Con le frecce si torna ai giorni passati;
+// l'elenco completo dei pasti di un giorno è in Dieta
 struct OggiView: View {
+    var apriDieta: (String) -> Void = { _ in }
+
     @Environment(Archivio.self) private var archivio
-    @Environment(\.scenePhase) private var fase
     @Environment(\.importa) private var importa
+    @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var testo
     @State private var giorno = Giorni.oggi()
-    @State private var ultimoOggi = Giorni.oggi()
 
     private var titolo: String {
         let oggi = Giorni.oggi()
-        let nome = Giorni.nomi[Giorni.indice(giorno)]
         if giorno == oggi { return "Oggi" }
         if giorno == Giorni.aggiungi(oggi, -1) { return "Ieri" }
-        return nome
+        return Giorni.nomi[Giorni.indice(giorno)]
     }
 
     private var notaCalorie: String {
         var t = "Calorie stimate con valori medi (tabelle CREA), olio compreso: sono un ordine di grandezza."
         if let bmr = archivio.profilo.bia.max(by: { $0.data < $1.data })?.bmr {
-            t += " Metabolismo basale dall'ultima BIA: \(numeroKcal(bmr)) kcal."
+            t += " Metabolismo basale dall'ultima misurazione: \(numeroKcal(bmr)) kcal."
         }
         return t
     }
@@ -28,364 +29,260 @@ struct OggiView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                if let piano = archivio.profilo.piano(per: giorno) {
-                    let g = piano.giorni[Giorni.indice(giorno)]
-                    // Il primo pasto non ancora segnato è quello «da fare»
-                    let prossimo = g.pasti.indices.first { let s = archivio.slot(giorno, $0); return !s.fatto && s.altro == nil }
-                    VStack(spacing: 14) {
-                        RiepilogoGiorno(giorno: giorno, piano: piano)
-                        ForEach(Array(g.pasti.enumerated()), id: \.offset) { i, pasto in
-                            SchedaPasto(giorno: giorno, indice: i, pasto: pasto, prossimo: i == prossimo && giorno == Giorni.oggi())
-                        }
-                        SchedaAcquaOlio(giorno: giorno)
-                        VStack(alignment: .leading, spacing: 8) {
-                            if !archivio.profilo.testoNote.isEmpty {
-                                Label(archivio.profilo.testoNote, systemImage: "lightbulb")
-                            }
-                            Text(notaCalorie)
-                        }
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
+                VStack(spacing: 14) {
+                    intestazione
+                    if let piano = archivio.profilo.piano(per: giorno) {
+                        giornata(piano)
+                    } else {
+                        senzaPiano
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
-                    .animation(.spring(duration: 0.35), value: archivio.registro(giorno))
-                } else {
-                    let prossimo = archivio.profilo.prossimoPiano(dopo: giorno)
-                    ContentUnavailableView {
-                        Label("Nessun piano per questo giorno", systemImage: "fork.knife")
-                    } description: {
-                        Text(prossimo.map { "Il piano «\($0.nome)» inizia il \(Giorni.breve($0.dal))." }
-                             ?? "Carica lo schema dietetico in PDF: diventa il piano di Oggi e Settimana.")
-                    } actions: {
-                        if prossimo == nil {
-                            Button("Carica schema dietetico") { importa(.schema) }
-                                .tastoPrincipale()
-                        }
-                    }
-                    .padding(.top, 80)
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+                .animation(.spring(duration: 0.35), value: archivio.registro(giorno))
             }
-            .navigationTitle(titolo)
             .sfondoTema()
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarLeading) {
-                    Button("Giorno precedente", systemImage: "chevron.left") {
-                        giorno = Giorni.aggiungi(giorno, -1)
-                    }
-                    Button("Giorno successivo", systemImage: "chevron.right") {
-                        giorno = Giorni.aggiungi(giorno, 1)
-                    }
-                    .disabled(giorno >= Giorni.oggi())
-                    if giorno != Giorni.oggi() {
-                        Button("Oggi") { giorno = Giorni.oggi() }
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) { MenuProfilo() }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .animation(.default, value: giorno)
         }
-        // Se l'app resta aperta oltre la mezzanotte, passa al nuovo giorno
-        .onChange(of: fase) { _, nuova in
-            guard nuova == .active else { return }
-            if giorno == ultimoOggi { giorno = Giorni.oggi() }
-            ultimoOggi = Giorni.oggi()
+        .seguiMezzanotte($giorno)
+    }
+
+    // ---------- Intestazione ----------
+
+    @ViewBuilder private var intestazione: some View {
+        let titoli = VStack(alignment: .leading, spacing: 2) {
+            Text(Giorni.estesa(giorno))
+                .font(.georgia(.subheadline, grassetto: true))
+                .foregroundStyle(palette.secondario)
+            TestoIntero(testo: titolo)
+                .font(.georgia(.largeTitle, grassetto: true))
+                .accessibilityAddTraits(.isHeader)
+        }
+        let comandi = HStack(spacing: 6) {
+            freccia("Giorno precedente", "chevron.left") { giorno = Giorni.aggiungi(giorno, -1) }
+            freccia("Giorno successivo", "chevron.right") { giorno = Giorni.aggiungi(giorno, 1) }
+                .disabled(giorno >= Giorni.oggi())
+                .opacity(giorno >= Giorni.oggi() ? 0.4 : 1)
+            MenuProfilo()
+        }
+        VStack(alignment: .leading, spacing: 8) {
+            if testo.isAccessibilitySize {
+                titoli
+                comandi
+            } else {
+                HStack(alignment: .bottom) {
+                    titoli
+                    Spacer(minLength: 8)
+                    comandi
+                }
+            }
+            if giorno != Giorni.oggi() {
+                Button("Torna a oggi") { giorno = Giorni.oggi() }
+                    .font(.georgia(.subheadline, grassetto: true))
+                    .foregroundStyle(palette.accento)
+                    .frame(minHeight: 44)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func freccia(_ etichetta: String, _ icona: String, azione: @escaping () -> Void) -> some View {
+        Button(action: azione) {
+            Image(systemName: icona)
+                .font(.georgiaFissa(17, grassetto: true))
+                .foregroundStyle(palette.testo)
+                .frame(width: 44, height: 44)
+                .background(palette.riempimento, in: .circle)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(etichetta)
+    }
+
+    // ---------- Contenuto ----------
+
+    @ViewBuilder private func giornata(_ piano: Piano) -> some View {
+        let pasti = piano.giorni[Giorni.indice(giorno)].pasti
+        RiepilogoGiorno(giorno: giorno, piano: piano)
+        if let i = archivio.registro(giorno).prossimoPasto(pasti) {
+            SchedaProssimoPasto(giorno: giorno, indice: i, pasto: pasti[i])
+        } else if !pasti.isEmpty {
+            StatoVuoto(titolo: "Pasti segnati", icona: "checkmark.circle",
+                       descrizione: "Non resta nessun pasto da segnare in questo giorno.")
+        }
+        Button("Vedi tutti i pasti") { apriDieta(giorno) }
+            .font(.georgia(.subheadline, grassetto: true))
+            .foregroundStyle(palette.accento)
+            .frame(minHeight: 44)
+        VStack(alignment: .leading, spacing: 8) {
+            if !archivio.profilo.testoNote.isEmpty {
+                Label(archivio.profilo.testoNote, systemImage: "lightbulb")
+            }
+            Text(notaCalorie)
+        }
+        .font(.georgia(.footnote))
+        .foregroundStyle(palette.secondario)
+        .padding(.horizontal, 6)
+    }
+
+    @ViewBuilder private var senzaPiano: some View {
+        let prossimo = archivio.profilo.prossimoPiano(dopo: giorno)
+        StatoVuoto(titolo: "Nessun piano per questo giorno", icona: "fork.knife",
+                   descrizione: prossimo.map { "Il piano «\($0.nome)» inizia il \(Giorni.breve($0.dal))." }
+                       ?? "Carica il piano alimentare in PDF: diventa il piano di Oggi e Dieta.") {
+            if prossimo == nil {
+                Button("Carica piano alimentare") { importa(.schema) }
+                    .buttonStyle(TastoTema())
+            }
         }
     }
 }
 
-// Data, piano e tre anelli: pasti segnati, acqua bevuta, calorie dei pasti segnati
+// Tre anelli: calorie dei pasti segnati, pasti segnati, acqua bevuta
 struct RiepilogoGiorno: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var testo
     let giorno: String
     let piano: Piano
 
     var body: some View {
-        let g = piano.giorni[Giorni.indice(giorno)]
-        let fatti = g.pasti.indices.filter { archivio.slot(giorno, $0).fatto }.count
+        let pasti = piano.giorni[Giorni.indice(giorno)].pasti
+        let fatti = pasti.indices.filter { archivio.slot(giorno, $0).fatto }.count
         let r = archivio.registro(giorno)
         let p = archivio.profilo
-        let kcal = p.calorie(giorno)
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Giorni.nomi[Giorni.indice(giorno)] + " " + Giorni.breve(giorno))
-                        .font(.title3.weight(.semibold))
-                        .fontDesign(.rounded)
-                    Text(piano.nome).font(.subheadline).foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 8)
-                if g.palestra {
-                    Label("Palestra", systemImage: "dumbbell.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(palette.suAccento)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(palette.accento.gradient, in: .capsule)
-                }
+        let misure = Group {
+            if let kcal = p.calorie(giorno) {
+                misura(Anello(valore: kcal.previste > 0 ? kcal.segnate / kcal.previste : 0,
+                              testo: numeroKcal(kcal.segnate),
+                              descrizione: "Calorie dei pasti segnati: circa \(numeroKcal(kcal.segnate)) su \(numeroKcal(kcal.previste))"),
+                       titolo: "di \(numeroKcal(kcal.previste)) kcal")
             }
-            HStack(alignment: .top) {
-                misura(Anello(valore: g.pasti.isEmpty ? 0 : Double(fatti) / Double(g.pasti.count),
-                              testo: "\(fatti)/\(g.pasti.count)", lato: 64,
-                              descrizione: "Pasti segnati: \(fatti) su \(g.pasti.count)"),
-                       titolo: fatti == g.pasti.count && fatti > 0 ? "Tutti fatti" : "Pasti")
-                misura(Anello(valore: p.acqua > 0 ? r.acqua / p.acqua : 0, testo: num(r.acqua), lato: 64,
-                              descrizione: "Acqua: \(num(r.acqua)) litri su \(num(p.acqua))", colore: .blue),
-                       titolo: "di \(num(p.acqua)) L")
-                if let kcal {
-                    misura(Anello(valore: kcal.previste > 0 ? kcal.segnate / kcal.previste : 0,
-                                  testo: numeroKcal(kcal.segnate), lato: 64,
-                                  descrizione: "Calorie dei pasti segnati: circa \(numeroKcal(kcal.segnate)) su \(numeroKcal(kcal.previste))",
-                                  colore: .orange),
-                           titolo: "di ≈ \(numeroKcal(kcal.previste)) kcal")
-                }
-            }
+            misura(Anello(valore: pasti.isEmpty ? 0 : Double(fatti) / Double(pasti.count),
+                          testo: "\(fatti)/\(pasti.count)",
+                          descrizione: "Pasti segnati: \(fatti) su \(pasti.count)", colore: palette.caldo),
+                   titolo: "pasti")
+            misura(Anello(valore: p.acqua > 0 ? r.acqua / p.acqua : 0, testo: num(r.acqua),
+                          descrizione: "Acqua: \(num(r.acqua)) litri su \(num(p.acqua))", colore: palette.freddo),
+                   titolo: "di \(num(p.acqua)) litri")
         }
-        .scheda()
-    }
-
-    private func misura(_ anello: Anello, titolo: String) -> some View {
-        VStack(spacing: 6) {
-            anello
-            Text(titolo)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .minimumScaleFactor(0.6)
+        // Tre anelli in fila non ci stanno con il testo molto grande
+        Group {
+            if testo.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 12) { misure }
+            } else {
+                HStack(alignment: .top, spacing: 4) { misure }
+            }
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 12)
+        .background(palette.scheda, in: .rect(cornerRadius: 22))
+    }
+
+    @ViewBuilder private func misura(_ anello: Anello, titolo: String) -> some View {
+        let etichetta = Text(titolo)
+            .font(.georgia(.footnote))
+            .foregroundStyle(palette.secondario)
+            .multilineTextAlignment(.center)
+        if testo.isAccessibilitySize {
+            HStack(spacing: 12) {
+                anello
+                etichetta
+            }
+        } else {
+            VStack(spacing: 6) {
+                anello
+                etichetta
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 }
 
-// Un pasto: alternative, alimenti e pulsante per segnarlo. Fatto, si richiude in una riga (toccandola si riapre)
-struct SchedaPasto: View {
+// Il prossimo pasto: alimenti, «Mangiato» e «Altro» (alternative e fuori piano)
+struct SchedaProssimoPasto: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var testo
     let giorno: String
     let indice: Int
     let pasto: Pasto
-    let prossimo: Bool
-    @State private var aperto = false
-    @State private var chiediAltro = false
-    @State private var notaAltro = ""
-    @Environment(\.dynamicTypeSize) private var testo
+    @State private var foglio = false
+    @State private var segnati = 0   // la scheda passa subito al pasto dopo: la vibrazione non può seguire il suo stato
 
     var body: some View {
-        // Con il testo molto grande le calorie vanno sotto il nome: accanto lo spezzerebbero
-        let kcalSotto = testo.isAccessibilitySize
         let s = archivio.slot(giorno, indice)
-        let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
-        let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : nil
-        let calorie = opz?.calorie
-        let colore = colorePasto(pasto.nome)
-        let fuori = s.altro != nil
-        let chiuso = (s.fatto || fuori) && !aperto
-        VStack(alignment: .leading, spacing: 14) {
-            Button {
-                if s.fatto || fuori { aperto.toggle() }
-            } label: {
-                HStack(spacing: 12) {
-                    IconaPasto(nome: pasto.nome)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(pasto.nome).font(.headline).lineLimit(1).minimumScaleFactor(0.6)
-                        if kcalSotto, let calorie, calorie.kcal > 0, !fuori {
-                            Text(kcal(calorie.kcal, incompleto: !calorie.ignoti.isEmpty))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        if let nota = s.altro {
-                            Text(nota.isEmpty ? "Fuori piano" : "Fuori piano: \(nota)")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.orange)
-                                .lineLimit(2)
-                        } else if let t = opz?.titolo, chiuso || pasto.opzioni.count == 1 {
-                            Text(t).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-                        } else if prossimo {
-                            Text("Prossimo pasto").font(.subheadline.weight(.medium)).foregroundStyle(colore)
-                        }
-                    }
-                    Spacer(minLength: 8)
-                    if !kcalSotto, let calorie, calorie.kcal > 0, !fuori {
-                        Text(kcal(calorie.kcal, incompleto: !calorie.ignoti.isEmpty))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                    if s.fatto {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(colore)
-                            .transition(.scale.combined(with: .opacity))
-                    } else if fuori {
-                        Image(systemName: "arrow.triangle.swap")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.orange)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .allowsHitTesting(s.fatto || fuori)   // non .disabled: renderebbe l'intestazione grigia
-
-            if !chiuso {
-                if pasto.opzioni.count > 1 {
-                    let scelte = Picker("Alternativa", selection: Binding(
-                        get: { scelta },
-                        set: { nuova in archivio.cambiaSlot(giorno, indice) { $0.opt = nuova } }
-                    )) {
-                        ForEach(pasto.opzioni.indices, id: \.self) { j in
-                            Text(pasto.opzioni[j].titolo ?? "Opzione \(j + 1)").tag(j)
-                        }
-                    }
-                    if pasto.opzioni.count <= 3 && pasto.opzioni.allSatisfy({ ($0.titolo ?? "").count <= 14 }) {
-                        scelte.pickerStyle(.segmented)
-                    } else {
-                        // Titoli lunghi: menu a tendina con il titolo scelto ben visibile
-                        Menu {
-                            scelte
-                        } label: {
-                            HStack {
-                                Text(opz?.titolo ?? "Opzione \(scelta + 1)").fontWeight(.medium).lineLimit(1)
-                                Spacer()
-                                Image(systemName: "chevron.up.chevron.down").font(.caption)
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 9)
-                            .background(colore.opacity(0.12), in: .rect(cornerRadius: 10))
-                            .foregroundStyle(colore)
-                        }
-                    }
-                }
-                VStack(spacing: 0) {
-                    ForEach(Array((opz?.alimenti ?? []).enumerated()), id: \.offset) { j, a in
-                        if j > 0 { Divider() }
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(a.nome).strikethrough(s.fatto)
-                            Spacer(minLength: 12)
-                            Text(a.quantita).foregroundStyle(.secondary).monospacedDigit()
-                        }
-                        .padding(.vertical, 8)
-                        .opacity(s.fatto ? 0.5 : 1)
-                    }
-                }
-                if let calorie, !calorie.ignoti.isEmpty {
-                    Text("Calorie non stimate per: \(calorie.ignoti.joined(separator: ", ")).")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if fuori {
-                    Button {
-                        archivio.cambiaSlot(giorno, indice) { $0.altro = nil }
-                        aperto = false
-                    } label: {
-                        Label("Annulla «fuori piano»", systemImage: "arrow.uturn.backward")
-                            .font(.body.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 4)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.secondary)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.large)
-                } else {
-                    Button {
-                        archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle(); $0.altro = nil }
-                        aperto = false
-                    } label: {
-                        Label(s.fatto ? "Segnato come fatto · annulla" : "Segna come fatto",
-                              systemImage: s.fatto ? "arrow.uturn.backward" : "checkmark")
-                            .font(.body.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 4)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(s.fatto ? .secondary : colore)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.large)
-                    if !s.fatto {
-                        Button("Ho mangiato altro", systemImage: "arrow.triangle.swap") {
-                            notaAltro = ""
-                            chiediAltro = true
-                        }
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-            }
-        }
-        .scheda()
-        .overlay {
-            if prossimo {
-                RoundedRectangle(cornerRadius: 22).strokeBorder(colore.opacity(0.7), lineWidth: 2)
-            }
-        }
-        .sensoryFeedback(trigger: s.fatto) { _, nuovo in nuovo ? .success : .selection }
-        .alert("Ho mangiato altro", isPresented: $chiediAltro) {
-            TextField("Cosa? (facoltativo)", text: $notaAltro)
-            Button("Salva") {
-                let nota = notaAltro.trimmingCharacters(in: .whitespaces)
-                archivio.cambiaSlot(giorno, indice) { $0.altro = nota; $0.fatto = false }
-                aperto = false
-            }
-            Button("Annulla", role: .cancel) {}
-        } message: {
-            Text("Il pasto resta segnato come fuori piano: non conta nella costanza né nelle calorie.")
-        }
-    }
-}
-
-// Acqua a bicchieri da 0,25 L e olio a cucchiaini: si tocca l'ultimo da riempire (o l'ultimo pieno per toglierlo)
-struct SchedaAcquaOlio: View {
-    @Environment(Archivio.self) private var archivio
-    let giorno: String
-
-    var body: some View {
-        let r = archivio.registro(giorno)
-        let p = archivio.profilo
-        VStack(alignment: .leading, spacing: 16) {
-            riga(titolo: "Acqua", valore: "\(num(r.acqua)) / \(num(p.acqua)) L", icona: "drop.fill", colore: .blue,
-                 pieni: Int((r.acqua / 0.25).rounded()), totale: Int((p.acqua / 0.25).rounded()),
-                 unita: "bicchiere") { n in archivio.cambiaRegistro(giorno) { $0.acqua = Double(n) * 0.25 } }
-            Divider()
-            riga(titolo: "Olio extra vergine", valore: "\(r.olio) / \(p.olio) cucchiaini", icona: "drop.halffull",
-                 colore: Color(red: 0.62, green: 0.62, blue: 0.13),
-                 pieni: r.olio, totale: p.olio, unita: "cucchiaino") { n in archivio.cambiaRegistro(giorno) { $0.olio = n } }
-            Text("Un bicchiere è circa 0,25 L.").font(.caption).foregroundStyle(.secondary)
-        }
-        .scheda()
-        .sensoryFeedback(.selection, trigger: r)
-    }
-
-    private func riga(titolo: String, valore: String, icona: String, colore: Color,
-                      pieni: Int, totale: Int, unita: String, cambia: @escaping (Int) -> Void) -> some View {
+        let opz = pasto.opzione(s)
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(titolo).font(.headline)
-                Spacer()
-                Text(valore).foregroundStyle(.secondary).monospacedDigit().contentTransition(.numericText())
-            }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: min(max(totale, 1), 8)), spacing: 8) {
-                ForEach(0..<max(totale, 1), id: \.self) { i in
-                    Button {
-                        // Toccare l'ultimo pieno lo svuota, altrimenti si riempie fino a quello toccato
-                        cambia(i + 1 == pieni ? i : i + 1)
-                    } label: {
-                        Image(systemName: icona)
-                            .font(.title2)
-                            .foregroundStyle(i < pieni ? AnyShapeStyle(colore.gradient) : AnyShapeStyle(colore.opacity(0.22)))
-                            .symbolEffect(.bounce, value: i < pieni)
-                            .frame(maxWidth: .infinity, minHeight: 36)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(unita.capitalized) \(i + 1)")
-                    .accessibilityAddTraits(i < pieni ? .isSelected : [])
+            intestazione(opz)
+            ForEach(Array((opz?.alimenti ?? []).enumerated()), id: \.offset) { _, a in
+                HStack(alignment: .firstTextBaseline) {
+                    Text(a.nome)
+                    Spacer(minLength: 12)
+                    Text(a.quantita)
+                        .foregroundStyle(palette.secondario)
+                        .multilineTextAlignment(.trailing)
                 }
+                .font(.georgia(.callout))
+            }
+            tasti.padding(.top, 4)
+        }
+        .scheda()
+        .sheet(isPresented: $foglio) {
+            FoglioPasto(giorno: giorno, indice: indice, pasto: pasto)
+        }
+    }
+
+    @ViewBuilder private func intestazione(_ opz: Opzione?) -> some View {
+        let nome = VStack(alignment: .leading, spacing: 2) {
+            Text(giorno == Giorni.oggi() ? "Prossimo pasto" : "Da segnare")
+                .font(.georgia(.footnote, grassetto: true))
+                .foregroundStyle(palette.accento)
+            TestoIntero(testo: pasto.nome)
+                .font(.georgia(.title2, grassetto: true))
+        }
+        if let opz, opz.kcal > 0 {
+            let calorie = Text(kcal(opz.kcal, incompleto: !opz.calorie.ignoti.isEmpty))
+                .font(.georgia(.subheadline))
+                .foregroundStyle(palette.secondario)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            if testo.isAccessibilitySize {
+                nome
+                calorie
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    nome
+                    Spacer(minLength: 8)
+                    calorie.fixedSize()
+                }
+            }
+        } else {
+            nome
+        }
+    }
+
+    @ViewBuilder private var tasti: some View {
+        let mangiato = Button("Mangiato") {
+            archivio.cambiaSlot(giorno, indice) { $0.fatto = true; $0.altro = nil }
+            segnati += 1
+        }
+        .buttonStyle(TastoTema())
+        .sensoryFeedback(.success, trigger: segnati)
+        let altro = Button("Altro") { foglio = true }
+            .buttonStyle(TastoTema(principale: false))
+            .accessibilityHint("Alternative e «Ho mangiato altro»")
+        if testo.isAccessibilitySize {
+            VStack(spacing: 8) {
+                mangiato
+                altro
+            }
+        } else {
+            HStack(spacing: 8) {
+                mangiato
+                altro.fixedSize()
             }
         }
     }

@@ -20,7 +20,7 @@ struct PrimaApertura: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 Text("èffort")
-                    .titoloApp(.largeTitle)
+                    .font(.georgia(.largeTitle, grassetto: true))
                     .foregroundStyle(palette.testo)
                     .accessibilityAddTraits(.isHeader)
 
@@ -45,7 +45,7 @@ struct PrimaApertura: View {
     private var scelta: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Benvenuto. Per cominciare serve un profilo.")
-                .font(.title3)
+                .font(.georgia(.title3))
                 .foregroundStyle(palette.secondario)
             Spacer().frame(height: 8)
             tasto("Carica il tuo profilo", dettaglio: "Importa un backup", evidente: false) { importa(.backup) }
@@ -56,7 +56,7 @@ struct PrimaApertura: View {
     private var richiestaNome: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Come ti chiami?")
-                .titoloApp(.title2)
+                .font(.georgia(.title2, grassetto: true))
                 .foregroundStyle(palette.testo)
             TextField("Nome", text: $nome)
                 .textContentType(.givenName)
@@ -70,7 +70,7 @@ struct PrimaApertura: View {
                 .onAppear { nomeAttivo = true }
             if !nome.isEmpty && nomePulito.isEmpty {
                 Text("Scrivi almeno una lettera.")
-                    .font(.footnote)
+                    .font(.georgia(.footnote))
                     .foregroundStyle(palette.caldo)
             }
             tasto("Continua", evidente: true) { passo = .piano }
@@ -83,10 +83,10 @@ struct PrimaApertura: View {
     private var propostaPiano: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Hai il piano alimentare in PDF?")
-                .titoloApp(.title2)
+                .font(.georgia(.title2, grassetto: true))
                 .foregroundStyle(palette.testo)
             Text("Puoi caricarlo ora, oppure farlo più tardi da Profilo.")
-                .font(.body)
+                .font(.georgia(.body))
                 .foregroundStyle(palette.secondario)
             tasto("Carica il piano (PDF)", evidente: true) { crea(poiCaricaPiano: true) }
             tasto("Salta", evidente: false) { crea(poiCaricaPiano: false) }
@@ -103,9 +103,9 @@ struct PrimaApertura: View {
     private func tasto(_ titolo: String, dettaglio: String? = nil, evidente: Bool, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             VStack(spacing: 2) {
-                Text(titolo).font(.headline)
+                Text(titolo).font(.georgia(.headline))
                 if let dettaglio {
-                    Text(dettaglio).font(.subheadline)
+                    Text(dettaglio).font(.georgia(.subheadline))
                         .foregroundStyle(evidente ? palette.suTasto : palette.secondario)
                 }
             }
