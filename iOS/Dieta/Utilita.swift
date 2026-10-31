@@ -154,9 +154,47 @@ struct IconaPasto: View {
 // Riquadro delle schede: sfondo della lista raggruppata, angoli ampi
 extension View {
     func scheda() -> some View {
-        padding(16)
+        modifier(StileScheda())
+    }
+
+    // Pulsante principale: il tasto del tema (nel Giorno resta neon, con testo scuro)
+    func tastoPrincipale() -> some View {
+        modifier(StileTasto())
+    }
+}
+
+private struct SfondoTema: ViewModifier {
+    @Environment(\.palette) private var palette
+
+    func body(content: Content) -> some View {
+        content.background(palette.fondo.ignoresSafeArea())
+    }
+}
+
+extension View {
+    // Sfondo a gradiente del tema dentro una NavigationStack
+    func sfondoTema() -> some View { modifier(SfondoTema()) }
+}
+
+private struct StileScheda: ViewModifier {
+    @Environment(\.palette) private var palette
+
+    func body(content: Content) -> some View {
+        content
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 22))
+            .background(palette.scheda, in: .rect(cornerRadius: 22))
+    }
+}
+
+private struct StileTasto: ViewModifier {
+    @Environment(\.palette) private var palette
+
+    func body(content: Content) -> some View {
+        content
+            .buttonStyle(.borderedProminent)
+            .tint(palette.tasto)
+            .foregroundStyle(palette.suTasto)
     }
 }
 
@@ -166,13 +204,15 @@ struct Anello: View {
     let testo: String
     var lato: CGFloat = 52
     var descrizione = ""     // per VoiceOver, es. «Pasti segnati: 1 su 4»
-    var colore = Color.accentColor
+    var colore: Color?      // senza indicazione, l'accento del tema
+    @Environment(\.palette) private var palette
     @ScaledMetric(relativeTo: .subheadline) private var scala = 1.0
 
     // Cresce con il testo, ma ne devono stare tre in una riga
     private var latoScalato: CGFloat { lato * min(scala, 1.6) }
 
     var body: some View {
+        let colore = colore ?? palette.accento
         ZStack {
             Circle().stroke(colore.opacity(0.18), lineWidth: 6)
             Circle()

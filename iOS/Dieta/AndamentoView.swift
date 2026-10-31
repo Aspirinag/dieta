@@ -55,7 +55,7 @@ struct AndamentoView: View {
                             Text("Carica i referti BIA in PDF o aggiungi una misurazione a mano.")
                         } actions: {
                                 Button("Carica referti BIA (PDF)") { importa(.bia) }
-                                .buttonStyle(.borderedProminent)
+                                .tastoPrincipale()
                             Button("Pesata rapida") { pesata = "" }
                             Button("Aggiungi a mano") { nuovaMisura = true }
                         }
@@ -70,8 +70,8 @@ struct AndamentoView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
             }
-            .background(Color(.systemGroupedBackground))
             .navigationTitle("Andamento")
+            .sfondoTema()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {

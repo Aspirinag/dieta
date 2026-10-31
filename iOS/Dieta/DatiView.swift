@@ -28,6 +28,7 @@ struct DatiView: View {
             backup
         }
         .navigationTitle("Profilo")
+        .sfondoTema()
         .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
     }
 

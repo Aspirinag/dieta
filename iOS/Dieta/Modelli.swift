@@ -306,6 +306,7 @@ struct Stato: Codable, Hashable {
     var preferito: String?
     var promemoria: Promemoria?
     var spunte: [String: String]?   // lista della spesa, comune a tutti i profili: alimento → giorno della spunta
+    var tema: String?               // nome del tema scelto; assente = Halloween
 
     static let iniziale = Stato(
         profili: [
@@ -332,6 +333,7 @@ struct Stato: Codable, Hashable {
         preferito = c.valore(.preferito, nil)
         promemoria = c.valore(.promemoria, nil)
         spunte = c.valore(.spunte, nil)
+        tema = c.valore(.tema, nil)
         if profili[attivo] == nil { attivo = profili.keys.sorted()[0] }
     }
 }

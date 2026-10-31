@@ -3,6 +3,7 @@ import SwiftUI
 // Pasti di ogni giorno del piano attivo e lista della spesa della settimana
 struct SettimanaView: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.palette) private var palette
     @State private var vista = Avvio.valore("-vista") == "spesa" ? 1 : 0
     @State private var giorno = Giorni.indice(Giorni.oggi())
 
@@ -25,6 +26,7 @@ struct SettimanaView: View {
                 }
             }
             .navigationTitle("Settimana")
+            .sfondoTema()
             .toolbar {
                 if vista == 1 {
                     ToolbarItem(placement: .topBarLeading) {
@@ -67,10 +69,10 @@ struct SettimanaView: View {
                     if g.palestra {
                         Label("Palestra", systemImage: "dumbbell.fill")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(palette.suAccento)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Color.accentColor.gradient, in: .capsule)
+                            .background(palette.accento.gradient, in: .capsule)
                     }
                 }
                 .padding(.vertical, 4)

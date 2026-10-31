@@ -45,7 +45,10 @@ struct Radice: View {
     @State private var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
     @State private var avvisoScadenza = Scadenza.avvisoApertura()
 
+    private var tema: Tema { Tema.scelto(Avvio.valore("-tema") ?? archivio.stato.tema) }
+
     var body: some View {
+        let palette = tema.palette
         TabView(selection: $scheda) {
             Tab("Oggi", systemImage: "fork.knife", value: .oggi) {
                 OggiView()
@@ -61,6 +64,12 @@ struct Radice: View {
             }
         }
         .importatore()
+        .environment(\.palette, palette)
+        .tint(palette.accento)
+        .fontDesign(.rounded)
+        .scrollContentBackground(.hidden)
+        .background(palette.fondo.ignoresSafeArea())
+        .preferredColorScheme(tema.schemaColori)
         .task {
             await archivio.programmaPromemoria()
             await Scadenza.programma()

@@ -61,14 +61,14 @@ struct OggiView: View {
                     } actions: {
                         if prossimo == nil {
                             Button("Carica schema dietetico") { importa(.schema) }
-                                .buttonStyle(.borderedProminent)
+                                .tastoPrincipale()
                         }
                     }
                     .padding(.top, 80)
                 }
             }
-            .background(Color(.systemGroupedBackground))
             .navigationTitle(titolo)
+            .sfondoTema()
             .toolbar {
                 ToolbarItemGroup(placement: .topBarLeading) {
                     Button("Giorno precedente", systemImage: "chevron.left") {
@@ -98,6 +98,7 @@ struct OggiView: View {
 // Data, piano e tre anelli: pasti segnati, acqua bevuta, calorie dei pasti segnati
 struct RiepilogoGiorno: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.palette) private var palette
     let giorno: String
     let piano: Piano
 
@@ -119,10 +120,10 @@ struct RiepilogoGiorno: View {
                 if g.palestra {
                     Label("Palestra", systemImage: "dumbbell.fill")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(palette.suAccento)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Color.accentColor.gradient, in: .capsule)
+                        .background(palette.accento.gradient, in: .capsule)
                 }
             }
             HStack(alignment: .top) {
