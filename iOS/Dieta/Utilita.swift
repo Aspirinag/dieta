@@ -112,6 +112,10 @@ extension View {
     // Sfondo a gradiente del tema dentro una NavigationStack
     func sfondoTema() -> some View { modifier(SfondoTema()) }
 
+    // Schede senza barra di navigazione: il testo si ferma prima dell'ora e della barra in basso,
+    // e il rimbalzo c'è solo quando c'è davvero da scorrere
+    func scorrimentoTema() -> some View { clipped().scrollBounceBehavior(.basedOnSize) }
+
     // Righe di List e Form nei colori del tema
     func sezioneTema() -> some View { modifier(StileSezione()) }
 

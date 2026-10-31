@@ -40,6 +40,7 @@ struct DietaView: View {
                 .padding(.bottom, 24)
                 .animation(.spring(duration: 0.35), value: archivio.registro(giorno))
             }
+            .scorrimentoTema()
             .sfondoTema()
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(isPresented: $mostraSpesa) { SpesaView() }

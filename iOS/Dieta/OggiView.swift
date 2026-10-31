@@ -41,6 +41,7 @@ struct OggiView: View {
                 .padding(.bottom, 24)
                 .animation(.spring(duration: 0.35), value: archivio.registro(giorno))
             }
+            .scorrimentoTema()
             .sfondoTema()
             .toolbar(.hidden, for: .navigationBar)
             .animation(.default, value: giorno)
