@@ -284,10 +284,22 @@ struct Profilo: Codable, Hashable {
     var acquaTot: Double?
     var note: String?
     var spesa: Spesa?
+    // Allenamento (vedi ModelliAllenamento.swift)
+    var allenamenti: [Allenamento] = []
+    var routine: [Routine] = []
+    var cardio: [SessioneCardio] = []
+    var pagamenti: [String: String] = [:]        // mese → data del pagamento
+    var calendario: [String: String] = [:]       // data → pesi, cardio o saltato
+    var spunte: [String: [String: Bool]] = [:]   // data → riscaldamento e defaticamento
+    var modoCardio = ""
+    var allenamentoInCorso: Allenamento?
+    var noteEsercizi: [String: String] = [:]     // esercizio → nota (`note` è già la nota del profilo)
 
     enum CodingKeys: String, CodingKey {
         case nome, piani, bia, pesate, dieta, note, spesa
         case olioTot = "olio_tot", acquaTot = "acqua_tot"
+        case allenamenti, routine, cardio, pagamenti, calendario, spunte
+        case modoCardio = "modo_cardio", allenamentoInCorso = "allenamento_in_corso", noteEsercizi = "note_esercizi"
     }
 
     init(nome: String) {
@@ -305,6 +317,15 @@ struct Profilo: Codable, Hashable {
         acquaTot = c.valore(.acquaTot, nil)
         note = c.valore(.note, nil)
         spesa = c.valore(.spesa, nil)
+        allenamenti = c.valore(.allenamenti, [])
+        routine = c.valore(.routine, [])
+        cardio = c.valore(.cardio, [])
+        pagamenti = c.valore(.pagamenti, [:])
+        calendario = c.valore(.calendario, [:])
+        spunte = c.valore(.spunte, [:])
+        modoCardio = c.valore(.modoCardio, "")
+        allenamentoInCorso = c.valore(.allenamentoInCorso, nil)
+        noteEsercizi = c.valore(.noteEsercizi, [:])
     }
 }
 
