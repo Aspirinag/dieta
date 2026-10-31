@@ -94,9 +94,13 @@ extension EnvironmentValues {
 }
 
 extension Text {
+    static let nomeFontTitoli = "Georgia"
+
     // Georgia solo per il nome dell'app e i titoli: mai per i numeri
     func titoloApp(_ stile: Font.TextStyle) -> Text {
-        font(.custom("Georgia", size: Self.dimensione(stile), relativeTo: stile))
+        font(.custom(Self.nomeFontTitoli, size: Self.dimensione(stile), relativeTo: stile))
+            // L'app ha .fontDesign(.rounded) alla radice e sostituirebbe Georgia con il carattere di sistema
+            .fontDesign(nil)
     }
 
     private static func dimensione(_ stile: Font.TextStyle) -> CGFloat {

@@ -105,7 +105,8 @@ struct PrimaApertura: View {
             VStack(spacing: 2) {
                 Text(titolo).font(.headline)
                 if let dettaglio {
-                    Text(dettaglio).font(.subheadline).opacity(0.8)
+                    Text(dettaglio).font(.subheadline)
+                        .foregroundStyle(evidente ? palette.suTasto : palette.secondario)
                 }
             }
             .multilineTextAlignment(.center)
