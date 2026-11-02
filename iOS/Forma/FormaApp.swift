@@ -33,7 +33,7 @@ struct FormaApp: App {
 }
 
 enum Scheda: String {
-    case oggi, dieta, allenamento, progressi, profilo
+    case oggi, dieta, allenamento, profilo
 }
 
 // Scheda selezionata e allenamento aperto: anche i pulsanti dentro le schermate possono cambiarli
@@ -48,6 +48,7 @@ final class Navigazione {
 struct Radice: View {
     @Environment(Archivio.self) private var archivio
     @Environment(Palestra.self) private var palestra
+    @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
     @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
 
@@ -58,11 +59,11 @@ struct Radice: View {
         TabView(selection: $navigazione.scheda) {
             Tab("Oggi", systemImage: "sun.max", value: .oggi) { HomeView() }
             Tab("Dieta", systemImage: "fork.knife", value: .dieta) { PastiView() }
-            Tab("Allenamento", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
-            Tab("Progressi", systemImage: "chart.line.uptrend.xyaxis", value: .progressi) { ProgressiView() }
-            Tab("Profilo", systemImage: "person.crop.circle", value: .profilo) { ProfiloView() }
+            Tab("Palestra", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
+            Tab("Impostazioni", systemImage: "gearshape", value: .profilo) { ProfiloView() }
         }
-        .accessorioAllenamento()
+        // La barra compare solo con un allenamento in corso o un recupero che scorre
+        .accessorioAllenamento(visibile: palestra.stato.inCorso != nil || timer.attivo)
         .fullScreenCover(isPresented: Binding(
             get: { navigazione.allenamentoAperto && palestra.stato.inCorso != nil },
             set: { navigazione.allenamentoAperto = $0 }
@@ -91,18 +92,24 @@ struct Radice: View {
 extension View {
     // Su iOS 26 timer di recupero e allenamento in corso stanno sopra la tab bar, in vetro
     @ViewBuilder
-    func accessorioAllenamento() -> some View {
-        if #available(iOS 26.0, *) {
+    func accessorioAllenamento(visibile: Bool) -> some View {
+        if #available(iOS 26.1, *) {
+            tabViewBottomAccessory(isEnabled: visibile) { BarraAllenamento() }
+        } else if #available(iOS 26.0, *) {
             tabViewBottomAccessory { BarraAllenamento() }
         } else {
             safeAreaInset(edge: .bottom) {
-                BarraAllenamento()
-                    .padding(.vertical, 10)
-                    .background(.bar, in: .capsule)
-                    .padding(.horizontal)
-                    .padding(.bottom, 56)
+                if visibile { barraClassica }
             }
         }
+    }
+
+    private var barraClassica: some View {
+        BarraAllenamento()
+            .padding(.vertical, 10)
+            .background(.bar, in: .capsule)
+            .padding(.horizontal)
+            .padding(.bottom, 56)
     }
 }
 

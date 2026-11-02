@@ -271,6 +271,7 @@ struct StatoPalestra: Codable, Hashable {
     var saltati: [String] = []                  // giorni segnati "non sono andato"
     var pagamenti: [String: String] = [:]       // yyyy-MM → data del pagamento
     var importati: [String] = []                // allenamenti di Salute già letti (anche se poi eliminati)
+    var oraPagamento = 9 * 60                   // ora del promemoria del pagamento, minuti dalla mezzanotte
 
     init() {}
 
@@ -287,6 +288,7 @@ struct StatoPalestra: Codable, Hashable {
         saltati = c.valore(.saltati, [])
         pagamenti = c.valore(.pagamenti, [:])
         importati = c.valore(.importati, [])
+        oraPagamento = c.valore(.oraPagamento, base.oraPagamento)
         // Aggiunge alla libreria gli esercizi predefiniti nuovi
         for e in Libreria.predefiniti where !esercizi.contains(where: { $0.id == e.id }) { esercizi.append(e) }
     }

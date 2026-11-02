@@ -288,27 +288,31 @@ final class Palestra {
         Task { await programmaPagamento() }
     }
 
-    // Una sola notifica, il primo giorno utile (1 o 2 alle 9:00) di un mese non ancora pagato
+    // Una sola notifica, il primo giorno utile (1 o 2 del mese, all'ora scelta) di un mese non ancora pagato
     func programmaPagamento() async {
         guard !demo else { return }
-        let centro = UNUserNotificationCenter.current()
-        centro.removePendingNotificationRequests(withIdentifiers: ["pagamento"])
-        let ora = Date()
-        let questoMese = Giorni.data(String(Giorni.oggi().prefix(8)) + "01")
+        Notifiche.cancella(["pagamento"])
+        guard let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento) else { return }
+        await Notifiche.una(id: "pagamento", titolo: "Palestra",
+                            testo: p.primo ? "Oggi si paga la palestra (1 o 2 del mese)." : "Ultimo giorno per pagare la palestra.",
+                            quando: p.quando)
+    }
+
+    static func prossimoPagamento(dopo ora: Date, pagamenti: [String: String], minuti: Int) -> (quando: DateComponents, primo: Bool)? {
+        let questoMese = Giorni.data(String(Giorni.iso(ora).prefix(8)) + "01")
         for m in 0..<3 {
             guard let mese = Giorni.calendario.date(byAdding: .month, value: m, to: questoMese) else { continue }
-            if stato.pagamenti[Self.mese(Giorni.iso(mese))] != nil { continue }
+            if pagamenti[Self.mese(Giorni.iso(mese))] != nil { continue }
             for giorno in [1, 2] {
                 var dc = Giorni.calendario.dateComponents([.year, .month], from: mese)
                 dc.day = giorno
-                dc.hour = 9
+                dc.hour = minuti / 60
+                dc.minute = minuti % 60
                 guard let quando = Giorni.calendario.date(from: dc), quando > ora else { continue }
-                await Notifiche.una(id: "pagamento", titolo: "Palestra",
-                                    testo: giorno == 1 ? "Oggi si paga la palestra (1 o 2 del mese)." : "Ultimo giorno per pagare la palestra.",
-                                    quando: dc)
-                return
+                return (dc, giorno == 1)
             }
         }
+        return nil
     }
 
     // ---------- Backup della vecchia app Palestra ----------

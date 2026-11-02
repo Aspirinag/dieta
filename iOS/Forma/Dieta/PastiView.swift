@@ -8,6 +8,7 @@ struct PastiView: View {
     @State private var giorno = Giorni.oggi()
     @State private var ultimoOggi = Giorni.oggi()
     @State private var settimana = ["settimana", "spesa"].contains(Avvio.valore("-vista") ?? "")
+    @State private var richiesta: TipoPDF?
 
     private var titolo: String {
         let oggi = Giorni.oggi()
@@ -35,11 +36,24 @@ struct PastiView: View {
                         }
                         SezioneOlioAcqua(giorno: giorno)
                     } else {
-                        ContentUnavailableView(
-                            "Nessun piano per questo giorno",
-                            systemImage: "fork.knife",
-                            description: Text("Carica lo schema dietetico in PDF dalla scheda Profilo.")
-                        )
+                        ContentUnavailableView {
+                            Label("Nessun piano per questo giorno", systemImage: "fork.knife")
+                        } description: {
+                            Text("Carica lo schema dietetico che ti ha dato il nutrizionista, in PDF.")
+                        } actions: {
+                            Button("Carica schema dietetico", systemImage: "doc.badge.plus") { richiesta = .schema }
+                                .pulsanteVetro(evidente: true)
+                        }
+                    }
+                    Section {
+                        NavigationLink { AndamentoPagina() } label: {
+                            Label("Andamento e misure BIA", systemImage: "chart.line.uptrend.xyaxis")
+                        }
+                        NavigationLink { PianiDietaView() } label: {
+                            Label("Piani e referti (PDF)", systemImage: "doc.text")
+                        }
+                    } header: {
+                        Text("Progressi e piani")
                     }
                 }
                 .righeTema()
@@ -66,6 +80,7 @@ struct PastiView: View {
             }
             .animation(.default, value: giorno)
             .sheet(isPresented: $settimana) { SettimanaView() }
+            .importaPDF($richiesta)
         }
         // Se l'app resta aperta oltre la mezzanotte, passa al nuovo giorno
         .onChange(of: fase) { _, nuova in

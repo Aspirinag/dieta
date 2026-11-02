@@ -1,6 +1,9 @@
 import SwiftUI
 
-// Scheda Allenamento: inizia un allenamento, le mie schede, schede pronte, cardio e libreria esercizi
+// Apre l'editor di una scheda (tipo a parte: gli UUID semplici aprono il dettaglio di un allenamento)
+struct ApriScheda: Hashable { let id: UUID }
+
+// Scheda Palestra: inizia un allenamento, le mie schede, cardio, storico e calendario, impostazioni
 struct AllenamentoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
@@ -23,12 +26,31 @@ struct AllenamentoView: View {
                             Label("Schede pronte", systemImage: "square.stack.3d.up")
                         }
                     }
+                    Section {
+                        NavigationLink { PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() } } label: {
+                            LabeledContent {
+                                Text("\(palestra.stato.allenamenti.count)")
+                            } label: {
+                                Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
+                            }
+                        }
+                        NavigationLink { PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() } } label: {
+                            Label("Calendario", systemImage: "calendar")
+                        }
+                        NavigationLink { PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() } } label: {
+                            Label("Piano A/B, pagamento e Watch", systemImage: "gearshape")
+                        }
+                    } header: {
+                        Text("Progressi e impostazioni")
+                    }
                 }
                 .righeTema()
             }
             .sfondoTema()
-            .navigationTitle("Allenamento")
-            .navigationDestination(for: UUID.self) { EditorSchedaView(idScheda: $0) }
+            .navigationTitle("Palestra")
+            .navigationDestination(for: ApriScheda.self) { EditorSchedaView(idScheda: $0.id) }
+            .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
+            .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
             .sheet(isPresented: $cardio) { NuovoCardioView() }
             .confirmationDialog("C'è già un allenamento in corso", isPresented: Binding(
                 get: { daAvviare != nil }, set: { if !$0 { daAvviare = nil } }
@@ -81,7 +103,7 @@ struct AllenamentoView: View {
             ForEach(palestra.stato.routine) { r in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        NavigationLink(value: r.id) {
+                        NavigationLink(value: ApriScheda(id: r.id)) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(r.nome).font(.headline)
                                 Text(r.voci.map { palestra.nome($0.esercizio) }.joined(separator: ", "))
@@ -114,7 +136,7 @@ struct AllenamentoView: View {
             Button("Nuova scheda", systemImage: "square.and.pencil") {
                 let r = Routine(nome: "Nuova scheda")
                 palestra.stato.routine.append(r)
-                percorso.append(r.id)
+                percorso.append(ApriScheda(id: r.id))
             }
         } header: {
             Text("Le mie schede")
@@ -267,7 +289,7 @@ struct ModelliView: View {
                             var copia = m
                             copia.id = UUID()
                             palestra.stato.routine.append(copia)
-                            percorso = NavigationPath([copia.id])
+                            percorso = NavigationPath([ApriScheda(id: copia.id)])
                         }
                     } header: {
                         Text(m.nome)
@@ -325,5 +347,20 @@ struct NuovoCardioView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+}
+
+// Pagina della scheda Palestra con il contenuto di una lista (storico, calendario, impostazioni)
+struct PaginaPalestra<Contenuto: View>: View {
+    let titolo: String
+    @ViewBuilder let contenuto: Contenuto
+
+    var body: some View {
+        List {
+            Group { contenuto }.righeTema()
+        }
+        .sfondoTema()
+        .navigationTitle(titolo)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Temi dell'app: i temi Halloween di Slack più il tema classico; ognuno in versione chiara e scura, come il telefono
+// Temi dell'app, ognuno in versione chiara e scura: seguono l'aspetto impostato sul telefono
 enum Tema: String, CaseIterable, Identifiable {
     case slimeTime, fangtastic, friendlyGhost, candyCorn, frankenstein, witchingHour, classico
 
@@ -23,7 +23,7 @@ enum Tema: String, CaseIterable, Identifiable {
         let alto: UInt32, basso: UInt32, accento: UInt32, secondo: UInt32, primario: UInt32, suPrimario: UInt32
     }
 
-    // Versione scura (i temi Halloween di Slack) e chiara (scelta a mano, accenti scuriti per leggersi sul chiaro)
+    // Versione scura e chiara (scelta a mano, accenti scuriti per leggersi sul chiaro)
     func palette(_ schema: ColorScheme) -> Palette? {
         let scuro = schema == .dark
         switch self {
@@ -139,7 +139,7 @@ struct SezioneTema: View {
         } header: {
             Text("Tema")
         } footer: {
-            Text("I temi Halloween di Slack. Chiaro o scuro segue il telefono.")
+            Text("Il tema segue l'aspetto chiaro o scuro impostato sull'iPhone.")
         }
     }
 

@@ -16,7 +16,7 @@ struct AndamentoView: View {
         Voce(campo: .vita, verso: -1), Voce(campo: .addome, verso: -1), Voce(campo: .fianchi, verso: -1),
     ]
 
-    // Contenuto della vista "Corpo" in Progressi (la lista e la navigazione sono di ProgressiView)
+    // Contenuto della pagina Andamento in Dieta (la lista e la navigazione sono di AndamentoPagina)
     var body: some View {
         let bia = archivio.profilo.bia.sorted { $0.data < $1.data }
         riepilogo(bia)
@@ -28,7 +28,7 @@ struct AndamentoView: View {
             ContentUnavailableView(
                 "Nessuna misurazione",
                 systemImage: "figure.stand",
-                description: Text("Carica la BIA in PDF o aggiungila a mano dalla scheda Profilo.")
+                description: Text("Carica la BIA in PDF o aggiungila a mano da Dieta → Piani e referti.")
             )
         }
     }

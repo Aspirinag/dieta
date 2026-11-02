@@ -144,23 +144,26 @@ final class Archivio {
 
     // ---------- Promemoria ----------
 
-    static let oreAcqua = [10, 12, 14, 16, 18, 20]
+    // Una programmazione alla volta: se ne parte un'altra aspetta la precedente,
+    // così non restano promemoria con orari vecchi
+    @ObservationIgnored private var programmazione: Task<Void, Never>?
 
     func programmaPromemoria() async {
         guard !demo else { return }
+        let precedente = programmazione
+        let t = Task { await precedente?.value; await eseguiProgrammazione() }
+        programmazione = t
+        await t.value
+    }
+
+    private func eseguiProgrammazione() async {
         let centro = UNUserNotificationCenter.current()
-        centro.removePendingNotificationRequests(withIdentifiers: Self.oreAcqua.map { "acqua-\($0)" } + ["pasti", "mattino"])
-        let p = stato.promemoria ?? Promemoria()
-        if p.acqua {
-            for ora in Self.oreAcqua {
-                await Notifiche.giornaliera(id: "acqua-\(ora)", titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.", ora: ora)
-            }
-        }
-        if p.mattino {
-            await Notifiche.giornaliera(id: "mattino", titolo: "Dieta", testo: "Controlla la dieta odierna 🥗", ora: 9)
-        }
-        if p.pasti {
-            await Notifiche.giornaliera(id: "pasti", titolo: "Dieta", testo: "Hai segnato i pasti di oggi?", ora: 21)
+        // Toglie tutti i promemoria della dieta, anche quelli con orari vecchi
+        let vecchi = await centro.pendingNotificationRequests().map(\.identifier)
+            .filter { $0 == "mattino" || $0 == "pasti" || $0.hasPrefix("acqua-") }
+        centro.removePendingNotificationRequests(withIdentifiers: vecchi)
+        for n in (stato.promemoria ?? Promemoria()).notifiche {
+            await Notifiche.giornaliera(id: n.id, titolo: n.titolo, testo: n.testo, minuti: n.minuti)
         }
     }
 }

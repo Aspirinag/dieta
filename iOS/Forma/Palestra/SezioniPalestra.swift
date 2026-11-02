@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Sezioni della palestra nella scheda Profilo: piano settimanale A/B, pagamento, libreria
+// Impostazioni della palestra (dalla scheda Palestra): piano settimanale A/B, pagamento, libreria
 struct SezioniPalestra: View {
     @Environment(Palestra.self) private var palestra
     @AppStorage(Salute.chiave) private var watch = true
@@ -58,10 +58,14 @@ struct SezioniPalestra: View {
             } else {
                 Button("Segna pagato questo mese", systemImage: "creditcard") { palestra.segnaPagato(mese) }
             }
+            SceltaOrario(titolo: "Promemoria del pagamento alle", minuti: palestra.stato.oraPagamento) { m in
+                palestra.stato.oraPagamento = m
+                Task { await palestra.programmaPagamento() }
+            }
         } header: {
             Text("Palestra")
         } footer: {
-            Text("Il promemoria del pagamento arriva il 1 (o il 2) del mese alle 9, solo se il mese non è già segnato pagato.")
+            Text("Il promemoria del pagamento arriva il 1 (o il 2) del mese alle \(ProfiloView.orario(palestra.stato.oraPagamento)), solo se il mese non è già segnato pagato.")
         }
     }
 }
