@@ -309,6 +309,12 @@ struct Promemoria: Codable, Hashable {
         acquaDalle = c.valore(.acquaDalle, base.acquaDalle)
         acquaAlle = c.valore(.acquaAlle, base.acquaAlle)
         acquaOgni = c.valore(.acquaOgni, base.acquaOgni)
+        // Valori da un backup modificato o rovinato: riportati nei limiti
+        oraMattino = minutiValidi(oraMattino)
+        oraPasti = minutiValidi(oraPasti)
+        acquaDalle = minutiValidi(acquaDalle)
+        acquaAlle = max(minutiValidi(acquaAlle), acquaDalle)
+        acquaOgni = min(max(acquaOgni, 1), 6)
     }
 
     // Dalle `acquaDalle` alle `acquaAlle`, ogni `acquaOgni` ore (almeno il primo)
@@ -362,6 +368,9 @@ struct Stato: Codable, Hashable {
         if profili[attivo] == nil { attivo = profili.keys.sorted()[0] }
     }
 }
+
+// Minuti dalla mezzanotte tra 0:00 e 23:59
+func minutiValidi(_ m: Int) -> Int { min(max(m, 0), 24 * 60 - 1) }
 
 extension KeyedDecodingContainer {
     // Legge un campo se c'è ed è valido, altrimenti usa il valore predefinito

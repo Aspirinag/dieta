@@ -288,7 +288,7 @@ struct StatoPalestra: Codable, Hashable {
         saltati = c.valore(.saltati, [])
         pagamenti = c.valore(.pagamenti, [:])
         importati = c.valore(.importati, [])
-        oraPagamento = c.valore(.oraPagamento, base.oraPagamento)
+        oraPagamento = minutiValidi(c.valore(.oraPagamento, base.oraPagamento))
         // Aggiunge alla libreria gli esercizi predefiniti nuovi
         for e in Libreria.predefiniti where !esercizi.contains(where: { $0.id == e.id }) { esercizi.append(e) }
     }

@@ -65,7 +65,7 @@ struct ProfiloView: View {
                 }
                 Button("Annulla", role: .cancel) {}
             } message: { _ in
-                Text("Un backup di Forma o di Dieta sostituisce i dati della dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
+                Text("Un backup di Forma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
             }
             .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
@@ -184,8 +184,8 @@ struct ProfiloView: View {
                 Label("Bevi acqua", systemImage: "drop.fill")
             }
             if pr.acqua {
-                SceltaOrario(titolo: "Dalle", minuti: pr.acquaDalle) { m in cambiaPromemoria { $0.acquaDalle = m } }
-                SceltaOrario(titolo: "Alle", minuti: pr.acquaAlle) { m in cambiaPromemoria { $0.acquaAlle = m } }
+                SceltaOrario(titolo: "Dalle", minuti: pr.acquaDalle) { m in cambiaPromemoria { $0.acquaDalle = m; $0.acquaAlle = max($0.acquaAlle, m) } }
+                SceltaOrario(titolo: "Alle", minuti: pr.acquaAlle) { m in cambiaPromemoria { $0.acquaAlle = m; $0.acquaDalle = min($0.acquaDalle, m) } }
                 Stepper(pr.acquaOgni == 1 ? "Ogni ora" : "Ogni \(pr.acquaOgni) ore", value: Binding(
                     get: { pr.acquaOgni }, set: { v in cambiaPromemoria { $0.acquaOgni = v } }
                 ), in: 1...6)

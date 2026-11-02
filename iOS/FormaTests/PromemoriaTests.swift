@@ -60,4 +60,17 @@ struct PromemoriaTests {
         let s = try JSONDecoder().decode(StatoPalestra.self, from: Data("{}".utf8))
         #expect(s.oraPagamento == 9 * 60)
     }
+
+    @Test func orariFuoriScalaRiportatiNeiLimiti() throws {
+        let p = try JSONDecoder().decode(Promemoria.self, from: Data(#"{"oraMattino":1500,"oraPasti":-20,"acquaOgni":-3,"acquaDalle":900,"acquaAlle":600}"#.utf8))
+        #expect(p.oraMattino == 1439)
+        #expect(p.oraPasti == 0)
+        #expect(p.acquaOgni == 1)
+        #expect(p.acquaAlle >= p.acquaDalle)
+    }
+
+    @Test func oraPagamentoFuoriScala() throws {
+        let s = try JSONDecoder().decode(StatoPalestra.self, from: Data(#"{"oraPagamento":5000}"#.utf8))
+        #expect(s.oraPagamento == 1439)
+    }
 }
