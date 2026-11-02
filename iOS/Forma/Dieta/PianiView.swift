@@ -69,32 +69,46 @@ struct ImportaPDF: ViewModifier {
         return t
     }
 
+    enum EsitoLettura {
+        case piano([GiornoPiano])
+        case bia(Misura)
+        case errore(String)
+    }
+
+    // Decide cosa fare con quello che il lettore ha trovato nel PDF
+    static func valuta(_ tipo: TipoPDF, giorni: [GiornoPiano]?, misura: Misura?) -> EsitoLettura {
+        switch tipo {
+        case .schema:
+            let g = giorni ?? []
+            guard g.count == 7, g.allSatisfy({ !$0.pasti.isEmpty }) else {
+                return .errore("Non riesco a leggere lo schema da questo PDF (trovati \(g.count) giorni su 7). Controlla che sia lo schema dietetico, oppure crea il piano a mano da Piani e referti.")
+            }
+            return .piano(g)
+        case .bia:
+            guard let m = misura, !m.data.isEmpty, m.peso != nil else {
+                return .errore("Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA, oppure aggiungi la misurazione a mano.")
+            }
+            return .bia(m)
+        }
+    }
+
     private func leggi(_ tipo: TipoPDF, _ dati: Data, nome: String) async {
         lettura = true
         defer { lettura = false }
-        switch tipo {
-        case .schema:
-            do {
-                let giorni = try await LettorePDF.condiviso.schema(dati)
-                guard giorni.count == 7, giorni.allSatisfy({ !$0.pasti.isEmpty }) else {
-                    errore = "Non riesco a leggere lo schema da questo PDF (trovati \(giorni.count) giorni su 7). Controlla che sia lo schema dietetico."
-                    return
-                }
-                nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: giorni)
-            } catch {
-                errore = "Non riesco a leggere questo PDF."
+        let esito: EsitoLettura
+        do {
+            switch tipo {
+            case .schema: esito = Self.valuta(tipo, giorni: try await LettorePDF.condiviso.schema(dati), misura: nil)
+            case .bia: esito = Self.valuta(tipo, giorni: nil, misura: try await LettorePDF.condiviso.bia(dati))
             }
-        case .bia:
-            do {
-                let m = try await LettorePDF.condiviso.bia(dati)
-                guard !m.data.isEmpty, m.peso != nil else {
-                    errore = "Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA."
-                    return
-                }
-                nuovaBia = m
-            } catch {
-                errore = "Non riesco a leggere questo PDF."
-            }
+        } catch {
+            errore = "Non riesco a leggere questo PDF."
+            return
+        }
+        switch esito {
+        case .piano(let g): nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: g)
+        case .bia(let m): nuovaBia = m
+        case .errore(let t): errore = t
         }
     }
 }
