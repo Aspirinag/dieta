@@ -47,25 +47,29 @@ struct PianoSettimanaleView: View {
 
     var body: some View {
         List {
-            Section {
-                LabeledContent("Questa settimana", value: palestra.settimana(Giorni.oggi()))
-                Toggle("Scambia A e B", isOn: Binding(get: { palestra.stato.scambia }, set: { palestra.stato.scambia = $0 }))
-            } footer: {
-                Text("Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
-            }
-            ForEach(["A", "B"], id: \.self) { w in
-                Section("Settimana \(w)") {
-                    ForEach(0..<7, id: \.self) { i in
-                        Picker(Giorni.nomi[i], selection: Binding(
-                            get: { palestra.stato.piani[w]?[i] ?? .riposo },
-                            set: { palestra.stato.piani[w]?[i] = $0 }
-                        )) {
-                            ForEach(TipoGiorno.allCases) { t in Label(t.nome, systemImage: t.simbolo).tag(t) }
+            Group {
+                Section {
+                    LabeledContent("Questa settimana", value: palestra.settimana(Giorni.oggi()))
+                    Toggle("Scambia A e B", isOn: Binding(get: { palestra.stato.scambia }, set: { palestra.stato.scambia = $0 }))
+                } footer: {
+                    Text("Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
+                }
+                ForEach(["A", "B"], id: \.self) { w in
+                    Section("Settimana \(w)") {
+                        ForEach(0..<7, id: \.self) { i in
+                            Picker(Giorni.nomi[i], selection: Binding(
+                                get: { palestra.stato.piani[w]?[i] ?? .riposo },
+                                set: { palestra.stato.piani[w]?[i] = $0 }
+                            )) {
+                                ForEach(TipoGiorno.allCases) { t in Label(t.nome, systemImage: t.simbolo).tag(t) }
+                            }
                         }
                     }
                 }
             }
+            .righeTema()
         }
+        .sfondoTema()
         .navigationTitle("Piano settimanale")
         .navigationBarTitleDisplayMode(.inline)
     }

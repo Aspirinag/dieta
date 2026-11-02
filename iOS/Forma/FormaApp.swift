@@ -41,6 +41,9 @@ struct Radice: View {
     @Environment(Archivio.self) private var archivio
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
+    @AppStorage(Tema.chiave) private var scelto = Tema.slimeTime.rawValue
+
+    private var tema: Tema { Tema(rawValue: scelto) ?? .slimeTime }
 
     var body: some View {
         @Bindable var navigazione = navigazione
@@ -56,11 +59,12 @@ struct Radice: View {
             get: { navigazione.allenamentoAperto && palestra.stato.inCorso != nil },
             set: { navigazione.allenamentoAperto = $0 }
         )) {
-            AllenamentoInCorsoView()
+            AllenamentoInCorsoView().applicaTema(tema)
         }
         .sheet(item: $navigazione.riepilogo) { a in
-            RiepilogoView(allenamento: a)
+            RiepilogoView(allenamento: a).applicaTema(tema)
         }
+        .applicaTema(tema)
         .task {
             guard !palestra.demo else { return }
             await archivio.programmaPromemoria()

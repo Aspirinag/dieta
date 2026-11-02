@@ -13,12 +13,16 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
-                SezionePagamento()
-                allenamento
-                dieta
-                SezioneOlioAcqua(giorno: Giorni.oggi())
-                peso
+                Group {
+                    SezionePagamento()
+                    allenamento
+                    dieta
+                    SezioneOlioAcqua(giorno: Giorni.oggi())
+                    peso
+                }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Oggi")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { MenuProfilo() }

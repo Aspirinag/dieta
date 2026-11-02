@@ -7,22 +7,26 @@ struct ProgressiView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    Picker("Vista", selection: $vista) {
-                        Text("Allenamenti").tag(1)
-                        Text("Corpo").tag(0)
-                        Text("Calendario").tag(2)
+                Group {
+                    Section {
+                        Picker("Vista", selection: $vista) {
+                            Text("Allenamenti").tag(1)
+                            Text("Corpo").tag(0)
+                            Text("Calendario").tag(2)
+                        }
+                        .pickerStyle(.segmented)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                     }
-                    .pickerStyle(.segmented)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
+                    switch vista {
+                    case 0: AndamentoView()
+                    case 2: CalendarioContenuto()
+                    default: StoricoAllenamenti()
+                    }
                 }
-                switch vista {
-                case 0: AndamentoView()
-                case 2: CalendarioContenuto()
-                default: StoricoAllenamenti()
-                }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Progressi")
             .toolbar {
                 if vista == 0 { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
@@ -53,7 +57,7 @@ struct CalendarioContenuto: View {
             .buttonStyle(.borderless)
             GrigliaMese(mese: mese, scelto: $scelto)
         } footer: {
-            Text("Pallino arancione: pesi. Blu: cardio. Grigio: programmato. ✕: non andato.")
+            Text("Pallino colorato: pesi. Blu: cardio. Grigio: programmato. ✕: non andato.")
         }
         giorno
     }
@@ -146,7 +150,7 @@ struct GrigliaMese: View {
         let cardio = !palestra.cardio(del: iso).isEmpty
         if pesi || cardio {
             HStack(spacing: 2) {
-                if pesi { Circle().fill(.orange).frame(width: 6, height: 6) }
+                if pesi { Circle().fill(.tint).frame(width: 6, height: 6) }
                 if cardio { Circle().fill(.blue).frame(width: 6, height: 6) }
             }
         } else if palestra.stato.saltati.contains(iso) {

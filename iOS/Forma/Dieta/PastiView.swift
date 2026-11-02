@@ -20,27 +20,31 @@ struct PastiView: View {
     var body: some View {
         NavigationStack {
             List {
-                if let piano = archivio.profilo.piano(per: giorno) {
-                    let g = piano.giorni[Giorni.indice(giorno)]
-                    Section {
-                        LabeledContent(Giorni.nomi[Giorni.indice(giorno)] + " " + Giorni.breve(giorno), value: piano.nome)
-                        if g.palestra {
-                            Label("Giorno di palestra", systemImage: "dumbbell.fill")
-                                .foregroundStyle(.tint)
+                Group {
+                    if let piano = archivio.profilo.piano(per: giorno) {
+                        let g = piano.giorni[Giorni.indice(giorno)]
+                        Section {
+                            LabeledContent(Giorni.nomi[Giorni.indice(giorno)] + " " + Giorni.breve(giorno), value: piano.nome)
+                            if g.palestra {
+                                Label("Giorno di palestra", systemImage: "dumbbell.fill")
+                                    .foregroundStyle(.tint)
+                            }
                         }
+                        ForEach(Array(g.pasti.enumerated()), id: \.offset) { i, pasto in
+                            SezionePasto(giorno: giorno, indice: i, pasto: pasto)
+                        }
+                        SezioneOlioAcqua(giorno: giorno)
+                    } else {
+                        ContentUnavailableView(
+                            "Nessun piano per questo giorno",
+                            systemImage: "fork.knife",
+                            description: Text("Carica lo schema dietetico in PDF dalla scheda Profilo.")
+                        )
                     }
-                    ForEach(Array(g.pasti.enumerated()), id: \.offset) { i, pasto in
-                        SezionePasto(giorno: giorno, indice: i, pasto: pasto)
-                    }
-                    SezioneOlioAcqua(giorno: giorno)
-                } else {
-                    ContentUnavailableView(
-                        "Nessun piano per questo giorno",
-                        systemImage: "fork.knife",
-                        description: Text("Carica lo schema dietetico in PDF dalla scheda Profilo.")
-                    )
                 }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle(titolo)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarLeading) {

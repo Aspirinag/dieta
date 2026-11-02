@@ -11,18 +11,22 @@ struct AllenamentoView: View {
     var body: some View {
         NavigationStack(path: $percorso) {
             List {
-                avvio
-                schede
-                sezioneCardio
-                Section {
-                    NavigationLink { LibreriaView(modo: .sfoglia) } label: {
-                        Label("Libreria esercizi", systemImage: "books.vertical")
-                    }
-                    NavigationLink { ModelliView(percorso: $percorso) } label: {
-                        Label("Schede pronte", systemImage: "square.stack.3d.up")
+                Group {
+                    avvio
+                    schede
+                    sezioneCardio
+                    Section {
+                        NavigationLink { LibreriaView(modo: .sfoglia) } label: {
+                            Label("Libreria esercizi", systemImage: "books.vertical")
+                        }
+                        NavigationLink { ModelliView(percorso: $percorso) } label: {
+                            Label("Schede pronte", systemImage: "square.stack.3d.up")
+                        }
                     }
                 }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Allenamento")
             .navigationDestination(for: UUID.self) { EditorSchedaView(idScheda: $0) }
             .sheet(isPresented: $cardio) { NuovoCardioView() }
@@ -155,37 +159,41 @@ struct EditorSchedaView: View {
         if let i = indice {
             let r = palestra.stato.routine[i]
             List {
-                Section {
-                    TextField("Nome della scheda", text: Binding(
-                        get: { r.nome },
-                        set: { palestra.stato.routine[i].nome = $0 }
-                    ))
-                    .font(.headline)
-                }
-                Section {
-                    ForEach(r.voci) { v in
-                        if let j = r.voci.firstIndex(where: { $0.id == v.id }) {
-                            VoceSchedaView(voce: Binding(
-                                get: { palestra.stato.routine[i].voci[j] },
-                                set: { palestra.stato.routine[i].voci[j] = $0 }
-                            ))
+                Group {
+                    Section {
+                        TextField("Nome della scheda", text: Binding(
+                            get: { r.nome },
+                            set: { palestra.stato.routine[i].nome = $0 }
+                        ))
+                        .font(.headline)
+                    }
+                    Section {
+                        ForEach(r.voci) { v in
+                            if let j = r.voci.firstIndex(where: { $0.id == v.id }) {
+                                VoceSchedaView(voce: Binding(
+                                    get: { palestra.stato.routine[i].voci[j] },
+                                    set: { palestra.stato.routine[i].voci[j] = $0 }
+                                ))
+                            }
+                        }
+                        .onDelete { palestra.stato.routine[i].voci.remove(atOffsets: $0) }
+                        .onMove { palestra.stato.routine[i].voci.move(fromOffsets: $0, toOffset: $1) }
+                        Button("Aggiungi esercizi", systemImage: "plus") { aggiungi = true }
+                    } header: {
+                        Text("Esercizi")
+                    } footer: {
+                        Text("Tocca un esercizio per cambiare serie, ripetizioni e recupero. Tieni premuto e trascina per riordinare.")
+                    }
+                    Section {
+                        Button("Elimina scheda", systemImage: "trash", role: .destructive) {
+                            palestra.stato.routine.remove(at: i)
+                            chiudi()
                         }
                     }
-                    .onDelete { palestra.stato.routine[i].voci.remove(atOffsets: $0) }
-                    .onMove { palestra.stato.routine[i].voci.move(fromOffsets: $0, toOffset: $1) }
-                    Button("Aggiungi esercizi", systemImage: "plus") { aggiungi = true }
-                } header: {
-                    Text("Esercizi")
-                } footer: {
-                    Text("Tocca un esercizio per cambiare serie, ripetizioni e recupero. Tieni premuto e trascina per riordinare.")
                 }
-                Section {
-                    Button("Elimina scheda", systemImage: "trash", role: .destructive) {
-                        palestra.stato.routine.remove(at: i)
-                        chiudi()
-                    }
-                }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle(r.nome)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -249,22 +257,26 @@ struct ModelliView: View {
 
     var body: some View {
         List {
-            ForEach(Libreria.modelli) { m in
-                Section {
-                    ForEach(m.voci) { v in
-                        LabeledContent(palestra.nome(v.esercizio), value: v.obiettivo)
+            Group {
+                ForEach(Libreria.modelli) { m in
+                    Section {
+                        ForEach(m.voci) { v in
+                            LabeledContent(palestra.nome(v.esercizio), value: v.obiettivo)
+                        }
+                        Button("Aggiungi alle mie schede", systemImage: "plus.circle") {
+                            var copia = m
+                            copia.id = UUID()
+                            palestra.stato.routine.append(copia)
+                            percorso = NavigationPath([copia.id])
+                        }
+                    } header: {
+                        Text(m.nome)
                     }
-                    Button("Aggiungi alle mie schede", systemImage: "plus.circle") {
-                        var copia = m
-                        copia.id = UUID()
-                        palestra.stato.routine.append(copia)
-                        percorso = NavigationPath([copia.id])
-                    }
-                } header: {
-                    Text(m.nome)
                 }
             }
+            .righeTema()
         }
+        .sfondoTema()
         .navigationTitle("Schede pronte")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -281,17 +293,21 @@ struct NuovoCardioView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Picker("Tipo", selection: $tipo) {
-                    ForEach(Libreria.tipiCardio, id: \.self) { Label($0, systemImage: Libreria.simboloCardio($0)).tag($0) }
+                Group {
+                    Picker("Tipo", selection: $tipo) {
+                        ForEach(Libreria.tipiCardio, id: \.self) { Label($0, systemImage: Libreria.simboloCardio($0)).tag($0) }
+                    }
+                    DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
+                    LabeledContent("Minuti") {
+                        TextField("30", text: $minuti).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("Km (facoltativi)") {
+                        TextField("0", text: $km).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                    }
                 }
-                DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
-                LabeledContent("Minuti") {
-                    TextField("30", text: $minuti).keyboardType(.numberPad).multilineTextAlignment(.trailing)
-                }
-                LabeledContent("Km (facoltativi)") {
-                    TextField("0", text: $km).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
-                }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Cardio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

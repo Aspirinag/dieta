@@ -38,44 +38,48 @@ struct LibreriaView: View {
 
     private var contenuto: some View {
         List {
-            Section {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        filtro(titolo: muscolo?.nome ?? "Muscolo", attivo: muscolo != nil) {
-                            Picker("Muscolo", selection: $muscolo) {
-                                Text("Tutti").tag(Muscolo?.none)
-                                ForEach(Muscolo.allCases) { Text($0.nome).tag(Muscolo?.some($0)) }
+            Group {
+                Section {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            filtro(titolo: muscolo?.nome ?? "Muscolo", attivo: muscolo != nil) {
+                                Picker("Muscolo", selection: $muscolo) {
+                                    Text("Tutti").tag(Muscolo?.none)
+                                    ForEach(Muscolo.allCases) { Text($0.nome).tag(Muscolo?.some($0)) }
+                                }
+                            }
+                            filtro(titolo: attrezzo?.nome ?? "Attrezzo", attivo: attrezzo != nil) {
+                                Picker("Attrezzo", selection: $attrezzo) {
+                                    Text("Tutti").tag(Attrezzo?.none)
+                                    ForEach(Attrezzo.allCases) { Text($0.nome).tag(Attrezzo?.some($0)) }
+                                }
+                            }
+                            if muscolo != nil || attrezzo != nil {
+                                Button("Azzera", systemImage: "xmark.circle.fill") {
+                                    muscolo = nil
+                                    attrezzo = nil
+                                }
+                                .labelStyle(.iconOnly)
+                                .foregroundStyle(.secondary)
                             }
                         }
-                        filtro(titolo: attrezzo?.nome ?? "Attrezzo", attivo: attrezzo != nil) {
-                            Picker("Attrezzo", selection: $attrezzo) {
-                                Text("Tutti").tag(Attrezzo?.none)
-                                ForEach(Attrezzo.allCases) { Text($0.nome).tag(Attrezzo?.some($0)) }
-                            }
-                        }
-                        if muscolo != nil || attrezzo != nil {
-                            Button("Azzera", systemImage: "xmark.circle.fill") {
-                                muscolo = nil
-                                attrezzo = nil
-                            }
-                            .labelStyle(.iconOnly)
-                            .foregroundStyle(.secondary)
-                        }
+                        .padding(.horizontal, 2)
                     }
-                    .padding(.horizontal, 2)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                } footer: {
+                    Text("\(filtrati.count) esercizi")
                 }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            } footer: {
-                Text("\(filtrati.count) esercizi")
-            }
-            let gruppi = Dictionary(grouping: filtrati, by: \.muscolo)
-            ForEach(Muscolo.allCases.filter { gruppi[$0] != nil }) { m in
-                Section(m.nome) {
-                    ForEach(gruppi[m] ?? []) { e in riga(e) }
+                let gruppi = Dictionary(grouping: filtrati, by: \.muscolo)
+                ForEach(Muscolo.allCases.filter { gruppi[$0] != nil }) { m in
+                    Section(m.nome) {
+                        ForEach(gruppi[m] ?? []) { e in riga(e) }
+                    }
                 }
             }
+            .righeTema()
         }
+        .sfondoTema()
         .navigationTitle(inScelta ? "Aggiungi esercizi" : "Libreria esercizi")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $cerca, prompt: "Cerca esercizio")
@@ -167,14 +171,18 @@ struct NuovoEsercizioView: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Nome", text: $nome)
-                Picker("Muscolo principale", selection: $muscolo) {
-                    ForEach(Muscolo.allCases) { Text($0.nome).tag($0) }
+                Group {
+                    TextField("Nome", text: $nome)
+                    Picker("Muscolo principale", selection: $muscolo) {
+                        ForEach(Muscolo.allCases) { Text($0.nome).tag($0) }
+                    }
+                    Picker("Attrezzo", selection: $attrezzo) {
+                        ForEach(Attrezzo.allCases) { Text($0.nome).tag($0) }
+                    }
                 }
-                Picker("Attrezzo", selection: $attrezzo) {
-                    ForEach(Attrezzo.allCases) { Text($0.nome).tag($0) }
-                }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Nuovo esercizio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

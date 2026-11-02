@@ -12,59 +12,63 @@ struct DettaglioEsercizioView: View {
         let r = palestra.record(idEsercizio)
         let punti = palestra.andamento(idEsercizio)
         List {
-            Section {
-                HStack(spacing: 14) {
-                    IconaEsercizio(esercizio: e, lato: 56)
-                    VStack(alignment: .leading) {
-                        Text(e.muscolo.nome).font(.headline)
-                        Text(e.attrezzo.nome).foregroundStyle(.secondary)
+            Group {
+                Section {
+                    HStack(spacing: 14) {
+                        IconaEsercizio(esercizio: e, lato: 56)
+                        VStack(alignment: .leading) {
+                            Text(e.muscolo.nome).font(.headline)
+                            Text(e.attrezzo.nome).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                if r.pesoMax > 0 || r.ripMax > 0 {
+                    Section("Record personali") {
+                        LabeledContent("Peso massimo", value: "\(num(r.pesoMax)) kg")
+                        LabeledContent("Massimale stimato (1RM)", value: "\(num((r.massimale * 10).rounded() / 10)) kg")
+                        LabeledContent("Miglior serie (volume)", value: volumeTesto(r.volumeSerie))
+                        LabeledContent("Più ripetizioni", value: "\(r.ripMax)")
+                    }
+                }
+                if punti.count >= 2 {
+                    Section("Andamento") {
+                        Picker("Misura", selection: $metrica) {
+                            Text("Peso max").tag(0)
+                            Text("1RM stimato").tag(1)
+                            Text("Volume").tag(2)
+                        }
+                        .pickerStyle(.segmented)
+                        Chart(punti) { p in
+                            let v = metrica == 0 ? p.peso : metrica == 1 ? p.massimale : p.volume
+                            LineMark(x: .value("Data", p.data), y: .value("kg", v))
+                                .interpolationMethod(.monotone)
+                                .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
+                            PointMark(x: .value("Data", p.data), y: .value("kg", v))
+                        }
+                        .chartYScale(domain: .automatic(includesZero: false))
+                        .frame(height: 200)
+                        .padding(.vertical, 6)
+                    }
+                }
+                let storico = palestra.storico(idEsercizio)
+                Section("Storico") {
+                    if storico.isEmpty {
+                        Text("Ancora nessuna serie con questo esercizio.").foregroundStyle(.secondary)
+                    }
+                    ForEach(Array(storico.enumerated()), id: \.offset) { _, voce in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(voce.allenamento.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT"))))
+                                .font(.subheadline.weight(.semibold))
+                            Text(voce.serie.map { "\($0.riscaldamento ? "R " : "")\(num($0.kg ?? 0)) × \($0.rip ?? 0)" }.joined(separator: " · "))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
-            if r.pesoMax > 0 || r.ripMax > 0 {
-                Section("Record personali") {
-                    LabeledContent("Peso massimo", value: "\(num(r.pesoMax)) kg")
-                    LabeledContent("Massimale stimato (1RM)", value: "\(num((r.massimale * 10).rounded() / 10)) kg")
-                    LabeledContent("Miglior serie (volume)", value: volumeTesto(r.volumeSerie))
-                    LabeledContent("Più ripetizioni", value: "\(r.ripMax)")
-                }
-            }
-            if punti.count >= 2 {
-                Section("Andamento") {
-                    Picker("Misura", selection: $metrica) {
-                        Text("Peso max").tag(0)
-                        Text("1RM stimato").tag(1)
-                        Text("Volume").tag(2)
-                    }
-                    .pickerStyle(.segmented)
-                    Chart(punti) { p in
-                        let v = metrica == 0 ? p.peso : metrica == 1 ? p.massimale : p.volume
-                        LineMark(x: .value("Data", p.data), y: .value("kg", v))
-                            .interpolationMethod(.monotone)
-                            .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
-                        PointMark(x: .value("Data", p.data), y: .value("kg", v))
-                    }
-                    .chartYScale(domain: .automatic(includesZero: false))
-                    .frame(height: 200)
-                    .padding(.vertical, 6)
-                }
-            }
-            let storico = palestra.storico(idEsercizio)
-            Section("Storico") {
-                if storico.isEmpty {
-                    Text("Ancora nessuna serie con questo esercizio.").foregroundStyle(.secondary)
-                }
-                ForEach(Array(storico.enumerated()), id: \.offset) { _, voce in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(voce.allenamento.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT"))))
-                            .font(.subheadline.weight(.semibold))
-                        Text(voce.serie.map { "\($0.riscaldamento ? "R " : "")\(num($0.kg ?? 0)) × \($0.rip ?? 0)" }.joined(separator: " · "))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
+            .righeTema()
         }
+        .sfondoTema()
         .navigationTitle(e.nome)
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -147,11 +151,15 @@ struct DettaglioAllenamentoView: View {
     var body: some View {
         if let a = palestra.stato.allenamenti.first(where: { $0.id == id }) {
             List {
-                ContenutoAllenamento(allenamento: a)
-                Section {
-                    Button("Elimina allenamento", systemImage: "trash", role: .destructive) { chiediElimina = true }
+                Group {
+                    ContenutoAllenamento(allenamento: a)
+                    Section {
+                        Button("Elimina allenamento", systemImage: "trash", role: .destructive) { chiediElimina = true }
+                    }
                 }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle(a.nome)
             .navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Eliminare l'allenamento?", isPresented: $chiediElimina, titleVisibility: .visible) {
@@ -206,21 +214,25 @@ struct RiepilogoView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    VStack(spacing: 8) {
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 56))
-                            .foregroundStyle(.tint)
-                            .symbolEffect(.bounce, value: allenamento.id)
-                        Text("Allenamento completato!").font(.title2.weight(.bold))
-                        Text(allenamento.nome).foregroundStyle(.secondary)
+                Group {
+                    Section {
+                        VStack(spacing: 8) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 56))
+                                .foregroundStyle(.tint)
+                                .symbolEffect(.bounce, value: allenamento.id)
+                            Text("Allenamento completato!").font(.title2.weight(.bold))
+                            Text(allenamento.nome).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .listRowBackground(Color.clear)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color.clear)
+                    ContenutoAllenamento(allenamento: allenamento)
                 }
-                ContenutoAllenamento(allenamento: allenamento)
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Riepilogo")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }

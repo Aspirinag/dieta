@@ -15,26 +15,30 @@ struct AllenamentoInCorsoView: View {
         NavigationStack {
             if let a = palestra.stato.inCorso {
                 List {
-                    statistiche(a)
-                    SezioneRiscaldamento()
-                    ForEach(a.esercizi) { e in
-                        SezioneEsercizioInCorso(idEsercizio: e.id, campo: $campo)
-                    }
-                    Section {
-                        Button {
-                            aggiungi = true
-                        } label: {
-                            Label("Aggiungi esercizio", systemImage: "plus").frame(maxWidth: .infinity)
+                    Group {
+                        statistiche(a)
+                        SezioneRiscaldamento()
+                        ForEach(a.esercizi) { e in
+                            SezioneEsercizioInCorso(idEsercizio: e.id, campo: $campo)
                         }
-                        .pulsanteVetro(evidente: true)
-                        .controlSize(.large)
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets())
+                        Section {
+                            Button {
+                                aggiungi = true
+                            } label: {
+                                Label("Aggiungi esercizio", systemImage: "plus").frame(maxWidth: .infinity)
+                            }
+                            .pulsanteVetro(evidente: true)
+                            .controlSize(.large)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets())
+                        }
+                        Section {
+                            Button("Annulla allenamento", systemImage: "trash", role: .destructive) { chiediAnnulla = true }
+                        }
                     }
-                    Section {
-                        Button("Annulla allenamento", systemImage: "trash", role: .destructive) { chiediAnnulla = true }
-                    }
+                    .righeTema()
                 }
+                .sfondoTema()
                 .navigationTitle(a.nome)
                 .navigationBarTitleDisplayMode(.inline)
                 .scrollDismissesKeyboard(.interactively)

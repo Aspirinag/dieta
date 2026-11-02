@@ -18,36 +18,40 @@ struct EditorMisura: View {
 
     var body: some View {
         Form {
-            Section {
-                if let d = dataEsistente {
-                    LabeledContent("Data", value: Giorni.breve(d))
-                } else {
-                    DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
+            Group {
+                Section {
+                    if let d = dataEsistente {
+                        LabeledContent("Data", value: Giorni.breve(d))
+                    } else {
+                        DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
+                    }
                 }
-            }
-            Section {
-                ForEach(CampoMisura.allCases) { c in
-                    LabeledContent(c.nome) {
-                        HStack {
-                            TextField("–", text: Binding(get: { valori[c] ?? "" }, set: { valori[c] = $0 }))
-                                .keyboardType(c == .bmr || c == .vat ? .numberPad : .decimalPad)
-                                .multilineTextAlignment(.trailing)
-                            Text(c.unita).foregroundStyle(.secondary).frame(width: 40, alignment: .leading)
+                Section {
+                    ForEach(CampoMisura.allCases) { c in
+                        LabeledContent(c.nome) {
+                            HStack {
+                                TextField("–", text: Binding(get: { valori[c] ?? "" }, set: { valori[c] = $0 }))
+                                    .keyboardType(c == .bmr || c == .vat ? .numberPad : .decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                Text(c.unita).foregroundStyle(.secondary).frame(width: 40, alignment: .leading)
+                            }
+                        }
+                    }
+                } footer: {
+                    Text("Serve almeno il peso.")
+                }
+                if dataEsistente != nil {
+                    Section {
+                        Button("Elimina misurazione", role: .destructive) {
+                            archivio.profilo.bia.removeAll { $0.data == dataEsistente }
+                            chiudi()
                         }
                     }
                 }
-            } footer: {
-                Text("Serve almeno il peso.")
             }
-            if dataEsistente != nil {
-                Section {
-                    Button("Elimina misurazione", role: .destructive) {
-                        archivio.profilo.bia.removeAll { $0.data == dataEsistente }
-                        chiudi()
-                    }
-                }
-            }
+            .righeTema()
         }
+        .sfondoTema()
         .navigationTitle(dataEsistente == nil ? "Nuova misurazione" : "Modifica misurazione")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

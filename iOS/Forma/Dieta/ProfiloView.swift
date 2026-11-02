@@ -28,14 +28,19 @@ struct ProfiloView: View {
 
     private var lista: some View {
         List {
-            piani
-            misure
-            profili
-            impostazioni
-            promemoria
-            SezioniPalestra()
-            backup
+            Group {
+                piani
+                misure
+                profili
+                impostazioni
+                promemoria
+                SezioniPalestra()
+                SezioneTema()
+                backup
+            }
+            .righeTema()
         }
+        .sfondoTema()
         .navigationTitle("Profilo")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
         .overlay {
@@ -230,7 +235,7 @@ struct ProfiloView: View {
                 } label: {
                     HStack {
                         Image(systemName: id == archivio.stato.attivo ? "person.crop.circle.fill" : "person.crop.circle")
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(.tint)
                         Text(nome).foregroundStyle(.primary)
                         Spacer()
                         if archivio.stato.preferito == id {
@@ -332,18 +337,22 @@ struct FoglioNuovoPiano: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    TextField("Nome", text: $piano.nome)
-                    DatePicker("Valido dal", selection: $dal, displayedComponents: .date)
-                } footer: {
-                    Text("Il piano precedente si chiude il giorno prima.")
-                }
-                Section("Anteprima: \(piano.giorni.first?.nome ?? "")") {
-                    ForEach(Array((piano.giorni.first?.pasti ?? []).enumerated()), id: \.offset) { _, pasto in
-                        LabeledContent(pasto.nome, value: pasto.opzioni.first?.alimenti.map(\.nome).joined(separator: ", ") ?? "")
+                Group {
+                    Section {
+                        TextField("Nome", text: $piano.nome)
+                        DatePicker("Valido dal", selection: $dal, displayedComponents: .date)
+                    } footer: {
+                        Text("Il piano precedente si chiude il giorno prima.")
+                    }
+                    Section("Anteprima: \(piano.giorni.first?.nome ?? "")") {
+                        ForEach(Array((piano.giorni.first?.pasti ?? []).enumerated()), id: \.offset) { _, pasto in
+                            LabeledContent(pasto.nome, value: pasto.opzioni.first?.alimenti.map(\.nome).joined(separator: ", ") ?? "")
+                        }
                     }
                 }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Nuovo piano")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -10,21 +10,25 @@ struct SettimanaView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    Picker("Vista", selection: $vista) {
-                        Text("Giorni").tag(0)
-                        Text("Lista della spesa").tag(1)
+                Group {
+                    Section {
+                        Picker("Vista", selection: $vista) {
+                            Text("Giorni").tag(0)
+                            Text("Lista della spesa").tag(1)
+                        }
+                        .pickerStyle(.segmented)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                     }
-                    .pickerStyle(.segmented)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
+                    if vista == 0 {
+                        giorni
+                    } else {
+                        spesa
+                    }
                 }
-                if vista == 0 {
-                    giorni
-                } else {
-                    spesa
-                }
+                .righeTema()
             }
+            .sfondoTema()
             .navigationTitle("Settimana")
             .toolbar {
                 if vista == 1 {

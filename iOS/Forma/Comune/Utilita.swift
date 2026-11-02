@@ -72,9 +72,9 @@ extension View {
     @ViewBuilder
     func pulsanteVetro(evidente: Bool = false) -> some View {
         if #available(iOS 26.0, *) {
-            if evidente { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
+            if evidente { buttonStyle(.glassProminent).modifier(TestoSuAccento()) } else { buttonStyle(.glass) }
         } else {
-            if evidente { buttonStyle(.borderedProminent) } else { buttonStyle(.bordered) }
+            if evidente { buttonStyle(.borderedProminent).modifier(TestoSuAccento()) } else { buttonStyle(.bordered) }
         }
     }
 }
