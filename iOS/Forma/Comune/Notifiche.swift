@@ -3,6 +3,12 @@ import UserNotifications
 
 // Notifiche locali (promemoria della dieta, pagamento della palestra, fine recupero)
 enum Notifiche {
+    // Notifiche già consentite (senza chiedere)
+    static func consentite() async -> Bool {
+        let s = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        return s == .authorized || s == .provisional || s == .ephemeral
+    }
+
     static func permesso() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }

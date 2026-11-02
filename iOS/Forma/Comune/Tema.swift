@@ -8,12 +8,12 @@ enum Tema: String, CaseIterable, Identifiable {
 
     var nome: String {
         switch self {
-        case .slimeTime: "Slime Time"
-        case .fangtastic: "Fangtastic"
-        case .friendlyGhost: "Friendly Ghost"
-        case .candyCorn: "Candy Corn"
-        case .frankenstein: "Frankenstein"
-        case .witchingHour: "Witching Hour"
+        case .slimeTime: "Lime"
+        case .fangtastic: "Melograno"
+        case .friendlyGhost: "Lavanda"
+        case .candyCorn: "Ambra"
+        case .frankenstein: "Salvia"
+        case .witchingHour: "Notte"
         case .classico: "Classico"
         }
     }

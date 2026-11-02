@@ -11,6 +11,8 @@ final class Archivio {
     private let demo: Bool
     // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
     @ObservationIgnored private(set) var fileIlleggibile: URL?
+    // Nessun dato salvato: è la prima apertura dell'app
+    @ObservationIgnored private(set) var primaApertura = false
 
     static let oliPredefiniti = 6       // cucchiaini al giorno
     static let acquaPredefinita = 2.0   // litri al giorno
@@ -21,6 +23,7 @@ final class Archivio {
         var illeggibile: URL?
         var s = demo ? Stato.demo : Self.carica(&illeggibile)
         fileIlleggibile = illeggibile
+        primaApertura = !demo && illeggibile == nil && s == .iniziale
         if let p = s.preferito, s.profili[p] != nil { s.attivo = p }
         stato = s
     }

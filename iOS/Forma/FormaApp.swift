@@ -53,6 +53,7 @@ struct Radice: View {
     @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
     @State private var avvisoDati = true
     @Environment(\.scenePhase) private var fase
+    @AppStorage("benvenutoVisto") private var benvenutoVisto = false
 
     private var tema: Tema { Tema(rawValue: scelto) ?? .predefinito }
 
@@ -92,10 +93,18 @@ struct Radice: View {
         } message: {
             Text("Non riesco a leggere i dati salvati, quindi l'app è ripartita da zero. Ne ho tenuto una copia (\(copieIlleggibili ?? "")) nella cartella dell'app.")
         }
-        .task {
-            guard !palestra.demo else { return }
-            if await Notifiche.permesso() { await palestra.programmaPagamento() }
-            await archivio.programmaPromemoria()
+        .fullScreenCover(isPresented: Binding(
+            get: { archivio.primaApertura && !benvenutoVisto }, set: { if !$0 { benvenutoVisto = true } }
+        )) {
+            BenvenutoView { benvenutoVisto = true }.applicaTema(tema)
+        }
+        .task(id: benvenutoVisto) {
+            // Alla prima apertura i permessi si chiedono nel benvenuto, con la spiegazione
+            guard !palestra.demo, !(archivio.primaApertura && !benvenutoVisto) else { return }
+            if await Notifiche.consentite() {
+                await palestra.programmaPagamento()
+                await archivio.programmaPromemoria()
+            }
             if Salute.attivo, await Salute.shared.chiediPermesso() {
                 Salute.shared.avvia(palestra)
                 await Salute.shared.importa()
