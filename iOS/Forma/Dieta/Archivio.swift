@@ -117,15 +117,7 @@ final class Archivio {
 
     // ---------- Piani ----------
 
-    // Un nuovo piano chiude quelli aperti il giorno prima della sua data di inizio
-    func aggiungiPiano(_ p: Piano) {
-        var piani = profilo.piani.filter { !($0.nome == p.nome && $0.dal == p.dal) }
-        for i in piani.indices where piani[i].dal < p.dal && (piani[i].al.isEmpty || piani[i].al >= p.dal) {
-            piani[i].al = Giorni.aggiungi(p.dal, -1)
-        }
-        piani.append(p)
-        profilo.piani = piani
-    }
+    func aggiungiPiano(_ p: Piano) { profilo.aggiungiPiano(p) }
 
     // ---------- BIA ----------
 
@@ -182,10 +174,41 @@ extension Profilo {
     var testoNote: String { note ?? Archivio.notePredefinite }
 
     // Piano valido in una data: se più piani la coprono vince quello iniziato più di recente
+    // (a parità di data, l'ultimo aggiunto)
     func piano(per iso: String) -> Piano? {
-        piani
-            .filter { $0.dal <= iso && ($0.al.isEmpty || iso <= $0.al) && $0.giorni.count == 7 }
-            .max { $0.dal < $1.dal }
+        var scelto: Piano?
+        for p in piani where p.dal <= iso && (p.al.isEmpty || iso <= p.al) && p.giorni.count == 7 {
+            if scelto == nil || p.dal >= scelto!.dal { scelto = p }
+        }
+        return scelto
+    }
+
+    // Un nuovo piano chiude quelli aperti il giorno prima della sua data di inizio e sostituisce
+    // quelli che iniziano lo stesso giorno. Le spunte dei giorni già segnati da lì in poi
+    // seguono il nome del pasto (le spunte sono salvate per posizione)
+    mutating func aggiungiPiano(_ p: Piano) {
+        let giorni = dieta.keys.filter { $0 >= p.dal && (p.al.isEmpty || $0 <= p.al) }
+        let vecchi = Dictionary(uniqueKeysWithValues: giorni.map { ($0, piano(per: $0)) })
+        var nuovi = piani.filter { $0.dal != p.dal }
+        for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
+            nuovi[i].al = Giorni.aggiungi(p.dal, -1)
+        }
+        nuovi.append(p)
+        piani = nuovi
+        for iso in giorni {
+            guard var r = dieta[iso], let vecchio = vecchi[iso] ?? nil else { continue }
+            let g = Giorni.indice(iso)
+            let nomiVecchi = vecchio.giorni[g].pasti.map(\.nome)
+            let nomiNuovi = p.giorni.indices.contains(g) ? p.giorni[g].pasti.map(\.nome) : []
+            var slot: [String: Slot] = [:]
+            for (k, s) in r.slot {
+                guard let i = Int(k), nomiVecchi.indices.contains(i),
+                      let j = nomiNuovi.firstIndex(of: nomiVecchi[i]) else { continue }
+                slot[String(j)] = s
+            }
+            r.slot = slot
+            dieta[iso] = r
+        }
     }
 
     // Percentuale di pasti segnati negli ultimi 7 giorni, oggi escluso
