@@ -148,13 +148,18 @@ struct SezioneOlioAcqua: View {
             Stepper(value: Binding(
                 get: { r.olio },
                 set: { v in archivio.cambiaRegistro(giorno) { $0.olio = v } }
-            ), in: 0...max(p.olio, 0)) {
-                LabeledContent("Olio extra vergine", value: "\(r.olio) / \(p.olio)")
+            ), in: 0...max(p.olio * 2, 10)) {
+                // Si può segnare anche oltre la dose: il numero diventa arancione
+                LabeledContent {
+                    Text("\(r.olio) / \(p.olio)").foregroundStyle(r.olio > p.olio ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                } label: {
+                    Text("Olio extra vergine")
+                }
             }
             Stepper(value: Binding(
                 get: { r.acqua },
                 set: { v in archivio.cambiaRegistro(giorno) { $0.acqua = v } }
-            ), in: 0...max(p.acqua, 0), step: 0.25) {
+            ), in: 0...max(p.acqua * 2, 4), step: 0.25) {
                 LabeledContent("Acqua", value: "\(num(r.acqua)) / \(num(p.acqua)) L")
             }
         } header: {

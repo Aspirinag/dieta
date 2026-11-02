@@ -261,8 +261,10 @@ struct Profilo: Codable, Hashable {
         case olioTot = "olio_tot", acquaTot = "acqua_tot"
     }
 
-    init(nome: String) {
+    // I profili nuovi partono senza note; quelli salvati senza il campo tengono il testo predefinito
+    init(nome: String, note: String? = nil) {
         self.nome = nome
+        self.note = note
     }
 
     init(from decoder: Decoder) throws {
@@ -341,13 +343,8 @@ struct Stato: Codable, Hashable {
     var preferito: String?
     var promemoria: Promemoria?
 
-    static let iniziale = Stato(
-        profili: [
-            "raffaele": Profilo(nome: "Raffaele"),
-            "alessandra": Profilo(nome: "Alessandra"),
-        ],
-        attivo: "raffaele"
-    )
+    // Prima installazione: un solo profilo, senza note (si rinomina in Impostazioni)
+    static let iniziale = Stato(profili: ["io": Profilo(nome: "Io", note: "")], attivo: "io")
 
     init(profili: [String: Profilo], attivo: String, preferito: String? = nil, promemoria: Promemoria? = nil) {
         self.profili = profili

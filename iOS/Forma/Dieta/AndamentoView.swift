@@ -58,6 +58,11 @@ struct AndamentoView: View {
                 ForEach(consigli(bia), id: \.self) { c in
                     Label(c, systemImage: "lightbulb").font(.subheadline)
                 }
+                if !consigli(bia).isEmpty {
+                    Text("Indicazioni generali calcolate dalle misure: non sostituiscono il parere del tuo nutrizionista o medico.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -89,8 +94,8 @@ struct AndamentoView: View {
         guard let primo = bia.first, let ultimo = bia.last,
               let dg = delta(primo.grassoKg, ultimo.grassoKg), let dm = delta(primo.magraKg, ultimo.magraKg) else { return [] }
         var c: [String] = []
-        if dg < 0 && dm >= -0.5 { c.append("Dall'inizio il calo riguarda soprattutto la massa grassa, e la massa magra è stabile: è il risultato che cerchiamo.") }
-        if dm < -1 { c.append("La massa magra è scesa di più di 1 kg: conviene parlarne con la nutrizionista.") }
+        if dg < 0 && dm >= -0.5 { c.append("Dall'inizio è scesa la massa grassa e la massa magra è stabile.") }
+        if dm < -1 { c.append("La massa magra è scesa di più di 1 kg: può valere la pena parlarne con chi ti segue.") }
         if dg > 0 { c.append("La massa grassa è salita rispetto all'inizio.") }
         return c
     }

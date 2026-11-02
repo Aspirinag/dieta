@@ -6,6 +6,7 @@ struct SettimanaView: View {
     @Environment(\.dismiss) private var chiudi
     @State private var vista = Avvio.valore("-vista") == "spesa" ? 1 : 0
     @State private var giorno = Giorni.indice(Giorni.oggi())
+    @State private var lunSpesa = Profilo.lunediSpesa(oggi: Giorni.oggi())
 
     var body: some View {
         NavigationStack {
@@ -97,16 +98,26 @@ struct SettimanaView: View {
     // ---------- Spesa ----------
 
     @ViewBuilder private var spesa: some View {
-        let voci = archivio.profilo.vociSpesa()
-        let presi = archivio.spunteSpesa()
-        let lun = Giorni.lunedi(Giorni.oggi())
+        let lun = lunSpesa
+        let voci = archivio.profilo.vociSpesa(lunedi: lun)
+        let presi = archivio.spunteSpesa(lunedi: lun)
+        let questa = Giorni.lunedi(Giorni.oggi())
+        Section {
+            Picker("Settimana", selection: $lunSpesa) {
+                Text("Questa settimana").tag(questa)
+                Text("Prossima").tag(Giorni.aggiungi(questa, 7))
+            }
+            .pickerStyle(.segmented)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
+        }
         if voci.isEmpty {
-            ContentUnavailableView("Nessun piano questa settimana", systemImage: "cart")
+            ContentUnavailableView("Nessun piano in questa settimana", systemImage: "cart")
         } else {
             Section {
                 ForEach(voci) { v in
                     let preso = presi[v.chiave] == true
-                    RigaSpunta(fatto: preso, azione: { archivio.spunta(v.chiave) }) {
+                    RigaSpunta(fatto: preso, azione: { archivio.spunta(v.chiave, lunedi: lun) }) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(v.nome).strikethrough(preso)
                             Text(v.quanto).font(.caption).foregroundStyle(.secondary)
@@ -117,7 +128,7 @@ struct SettimanaView: View {
             } header: {
                 Text("Dal \(Giorni.breve(lun)) al \(Giorni.breve(Giorni.aggiungi(lun, 6)))")
             } footer: {
-                Text("Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte ripartono ogni lunedì.")
+                Text("Per ogni pasto conta l'alternativa scelta, altrimenti la prima. Le spunte valgono per una settimana alla volta.")
             }
             if !presi.isEmpty {
                 Section {
@@ -128,8 +139,8 @@ struct SettimanaView: View {
     }
 
     private var testoSpesa: String {
-        let presi = archivio.spunteSpesa()
-        let righe = archivio.profilo.vociSpesa().filter { presi[$0.chiave] != true }.map { "- \($0.nome): \($0.quanto)" }
+        let presi = archivio.spunteSpesa(lunedi: lunSpesa)
+        let righe = archivio.profilo.vociSpesa(lunedi: lunSpesa).filter { presi[$0.chiave] != true }.map { "- \($0.nome): \($0.quanto)" }
         return (["Lista della spesa"] + righe).joined(separator: "\n")
     }
 }

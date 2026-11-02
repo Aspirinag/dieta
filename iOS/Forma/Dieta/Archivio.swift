@@ -104,7 +104,7 @@ final class Archivio {
 
     func aggiungiProfilo(_ nome: String) {
         let id = "p\(Int(Date().timeIntervalSince1970 * 1000))"
-        stato.profili[id] = Profilo(nome: nome)
+        stato.profili[id] = Profilo(nome: nome, note: "")
         stato.attivo = id
     }
 
@@ -148,13 +148,12 @@ final class Archivio {
 
     // ---------- Lista della spesa ----------
 
-    func spunteSpesa() -> [String: Bool] {
-        let lun = Giorni.lunedi(Giorni.oggi())
+    // Le spunte valgono per una settimana alla volta (quella dell'ultima spunta)
+    func spunteSpesa(lunedi lun: String) -> [String: Bool] {
         return profilo.spesa?.settimana == lun ? profilo.spesa?.presi ?? [:] : [:]
     }
 
-    func spunta(_ chiave: String) {
-        let lun = Giorni.lunedi(Giorni.oggi())
+    func spunta(_ chiave: String, lunedi lun: String) {
         var s = profilo.spesa?.settimana == lun ? profilo.spesa! : Spesa(settimana: lun)
         s.presi[chiave] = !(s.presi[chiave] ?? false)
         profilo.spesa = s
@@ -255,8 +254,13 @@ extension Profilo {
 
     // Alimenti della settimana in corso: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
     // Le quantità in g, ml, kg o l si sommano, le altre si contano
-    func vociSpesa() -> [VoceSpesa] {
-        let lun = Giorni.lunedi(Giorni.oggi())
+    // Settimana proposta per la spesa: da venerdì si pensa già alla prossima
+    static func lunediSpesa(oggi: String) -> String {
+        let lun = Giorni.lunedi(oggi)
+        return Giorni.indice(oggi) >= 4 ? Giorni.aggiungi(lun, 7) : lun
+    }
+
+    func vociSpesa(lunedi lun: String) -> [VoceSpesa] {
         var voci: [String: (nome: String, unita: [String: Double], volte: Int)] = [:]
         let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
         for i in 0..<7 {
