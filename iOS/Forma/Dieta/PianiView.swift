@@ -111,27 +111,34 @@ struct PianiDietaView: View {
     @State private var richiesta: TipoPDF?
     @State private var nuovaMisura = false
     @State private var pianoDaEliminare: Piano?
+    @State private var pianoDaModificare: Piano?
+    @State private var nuovoVuoto = false
 
     var body: some View {
         List {
             Group {
                 Section {
                     ForEach(archivio.profilo.piani.sorted { $0.dal > $1.dal }) { p in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(p.nome).font(.headline)
-                            Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? "in corso" : Giorni.breve(p.al))")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                        Button { pianoDaModificare = p } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(p.nome).font(.headline).foregroundStyle(.primary)
+                                Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? "in corso" : Giorni.breve(p.al))")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .accessibilityHint("Apre il piano per modificarlo")
                         .swipeActions {
                             Button("Elimina", systemImage: "trash", role: .destructive) { pianoDaEliminare = p }
                         }
                     }
                     Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { richiesta = .schema }
+                    Button("Nuovo piano a mano", systemImage: "square.and.pencil") { nuovoVuoto = true }
                 } header: {
                     Text("Piani alimentari")
                 } footer: {
-                    Text("Lo schema in PDF viene letto e diventa il piano dei pasti. Scorri a sinistra su un piano per eliminarlo.")
+                    Text("Lo schema in PDF viene letto e diventa il piano dei pasti. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.")
                 }
                 Section {
                     Button("Carica referto BIA (PDF)", systemImage: "doc.text.magnifyingglass") { richiesta = .bia }
@@ -148,6 +155,8 @@ struct PianiDietaView: View {
         .navigationTitle("Piani e referti")
         .navigationBarTitleDisplayMode(.inline)
         .importaPDF($richiesta)
+        .sheet(item: $pianoDaModificare) { EditorPianoView(originale: $0) }
+        .sheet(isPresented: $nuovoVuoto) { EditorPianoView(originale: nil) }
         .sheet(isPresented: $nuovaMisura) {
             NavigationStack { EditorMisura(dataEsistente: nil) }
         }

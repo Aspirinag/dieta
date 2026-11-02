@@ -206,19 +206,37 @@ extension Profilo {
     // quelli che iniziano lo stesso giorno. Le spunte dei giorni già segnati da lì in poi
     // seguono il nome del pasto (le spunte sono salvate per posizione)
     mutating func aggiungiPiano(_ p: Piano) {
-        let giorni = dieta.keys.filter { $0 >= p.dal && (p.al.isEmpty || $0 <= p.al) }
-        let vecchi = Dictionary(uniqueKeysWithValues: giorni.map { ($0, piano(per: $0)) })
-        var nuovi = piani.filter { $0.dal != p.dal }
-        for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
-            nuovi[i].al = Giorni.aggiungi(p.dal, -1)
+        cambiaPiani(giorniDa: p.dal, al: p.al) { piani in
+            var nuovi = piani.filter { $0.dal != p.dal }
+            for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
+                nuovi[i].al = Giorni.aggiungi(p.dal, -1)
+            }
+            nuovi.append(p)
+            return nuovi
         }
-        nuovi.append(p)
-        piani = nuovi
+    }
+
+    // Piano modificato a mano: prende il posto dell'originale, le spunte seguono il nome del pasto
+    mutating func sostituisciPiano(_ originale: Piano, con nuovo: Piano) {
+        let dal = min(originale.dal, nuovo.dal)
+        let al = originale.al.isEmpty || nuovo.al.isEmpty ? "" : max(originale.al, nuovo.al)
+        cambiaPiani(giorniDa: dal, al: al) { piani in
+            piani.map { $0.id == originale.id ? nuovo : $0 }
+        }
+    }
+
+    // Cambia l'elenco dei piani e rimappa per nome del pasto le spunte dei giorni nell'intervallo
+    // (le spunte sono salvate per posizione del pasto)
+    private mutating func cambiaPiani(giorniDa dal: String, al: String, _ cambia: ([Piano]) -> [Piano]) {
+        let giorni = dieta.keys.filter { $0 >= dal && (al.isEmpty || $0 <= al) }
+        let prima = Dictionary(uniqueKeysWithValues: giorni.map { ($0, piano(per: $0)) })
+        piani = cambia(piani)
         for iso in giorni {
-            guard var r = dieta[iso], let vecchio = vecchi[iso] ?? nil else { continue }
+            guard var r = dieta[iso], let vecchio = prima[iso] ?? nil, let nuovo = piano(per: iso) else { continue }
             let g = Giorni.indice(iso)
             let nomiVecchi = vecchio.giorni[g].pasti.map(\.nome)
-            let nomiNuovi = p.giorni.indices.contains(g) ? p.giorni[g].pasti.map(\.nome) : []
+            let nomiNuovi = nuovo.giorni[g].pasti.map(\.nome)
+            guard nomiVecchi != nomiNuovi else { continue }
             var slot: [String: Slot] = [:]
             for (k, s) in r.slot {
                 guard let i = Int(k), nomiVecchi.indices.contains(i),

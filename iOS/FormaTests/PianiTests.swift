@@ -40,4 +40,21 @@ struct PianiTests {
         #expect(p.dieta["2026-10-30"]?.slot["2"]?.fatto == true)
         #expect(p.piano(per: "2026-10-30")?.nome == "A")
     }
+
+    @Test func modificaDelPianoSpostaLeSpunte() {
+        var p = Profilo(nome: "Io")
+        let a = piano("A", dal: "2026-11-02", pasti: ["Colazione", "Pranzo", "Cena"])
+        p.aggiungiPiano(a)
+        var r = Registro()
+        r.slot["0"] = Slot(opt: 0, fatto: true)     // Colazione
+        p.dieta["2026-11-03"] = r
+        var b = a
+        b.nome = "A corretto"
+        b.giorni = b.giorni.map { g in var g = g; g.pasti.reverse(); return g }   // Cena, Pranzo, Colazione
+        p.sostituisciPiano(a, con: b)
+        #expect(p.piani.count == 1)
+        #expect(p.piano(per: "2026-11-03")?.nome == "A corretto")
+        #expect(p.dieta["2026-11-03"]?.slot["2"]?.fatto == true)
+        #expect(p.dieta["2026-11-03"]?.slot["0"] == nil)
+    }
 }
