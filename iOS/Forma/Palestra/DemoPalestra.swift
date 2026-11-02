@@ -24,6 +24,13 @@ extension StatoPalestra {
                                            minuti: 30, km: k == -12 ? 12 : 4.5))
         }
         s.saltati = [Giorni.aggiungi(Giorni.oggi(), -8)]
+        // Dal Watch: una camminata e una sessione di palestra ancora senza esercizi
+        s.cardio.append(SessioneCardio(data: Giorni.aggiungi(Giorni.oggi(), -4), tipo: "Camminata", minuti: 52, km: 4.6,
+                                       watch: DatiWatch(uuid: "demo-camminata", calorie: 214, battito: 102)))
+        var w = Allenamento(nome: Palestra.nomeWatch, inizio: Giorni.data(Giorni.aggiungi(Giorni.oggi(), -2)).addingTimeInterval(18 * 3600))
+        w.fine = w.inizio.addingTimeInterval(55 * 60)
+        w.watch = DatiWatch(uuid: "demo-palestra", calorie: 318, battito: 118)
+        s.allenamenti.append(w)
         if Avvio.valore("-tab") == "inCorso" {
             var a = Allenamento(nome: scheda.nome, inizio: Date().addingTimeInterval(-1460), routine: scheda.id)
             a.esercizi = scheda.voci.prefix(3).enumerated().map { i, v in

@@ -86,7 +86,11 @@ struct AllenamentoInCorsoView: View {
     private func statistiche(_ a: Allenamento) -> some View {
         Section {
             HStack {
-                dato("Durata") { Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false).monospacedDigit() }
+                dato("Durata") {
+                    // Sessione del Watch completata dopo: durata fissa; altrimenti cronometro
+                    if a.fine != nil { Text(durataTesto(a.durata)) }
+                    else { Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false).monospacedDigit() }
+                }
                 dato("Volume") { Text(volumeTesto(a.volume)) }
                 dato("Serie") { Text("\(a.serieFatte)") }
             }

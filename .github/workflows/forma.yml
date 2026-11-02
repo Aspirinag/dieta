@@ -32,6 +32,9 @@ jobs:
         run: |
           mkdir Payload
           cp -R build/Release-iphoneos/Forma.app Payload/
+          # Firma ad hoc con gli entitlement (HealthKit): chi la rifirma per installarla li ritrova
+          codesign --force --sign - --entitlements iOS/Forma.entitlements Payload/Forma.app
+          codesign -d --entitlements - Payload/Forma.app
           zip -qry Forma.ipa Payload
       - name: Pubblica la release
         if: github.ref == 'refs/heads/main'

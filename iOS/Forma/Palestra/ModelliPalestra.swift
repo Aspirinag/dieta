@@ -175,6 +175,7 @@ struct Allenamento: Codable, Hashable, Identifiable {
     var esercizi: [EsercizioFatto] = []
     var routine: UUID?
     var riscaldamento: [String: Bool] = [:]
+    var watch: DatiWatch?                       // dati dell'allenamento registrato sull'Apple Watch
 
     init(nome: String, inizio: Date = Date(), esercizi: [EsercizioFatto] = [], routine: UUID? = nil) {
         self.nome = nome
@@ -192,9 +193,11 @@ struct Allenamento: Codable, Hashable, Identifiable {
         esercizi = c.valore(.esercizi, [])
         routine = c.valore(.routine, nil)
         riscaldamento = c.valore(.riscaldamento, [:])
+        watch = c.valore(.watch, nil)
     }
 
     var giorno: String { Giorni.iso(inizio) }
+    var soloWatch: Bool { esercizi.isEmpty && watch != nil }
     var volume: Double { esercizi.flatMap(\.serie).reduce(0) { $0 + $1.volume } }
     var serieFatte: Int { esercizi.flatMap(\.serie).filter(\.valida).count }
     var durata: TimeInterval { (fine ?? Date()).timeIntervalSince(inizio) }
@@ -206,12 +209,14 @@ struct SessioneCardio: Codable, Hashable, Identifiable {
     var tipo: String
     var minuti: Int
     var km: Double
+    var watch: DatiWatch?
 
-    init(data: String, tipo: String, minuti: Int, km: Double) {
+    init(data: String, tipo: String, minuti: Int, km: Double, watch: DatiWatch? = nil) {
         self.data = data
         self.tipo = tipo
         self.minuti = minuti
         self.km = km
+        self.watch = watch
     }
 
     init(from decoder: Decoder) throws {
@@ -221,7 +226,15 @@ struct SessioneCardio: Codable, Hashable, Identifiable {
         tipo = c.valore(.tipo, "Corsa")
         minuti = c.valore(.minuti, 0)
         km = c.valore(.km, 0.0)
+        watch = c.valore(.watch, nil)
     }
+}
+
+// Allenamento letto dall'app Salute (registrato sull'Apple Watch)
+struct DatiWatch: Codable, Hashable {
+    var uuid: String
+    var calorie: Double?        // kcal attive
+    var battito: Double?        // battiti al minuto, media
 }
 
 enum TipoGiorno: String, CaseIterable, Identifiable, Codable {
@@ -257,6 +270,7 @@ struct StatoPalestra: Codable, Hashable {
     var scambia = false
     var saltati: [String] = []                  // giorni segnati "non sono andato"
     var pagamenti: [String: String] = [:]       // yyyy-MM → data del pagamento
+    var importati: [String] = []                // allenamenti di Salute già letti (anche se poi eliminati)
 
     init() {}
 
@@ -272,6 +286,7 @@ struct StatoPalestra: Codable, Hashable {
         scambia = c.valore(.scambia, false)
         saltati = c.valore(.saltati, [])
         pagamenti = c.valore(.pagamenti, [:])
+        importati = c.valore(.importati, [])
         // Aggiunge alla libreria gli esercizi predefiniti nuovi
         for e in Libreria.predefiniti where !esercizi.contains(where: { $0.id == e.id }) { esercizi.append(e) }
     }

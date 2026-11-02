@@ -20,6 +20,16 @@ enum Notifiche {
                        trigger: UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(max(secondi, 1)), repeats: false))
     }
 
+    // Subito, con l'allenamento da completare (toccandola si sceglie la scheda)
+    static func sessioneWatch(id: UUID, titolo: String, testo: String) async {
+        let c = UNMutableNotificationContent()
+        c.title = titolo
+        c.body = testo
+        c.sound = .default
+        c.userInfo = ["compila": id.uuidString]
+        try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "watch-\(id.uuidString)", content: c, trigger: nil))
+    }
+
     static func cancella(_ ids: [String]) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }
@@ -33,9 +43,20 @@ enum Notifiche {
     }
 }
 
-// Mostra le notifiche anche con l'app aperta
+// Mostra le notifiche anche con l'app aperta; toccando quella del Watch si aggiungono esercizi e pesi
 final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
+    var navigazione: Navigazione?
+
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .sound]
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard let testo = response.notification.request.content.userInfo["compila"] as? String,
+              let id = UUID(uuidString: testo) else { return }
+        await MainActor.run {
+            navigazione?.scheda = .allenamento
+            navigazione?.compila = id
+        }
     }
 }

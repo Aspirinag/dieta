@@ -144,6 +144,7 @@ struct RigaAllenamento: View {
 
 struct DettaglioAllenamentoView: View {
     @Environment(Palestra.self) private var palestra
+    @Environment(Navigazione.self) private var navigazione
     @Environment(\.dismiss) private var chiudi
     let id: UUID
     @State private var chiediElimina = false
@@ -153,6 +154,13 @@ struct DettaglioAllenamentoView: View {
             List {
                 Group {
                     ContenutoAllenamento(allenamento: a)
+                    if a.soloWatch {
+                        Section {
+                            Button("Aggiungi esercizi e pesi", systemImage: "plus") { navigazione.compila = a.id }
+                        } footer: {
+                            Text("Registrata dall'Apple Watch: scegli la scheda e correggi i pesi.")
+                        }
+                    }
                     Section {
                         Button("Elimina allenamento", systemImage: "trash", role: .destructive) { chiediElimina = true }
                     }
@@ -182,8 +190,18 @@ struct ContenutoAllenamento: View {
         Section {
             LabeledContent("Data", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute().locale(Locale(identifier: "it_IT"))))
             LabeledContent("Durata", value: durataTesto(a.durata))
-            LabeledContent("Volume", value: volumeTesto(a.volume))
-            LabeledContent("Serie", value: "\(a.serieFatte)")
+            if !a.esercizi.isEmpty {
+                LabeledContent("Volume", value: volumeTesto(a.volume))
+                LabeledContent("Serie", value: "\(a.serieFatte)")
+            }
+        }
+        if let w = a.watch {
+            Section {
+                if let kcal = w.calorie { LabeledContent("Calorie attive", value: "\(Int(kcal.rounded())) kcal") }
+                if let bpm = w.battito { LabeledContent("Battito medio", value: "\(Int(bpm.rounded())) bpm") }
+            } header: {
+                Label("Apple Watch", systemImage: "applewatch")
+            }
         }
         let record = palestra.nuoviRecord(a)
         if !record.isEmpty {

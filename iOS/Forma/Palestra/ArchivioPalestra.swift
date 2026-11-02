@@ -87,23 +87,105 @@ final class Palestra {
     }
 
     // Chiude l'allenamento: restano solo le serie fatte. Restituisce l'allenamento salvato
+    // Un allenamento completato dopo (dal Watch) tiene la sua ora di fine
     @discardableResult
     func termina() -> Allenamento? {
         guard var a = stato.inCorso else { return nil }
-        a.fine = Date()
+        a.fine = a.fine ?? Date()
         a.esercizi = a.esercizi.compactMap { e in
             var e = e
             e.serie = e.serie.filter { $0.fatta && ($0.rip ?? 0) > 0 }
             return e.serie.isEmpty ? nil : e
         }
         stato.inCorso = nil
-        guard !a.esercizi.isEmpty else { return nil }
+        // Se il Watch aveva già registrato da solo questa sessione, i suoi dati passano a questa
+        if let i = stato.allenamenti.firstIndex(where: { $0.soloWatch && Self.sovrapposti($0, a) }) {
+            if a.watch == nil { a.watch = stato.allenamenti[i].watch }
+            stato.allenamenti.remove(at: i)
+        }
+        guard !a.esercizi.isEmpty || a.watch != nil else { return nil }
         stato.allenamenti.append(a)
+        stato.allenamenti.sort { $0.inizio < $1.inizio }
         stato.saltati.removeAll { $0 == a.giorno }
         return a
     }
 
-    func annulla() { stato.inCorso = nil }
+    // Annullando, se il Watch aveva registrato la sessione resta quella (senza esercizi)
+    func annulla() {
+        if var a = stato.inCorso, a.watch != nil {
+            a.esercizi = []
+            a.nome = Self.nomeWatch
+            a.routine = nil
+            a.fine = a.fine ?? Date()
+            stato.allenamenti.append(a)
+            stato.allenamenti.sort { $0.inizio < $1.inizio }
+        }
+        stato.inCorso = nil
+    }
+
+    // Aggiunge esercizi e pesi a una sessione registrata dal Watch: si apre come allenamento in corso,
+    // con le serie della scheda già compilate con i pesi dell'ultima volta (da confermare)
+    @discardableResult
+    func compila(_ id: UUID, con routine: Routine?) -> Bool {
+        guard stato.inCorso == nil, let i = stato.allenamenti.firstIndex(where: { $0.id == id }) else { return false }
+        var a = stato.allenamenti.remove(at: i)
+        if let routine {
+            a.nome = routine.nome
+            a.routine = routine.id
+            a.esercizi = routine.voci.map { v in
+                EsercizioFatto(esercizio: v.esercizio, recupero: v.recupero, serie: (0..<v.serie).map { k in
+                    let p = precedente(v.esercizio, k)
+                    return SerieFatta(kg: p?.kg, rip: p?.rip)
+                })
+            }
+        } else if a.nome == Self.nomeWatch {
+            a.nome = "Allenamento libero"
+        }
+        stato.inCorso = a
+        return true
+    }
+
+    static let nomeWatch = "Palestra · dal Watch"
+
+    enum EsitoWatch { case nuovo(Allenamento), agganciato, cardio, ignorato }
+
+    // Registra un allenamento del Watch: cardio come sessione cardio; palestra agganciata
+    // all'allenamento di Forma nello stesso orario, oppure salvata come sessione nuova senza esercizi
+    func registraDalWatch(_ w: AllenamentoWatch) -> EsitoWatch {
+        guard !stato.importati.contains(w.uuid) else { return .ignorato }
+        stato.importati.append(w.uuid)
+        let giorno = Giorni.iso(w.inizio)
+        switch w.genere {
+        case .cardio(let tipo):
+            guard w.minuti >= Salute.minutiCardio else { return .ignorato }
+            stato.cardio.append(SessioneCardio(data: giorno, tipo: tipo, minuti: w.minuti,
+                                               km: (w.km * 100).rounded() / 100, watch: w.dati))
+            stato.saltati.removeAll { $0 == giorno }
+            return .cardio
+        case .palestra:
+            guard w.minuti >= Salute.minutiPalestra else { return .ignorato }
+            var nuovo = Allenamento(nome: Self.nomeWatch, inizio: w.inizio)
+            nuovo.fine = w.fine
+            nuovo.watch = w.dati
+            if let c = stato.inCorso, Self.sovrapposti(nuovo, c) {
+                if c.watch == nil { stato.inCorso?.watch = w.dati }
+                return .agganciato
+            }
+            if let i = stato.allenamenti.firstIndex(where: { Self.sovrapposti($0, nuovo) }) {
+                if stato.allenamenti[i].watch == nil { stato.allenamenti[i].watch = w.dati }
+                return .agganciato
+            }
+            stato.allenamenti.append(nuovo)
+            stato.allenamenti.sort { $0.inizio < $1.inizio }
+            stato.saltati.removeAll { $0 == giorno }
+            return .nuovo(nuovo)
+        }
+    }
+
+    static func sovrapposti(_ a: Allenamento, _ b: Allenamento) -> Bool {
+        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fine ?? Date()
+        return a.inizio < fb && b.inizio < fa
+    }
 
     // Serie corrispondente (stessa posizione tra quelle valide) nell'ultimo allenamento con quell'esercizio
     func precedente(_ esercizio: String, _ indice: Int) -> SerieFatta? {

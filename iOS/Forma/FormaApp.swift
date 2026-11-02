@@ -5,13 +5,20 @@ import UserNotifications
 @main
 struct FormaApp: App {
     @State private var archivio = Archivio()
-    @State private var palestra = Palestra()
+    @State private var palestra: Palestra
     @State private var timer = TimerRecupero()
-    @State private var navigazione = Navigazione()
+    @State private var navigazione: Navigazione
     private let delegato = DelegatoNotifiche()
 
     init() {
+        let p = Palestra()
+        let n = Navigazione()
+        _palestra = State(initialValue: p)
+        _navigazione = State(initialValue: n)
+        delegato.navigazione = n
         UNUserNotificationCenter.current().delegate = delegato
+        // Subito all'avvio: iOS apre l'app in background quando il Watch salva un allenamento
+        Salute.shared.avvia(p)
     }
 
     var body: some Scene {
@@ -35,6 +42,7 @@ final class Navigazione {
     var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
     var allenamentoAperto = Avvio.valore("-tab") == "inCorso"
     var riepilogo: Allenamento?   // riepilogo mostrato appena finito un allenamento
+    var compila: UUID?            // sessione del Watch a cui aggiungere esercizi e pesi
 }
 
 struct Radice: View {
@@ -64,11 +72,18 @@ struct Radice: View {
         .sheet(item: $navigazione.riepilogo) { a in
             RiepilogoView(allenamento: a).applicaTema(tema)
         }
+        .sheet(isPresented: Binding(get: { navigazione.compila != nil }, set: { if !$0 { navigazione.compila = nil } })) {
+            if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema(tema) }
+        }
         .applicaTema(tema)
         .task {
             guard !palestra.demo else { return }
             if await Notifiche.permesso() { await palestra.programmaPagamento() }
             await archivio.programmaPromemoria()
+            if Salute.attivo, await Salute.shared.chiediPermesso() {
+                Salute.shared.avvia(palestra)
+                await Salute.shared.importa()
+            }
         }
     }
 }

@@ -3,8 +3,32 @@ import SwiftUI
 // Sezioni della palestra nella scheda Profilo: piano settimanale A/B, pagamento, libreria
 struct SezioniPalestra: View {
     @Environment(Palestra.self) private var palestra
+    @AppStorage(Salute.chiave) private var watch = true
 
     var body: some View {
+        sezionePalestra
+        Section {
+            Toggle(isOn: Binding(get: { watch }, set: { v in cambiaWatch(v) })) {
+                Label("Allenamenti dall'Apple Watch", systemImage: "applewatch")
+            }
+        } footer: {
+            Text("Le sessioni di palestra registrate sul Watch entrano da sole in Forma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno \(Salute.minutiCardio) minuti diventano cardio. Forma legge da Salute, non scrive niente.")
+        }
+    }
+
+    private func cambiaWatch(_ v: Bool) {
+        watch = v
+        Task {
+            if v, await Salute.shared.chiediPermesso() {
+                Salute.shared.avvia(palestra)
+                await Salute.shared.importa()
+            } else if !v {
+                Salute.shared.ferma()
+            }
+        }
+    }
+
+    @ViewBuilder private var sezionePalestra: some View {
         let mese = Palestra.mese(Giorni.oggi())
         let pagato = palestra.stato.pagamenti[mese]
         Section {
