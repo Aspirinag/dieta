@@ -5,6 +5,10 @@ name: App iOS
 
 on:
   push:
+    paths:
+      - 'iOS/Dieta/**'
+      - 'iOS/Dieta.xcodeproj/**'
+      - '.github/workflows/ios.yml'
   workflow_dispatch:
 
 permissions:
