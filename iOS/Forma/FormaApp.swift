@@ -52,6 +52,7 @@ struct Radice: View {
     @Environment(Navigazione.self) private var navigazione
     @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
     @State private var avvisoDati = true
+    @Environment(\.scenePhase) private var fase
 
     private var tema: Tema { Tema(rawValue: scelto) ?? .predefinito }
 
@@ -78,6 +79,12 @@ struct Radice: View {
             if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema(tema) }
         }
         .applicaTema(tema)
+        .onChange(of: fase) { _, f in
+            if f != .active {
+                archivio.salvaOra()
+                palestra.salvaOra()
+            }
+        }
         .alert("Dati non letti", isPresented: Binding(
             get: { avvisoDati && copieIlleggibili != nil }, set: { if !$0 { avvisoDati = false } }
         )) {

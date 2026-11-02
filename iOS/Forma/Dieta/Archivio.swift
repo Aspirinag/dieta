@@ -5,7 +5,7 @@ import UserNotifications
 @Observable
 final class Archivio {
     var stato: Stato {
-        didSet { if !demo { salva() } }
+        didSet { if !demo { programmaSalvataggio() } }
     }
 
     private let demo: Bool
@@ -26,6 +26,26 @@ final class Archivio {
     }
 
     // ---------- File ----------
+
+    // Salvataggio raggruppato: più modifiche ravvicinate (es. digitare i kg) scrivono il file una volta sola
+    @ObservationIgnored private var salvataggio: Task<Void, Never>?
+
+    private func programmaSalvataggio() {
+        salvataggio?.cancel()
+        salvataggio = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            salva()
+        }
+    }
+
+    // Scrive subito (quando l'app va in background)
+    func salvaOra() {
+        guard salvataggio != nil else { return }
+        salvataggio?.cancel()
+        salvataggio = nil
+        if !demo { salva() }
+    }
 
     private static var fileDati: URL {
         URL.applicationSupportDirectory.appending(path: "dieta.json")
