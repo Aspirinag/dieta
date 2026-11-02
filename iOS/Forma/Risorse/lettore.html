@@ -11,7 +11,10 @@
   const comeFile = (b64) => ({ arrayBuffer: async () => daBase64(b64).buffer });
 
   const GIORNI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-const PASTI = ['Spuntino', 'Pranzo', 'Cena'];
+// Nomi dei pasti riconosciuti (senza badare alle maiuscole): ogni schema ha i suoi
+const PASTI = ['colazione', 'spuntino', 'spuntino mattina', 'spuntino del mattino', 'spuntino pomeriggio',
+  'spuntino del pomeriggio', 'merenda', 'pranzo', 'cena', 'dopocena', 'spuntino serale'];
+const ePasto = (t) => PASTI.includes(t.toLowerCase());
 const PREFISSO = { Contorno: 'Contorno: ', Secondo: 'Secondo: ' };
 
 function parseSchema(righe) {
@@ -31,7 +34,7 @@ function parseSchema(righe) {
     }
     if (!giorno || ignora) continue;
     if (L.startsWith('Condimento')) { ignora = true; continue; }
-    if (PASTI.includes(L) && !R) {
+    if (ePasto(L) && !R) {
       pasto = { nome: L, opzioni: [] };
       giorno.pasti.push(pasto);
       opzione = { alimenti: [] };
@@ -74,7 +77,10 @@ function parseSchema(righe) {
     const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const righe = [];
     for (let p = 1; p <= doc.numPages; p++) {
-      const tc = await (await doc.getPage(p)).getTextContent();
+      const pagina = await doc.getPage(p);
+      const tc = await pagina.getTextContent();
+      // Colonna delle quantità: oltre il 40% della larghezza (240 punti su un A4 verticale)
+      const soglia = pagina.getViewport({ scale: 1 }).width * 0.4;
       const rows = {};
       tc.items.forEach((it) => { if (!it.str.trim()) return; const y = Math.round(it.transform[5]); (rows[y] = rows[y] || []).push(it); });
       Object.keys(rows).map(Number).sort((a, b) => b - a).forEach((y) => {
@@ -82,7 +88,7 @@ function parseSchema(righe) {
         let sinistra = '', destra = '', prev = null;
         items.forEach((it) => {
           const x = it.transform[4];
-          const parte = x < 240 ? 'sinistra' : 'destra';
+          const parte = x < soglia ? 'sinistra' : 'destra';
           const gap = prev ? x - (prev.x + prev.w) : 0;
           const sep = prev && prev.parte === parte && gap > 1.5 ? ' ' : '';
           if (parte === 'sinistra') sinistra += (sinistra && prev && prev.parte === 'sinistra' ? sep : '') + it.str;
