@@ -1,0 +1,59 @@
+# Compila Forma (dieta + palestra in un'unica app SwiftUI).
+# Su main pubblica la .ipa in una release; sugli altri branch fa le schermate nel simulatore
+# e le mette nel branch "schermate-forma"
+name: Forma iOS
+
+on:
+  push:
+    paths:
+      - 'iOS/Forma/**'
+      - 'iOS/Forma.xcodeproj/**'
+      - '.github/workflows/forma.yml'
+      - 'scripts/schermate.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    env:
+      VERSIONE: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compila l'app
+        run: >
+          xcodebuild -project iOS/Forma.xcodeproj -target Forma -configuration Release -sdk iphoneos
+          SYMROOT="$PWD/build" CODE_SIGNING_ALLOWED=NO
+          MARKETING_VERSION=$VERSIONE CURRENT_PROJECT_VERSION=${{ github.run_number }}
+          build
+      - name: Crea la .ipa
+        run: |
+          mkdir Payload
+          cp -R build/Release-iphoneos/Forma.app Payload/
+          zip -qry Forma.ipa Payload
+      - name: Pubblica la release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create forma-v$VERSIONE Forma.ipa --title "Forma $VERSIONE" --notes "Forma: dieta e palestra" --latest=false
+
+  schermate:
+    if: github.ref != 'refs/heads/main'
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compila per il simulatore
+        run: >
+          xcodebuild -project iOS/Forma.xcodeproj -target Forma -configuration Debug -sdk iphonesimulator
+          ARCHS=arm64 SYMROOT="$PWD/build" build
+      - name: Schermate
+        run: bash scripts/schermate.sh build/Debug-iphonesimulator/Forma.app io.github.aspirinag.forma "oggi dieta dieta:spesa allenamento inCorso progressi progressi:corpo progressi:calendario profilo"
+      - name: Pubblica le schermate nel branch "schermate-forma"
+        run: |
+          cd schermate
+          git init -q -b schermate-forma
+          git add .
+          git -c user.name="GitHub Actions" -c user.email="actions@github.com" commit -qm "Schermate di ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" schermate-forma

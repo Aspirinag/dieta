@@ -1,9 +1,9 @@
 #!/bin/bash
-# Installa Dieta e Palestra sull'iPhone collegato al Mac, firmate con il tuo Apple ID gratuito.
+# Installa Forma (o Dieta e Palestra) sull'iPhone collegato al Mac, firmate con il tuo Apple ID gratuito.
 # Uso (nel Terminale del Mac, con l'iPhone collegato via cavo e sbloccato):
 #   bash -c "$(curl -fsSL https://raw.githubusercontent.com/aspirinag/dieta/main/scripts/installa-iphone.sh)"
 # Con l'Apple ID gratuito le app durano 7 giorni: per rinnovarle basta rilanciare lo stesso comando.
-# Per installarne una sola aggiungi in fondo: _ dieta   (oppure _ palestra)
+# Di base installa Forma; per le app separate aggiungi in fondo: _ "dieta palestra"
 set -euo pipefail
 
 errore() { echo; echo "❌ $*"; exit 1; }
@@ -57,13 +57,14 @@ echo "iPhone: $UDID"
 # ---------- Compila e installa ----------
 LAVORO="$HOME/Library/Caches/app-iphone-aspirinag"
 mkdir -p "$LAVORO"
-APP_SCELTE=${1:-"dieta palestra"}
+APP_SCELTE=${1:-"forma"}
 
 for app in $APP_SCELTE; do
   case "$app" in
+    forma) REPO=dieta; NOME=Forma ;;
     dieta) REPO=dieta; NOME=Dieta ;;
     palestra) REPO=Palestra; NOME=Palestra ;;
-    *) errore "App sconosciuta: $app (usa dieta o palestra)" ;;
+    *) errore "App sconosciuta: $app (usa forma, dieta o palestra)" ;;
   esac
 
   passo "$NOME: scarico l'ultima versione"
