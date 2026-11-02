@@ -286,6 +286,14 @@ struct ProfiloView: View {
                     }
                 } icon: { Image(systemName: "drop.fill") }
             }
+            Toggle(isOn: Binding(get: { pr.mattino }, set: { v in Task { await cambiaPromemoria { $0.mattino = v } } })) {
+                Label {
+                    VStack(alignment: .leading) {
+                        Text("Controlla la dieta odierna")
+                        Text("ogni mattina alle 9").font(.caption).foregroundStyle(.secondary)
+                    }
+                } icon: { Image(systemName: "sun.horizon") }
+            }
             Toggle(isOn: Binding(get: { pr.pasti }, set: { v in Task { await cambiaPromemoria { $0.pasti = v } } })) {
                 Label {
                     VStack(alignment: .leading) {
@@ -302,7 +310,7 @@ struct ProfiloView: View {
     private func cambiaPromemoria(_ modifica: (inout Promemoria) -> Void) async {
         var p = archivio.stato.promemoria ?? Promemoria()
         modifica(&p)
-        if (p.acqua || p.pasti), !(await Notifiche.permesso()) {
+        if (p.acqua || p.pasti || p.mattino), !(await Notifiche.permesso()) {
             errore = "Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Dieta."
             return
         }

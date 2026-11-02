@@ -149,12 +149,15 @@ final class Archivio {
     func programmaPromemoria() async {
         guard !demo else { return }
         let centro = UNUserNotificationCenter.current()
-        centro.removePendingNotificationRequests(withIdentifiers: Self.oreAcqua.map { "acqua-\($0)" } + ["pasti"])
+        centro.removePendingNotificationRequests(withIdentifiers: Self.oreAcqua.map { "acqua-\($0)" } + ["pasti", "mattino"])
         let p = stato.promemoria ?? Promemoria()
         if p.acqua {
             for ora in Self.oreAcqua {
                 await Notifiche.giornaliera(id: "acqua-\(ora)", titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.", ora: ora)
             }
+        }
+        if p.mattino {
+            await Notifiche.giornaliera(id: "mattino", titolo: "Dieta", testo: "Controlla la dieta odierna 🥗", ora: 9)
         }
         if p.pasti {
             await Notifiche.giornaliera(id: "pasti", titolo: "Dieta", testo: "Hai segnato i pasti di oggi?", ora: 21)

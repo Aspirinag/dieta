@@ -281,6 +281,7 @@ struct Profilo: Codable, Hashable {
 struct Promemoria: Codable, Hashable {
     var acqua = false
     var pasti = false
+    var mattino = true
 
     init() {}
 
@@ -288,6 +289,7 @@ struct Promemoria: Codable, Hashable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         acqua = c.valore(.acqua, false)
         pasti = c.valore(.pasti, false)
+        mattino = c.valore(.mattino, true)
     }
 }
 
