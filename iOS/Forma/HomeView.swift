@@ -65,7 +65,7 @@ struct HomeView: View {
                 }
                 .pulsanteVetro(evidente: true)
             } else if fatti.isEmpty && cardio.isEmpty {
-                if t == .pesi, let r = palestra.stato.routine.first {
+                if t == .pesi, let r = palestra.stato.prossimaRoutine() {
                     Button {
                         palestra.inizia(r)
                         navigazione.allenamentoAperto = true

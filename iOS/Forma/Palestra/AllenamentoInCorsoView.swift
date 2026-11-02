@@ -145,6 +145,7 @@ struct SezioneEsercizioInCorso: View {
     @Environment(Palestra.self) private var palestra
     let idEsercizio: UUID
     var campo: FocusState<String?>.Binding
+    @State private var chiediRimuovi = false
 
     private var indice: Int? { palestra.stato.inCorso?.esercizi.firstIndex { $0.id == idEsercizio } }
 
@@ -195,11 +196,15 @@ struct SezioneEsercizioInCorso: View {
                 if i < (palestra.stato.inCorso?.esercizi.count ?? 0) - 1 {
                     Button("Sposta giù", systemImage: "arrow.down") { palestra.stato.inCorso?.esercizi.swapAt(i, i + 1) }
                 }
-                Button("Rimuovi esercizio", systemImage: "trash", role: .destructive) {
-                    palestra.stato.inCorso?.esercizi.remove(at: i)
-                }
+                Button("Rimuovi esercizio", systemImage: "trash", role: .destructive) { chiediRimuovi = true }
             } label: {
                 Image(systemName: "ellipsis.circle").font(.title3)
+            }
+            .accessibilityLabel("Opzioni di \(ex.nome)")
+            .confirmationDialog("Rimuovere \(ex.nome)?", isPresented: $chiediRimuovi, titleVisibility: .visible) {
+                Button("Rimuovi", role: .destructive) { palestra.stato.inCorso?.esercizi.removeAll { $0.id == idEsercizio } }
+            } message: {
+                Text("Le serie di questo esercizio non vengono salvate.")
             }
         }
     }

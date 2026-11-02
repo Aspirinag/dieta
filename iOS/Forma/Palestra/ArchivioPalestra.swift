@@ -369,3 +369,34 @@ final class Palestra {
         stato = s
     }
 }
+
+extension StatoPalestra {
+    // Scheda da proporre: quella dopo l'ultima fatta (a giro); senza storico la prima
+    func prossimaRoutine() -> Routine? {
+        guard let ultima = allenamenti.sorted(by: { $0.inizio < $1.inizio }).last(where: { a in routine.contains { $0.id == a.routine } }),
+              let i = routine.firstIndex(where: { $0.id == ultima.routine }) else { return routine.first }
+        return routine[(i + 1) % routine.count]
+    }
+
+    // Record battuti da ogni allenamento (come Palestra.nuoviRecord), in una sola passata
+    func conteggioRecord() -> [UUID: Int] {
+        var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:]
+        var risultato: [UUID: Int] = [:]
+        for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
+            var n = 0
+            for e in a.esercizi {
+                let valide = e.serie.filter(\.valida)
+                guard !valide.isEmpty else { continue }
+                let peso = valide.compactMap(\.kg).max() ?? 0
+                let mass = valide.map(\.massimale).max() ?? 0
+                if let p = pesoMax[e.esercizio] {
+                    if peso > p || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
+                }
+                pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, peso)
+                massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, mass)
+            }
+            risultato[a.id] = n
+        }
+        return risultato
+    }
+}
