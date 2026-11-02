@@ -9,19 +9,28 @@ final class Palestra {
     }
 
     let demo: Bool
+    // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
+    @ObservationIgnored private(set) var fileIlleggibile: URL?
 
     init() {
         demo = Avvio.demo
-        stato = demo ? StatoPalestra.demo : Self.carica()
+        var illeggibile: URL?
+        stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
+        fileIlleggibile = illeggibile
     }
 
     // ---------- File ----------
 
     private static var fileDati: URL { URL.applicationSupportDirectory.appending(path: "palestra.json") }
 
-    private static func carica() -> StatoPalestra {
-        if let d = try? Data(contentsOf: fileDati), let s = try? JSONDecoder().decode(StatoPalestra.self, from: d) { return s }
-        return StatoPalestra()
+    private static func carica(_ illeggibile: inout URL?) -> StatoPalestra {
+        switch FileDati.leggi(fileDati, come: StatoPalestra.self) {
+        case .ok(let s): return s
+        case .illeggibile(let copia):
+            illeggibile = copia
+            return StatoPalestra()
+        case .assente: return StatoPalestra()
+        }
     }
 
     private func salva() {

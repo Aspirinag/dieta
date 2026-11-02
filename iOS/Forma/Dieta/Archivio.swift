@@ -9,6 +9,8 @@ final class Archivio {
     }
 
     private let demo: Bool
+    // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
+    @ObservationIgnored private(set) var fileIlleggibile: URL?
 
     static let oliPredefiniti = 6       // cucchiaini al giorno
     static let acquaPredefinita = 2.0   // litri al giorno
@@ -16,7 +18,9 @@ final class Archivio {
 
     init() {
         demo = Avvio.demo
-        var s = demo ? Stato.demo : Self.carica()
+        var illeggibile: URL?
+        var s = demo ? Stato.demo : Self.carica(&illeggibile)
+        fileIlleggibile = illeggibile
         if let p = s.preferito, s.profili[p] != nil { s.attivo = p }
         stato = s
     }
@@ -28,9 +32,13 @@ final class Archivio {
     }
 
     // Ordine: file dell'app, poi i dati della prima versione dell'app (Capacitor), poi i profili iniziali
-    private static func carica() -> Stato {
-        if let d = try? Data(contentsOf: fileDati), let s = try? JSONDecoder().decode(Stato.self, from: d) {
-            return s
+    private static func carica(_ illeggibile: inout URL?) -> Stato {
+        switch FileDati.leggi(fileDati, come: Stato.self) {
+        case .ok(let s): return s
+        case .illeggibile(let copia):
+            illeggibile = copia
+            return .iniziale
+        case .assente: break
         }
         if let j = UserDefaults.standard.string(forKey: "CapacitorStorage.dieta:v1"),
            let s = try? JSONDecoder().decode(Stato.self, from: Data(j.utf8)) {

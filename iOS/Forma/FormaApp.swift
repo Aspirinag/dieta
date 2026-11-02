@@ -51,6 +51,7 @@ struct Radice: View {
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
     @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
+    @State private var avvisoDati = true
 
     private var tema: Tema { Tema(rawValue: scelto) ?? .predefinito }
 
@@ -77,6 +78,13 @@ struct Radice: View {
             if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema(tema) }
         }
         .applicaTema(tema)
+        .alert("Dati non letti", isPresented: Binding(
+            get: { avvisoDati && copieIlleggibili != nil }, set: { if !$0 { avvisoDati = false } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text("Non riesco a leggere i dati salvati, quindi l'app è ripartita da zero. Ne ho tenuto una copia (\(copieIlleggibili ?? "")) nella cartella dell'app.")
+        }
         .task {
             guard !palestra.demo else { return }
             if await Notifiche.permesso() { await palestra.programmaPagamento() }
@@ -86,6 +94,14 @@ struct Radice: View {
                 await Salute.shared.importa()
             }
         }
+    }
+}
+
+extension Radice {
+    // Nomi delle copie dei file dati illeggibili trovate all'avvio
+    var copieIlleggibili: String? {
+        let nomi = [archivio.fileIlleggibile, palestra.fileIlleggibile].compactMap { $0?.lastPathComponent }
+        return nomi.isEmpty ? nil : nomi.joined(separator: ", ")
     }
 }
 
