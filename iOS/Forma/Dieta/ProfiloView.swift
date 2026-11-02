@@ -230,6 +230,17 @@ struct ProfiloView: View {
                 Label("Esporta backup", systemImage: "square.and.arrow.up")
             }
             Button("Importa backup", systemImage: "square.and.arrow.down") { importaBackup = true }
+            let copie = FileDati.copie(in: URL.applicationSupportDirectory)
+            if !copie.isEmpty {
+                DisclosureGroup("Copie dei dati non letti (\(copie.count))") {
+                    ForEach(copie, id: \.self) { u in
+                        ShareLink(item: u) {
+                            Label(u.lastPathComponent, systemImage: "doc.badge.exclamationmark")
+                                .font(.caption)
+                        }
+                    }
+                }
+            }
         } header: {
             Text("Backup")
         } footer: {
@@ -253,7 +264,11 @@ struct FoglioNuovoPiano: View {
                         TextField("Nome", text: $piano.nome)
                         DatePicker("Valido dal", selection: $dal, displayedComponents: .date)
                     } footer: {
-                        Text("Il piano precedente si chiude il giorno prima.")
+                        if let altro = archivio.profilo.pianoConStessaData(Giorni.iso(dal), escluso: nil) {
+                            Text("Sostituisce «\(altro.nome)», che inizia lo stesso giorno.").foregroundStyle(.orange)
+                        } else {
+                            Text("Il piano precedente si chiude il giorno prima.")
+                        }
                     }
                     Section("Anteprima: \(piano.giorni.first?.nome ?? "")") {
                         ForEach(Array((piano.giorni.first?.pasti ?? []).enumerated()), id: \.offset) { _, pasto in

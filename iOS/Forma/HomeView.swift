@@ -8,6 +8,7 @@ struct HomeView: View {
     @Environment(Navigazione.self) private var navigazione
     @State private var richiesta: TipoPDF?
     @AppStorage("oggiPastiAperti") private var pastiAperti = false
+    @Environment(\.dynamicTypeSize) private var dimensione
 
     private var titolo: String {
         Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT"))).capitalized
@@ -137,7 +138,7 @@ struct HomeView: View {
                             Text(opz?.alimenti.map(\.nome).joined(separator: ", ") ?? "")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
+                                .lineLimit(dimensione.isAccessibilitySize ? nil : 2)
                         }
                         .opacity(s.fatto ? 0.5 : 1)
                     }

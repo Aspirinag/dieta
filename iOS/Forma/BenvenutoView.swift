@@ -75,6 +75,7 @@ struct BenvenutoView: View {
         let consentite = promemoria ? await Notifiche.permesso() : false
         p.mattino = consentite
         archivio.stato.promemoria = p
+        palestra.stato.pagamentoAttivo = consentite
         if p.mattino {
             await archivio.programmaPromemoria()
             await palestra.programmaPagamento()

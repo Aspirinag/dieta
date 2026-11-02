@@ -34,4 +34,19 @@ struct FileDatiTests {
         #expect(copia.pathExtension == "json")
         #expect(try Data(contentsOf: copia) == rotto)
     }
+
+    @Test func erroreDiLetturaNonEAssenza() throws {
+        // Al posto del file c'è una cartella: esiste ma non si legge
+        let u = try cartella().appending(path: "dati.json")
+        try FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
+        guard case .bloccato = FileDati.leggi(u, come: Prova.self) else { Issue.record("atteso .bloccato"); return }
+    }
+
+    @Test func copieElencate() throws {
+        let c = try cartella()
+        let u = c.appending(path: "dati.json")
+        try Data("rotto".utf8).write(to: u)
+        _ = FileDati.leggi(u, come: Prova.self)
+        #expect(FileDati.copie(in: c).count == 1)
+    }
 }

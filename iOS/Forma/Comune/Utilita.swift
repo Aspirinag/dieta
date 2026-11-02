@@ -126,3 +126,20 @@ struct RigaAlimento: View {
         }
     }
 }
+
+extension View {
+    // Selettore a segmenti, che con il testo molto grande diventa un menu (i segmenti si taglierebbero)
+    func segmentiOMenu() -> some View { modifier(SegmentiOMenu()) }
+}
+
+struct SegmentiOMenu: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dimensione
+
+    func body(content: Content) -> some View {
+        if dimensione.isAccessibilitySize {
+            content.pickerStyle(.menu)
+        } else {
+            content.pickerStyle(.segmented)
+        }
+    }
+}

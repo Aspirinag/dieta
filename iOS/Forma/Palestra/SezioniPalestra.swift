@@ -4,9 +4,11 @@ import SwiftUI
 struct SezioniPalestra: View {
     @Environment(Palestra.self) private var palestra
     @AppStorage(Salute.chiave) private var watch = true
+    @State private var senzaPermesso = false
 
     var body: some View {
         sezionePalestra
+            .task { await controllaPermesso() }
         Section {
             Toggle(isOn: Binding(get: { watch }, set: { v in cambiaWatch(v) })) {
                 Label("Allenamenti dall'Apple Watch", systemImage: "applewatch")
@@ -14,6 +16,11 @@ struct SezioniPalestra: View {
         } footer: {
             Text("Le sessioni di palestra registrate sul Watch entrano da sole in Forma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno \(Salute.minutiCardio) minuti diventano cardio. Forma legge da Salute, non scrive niente.")
         }
+    }
+
+    // Il promemoria del pagamento promesso nelle impostazioni ha bisogno delle notifiche
+    private func controllaPermesso() async {
+        if palestra.stato.pagamentoAttivo, !(await Notifiche.permesso()) { senzaPermesso = true }
     }
 
     private func cambiaWatch(_ v: Bool) {
@@ -48,7 +55,10 @@ struct SezioniPalestra: View {
             }
             Toggle(isOn: Binding(get: { palestra.stato.pagamentoAttivo }, set: { v in
                 palestra.stato.pagamentoAttivo = v
-                Task { await palestra.programmaPagamento() }
+                Task {
+                    if v, !(await Notifiche.permesso()) { senzaPermesso = true }
+                    await palestra.programmaPagamento()
+                }
             })) {
                 Label("Ricordami il pagamento", systemImage: "bell.badge")
             }
@@ -85,6 +95,10 @@ struct SezioniPalestra: View {
             if palestra.stato.pagamentoAttivo {
                 let g = palestra.stato.giornoPagamento
                 Text("L'avviso in Oggi compare una settimana prima. Il promemoria arriva il \(g) (o il \(g + 1)) del mese alle \(ProfiloView.orario(palestra.stato.oraPagamento)), solo se il mese non è già segnato pagato.")
+                if senzaPermesso {
+                    Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
+                        .foregroundStyle(.orange)
+                }
             }
         }
     }

@@ -91,7 +91,15 @@ struct Radice: View {
         )) {
             Button("OK") {}
         } message: {
-            Text("Non riesco a leggere i dati salvati, quindi l'app è ripartita da zero. Ne ho tenuto una copia (\(copieIlleggibili ?? "")) nella cartella dell'app.")
+            Text("Non riesco a leggere i dati salvati, quindi l'app è ripartita da zero. Ne ho tenuto una copia: la trovi in Impostazioni → Backup → Copie dei dati non letti, da dove puoi inviarla per recuperarla.")
+        }
+        .alert("Dati non disponibili", isPresented: Binding(
+            get: { avvisoDati && (archivio.salvataggioBloccato || palestra.salvataggioBloccato) },
+            set: { if !$0 { avvisoDati = false } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text("Non riesco ad aprire i dati salvati (succede se il telefono è bloccato). Chiudi e riapri l'app: finché non si risolve, Forma non salva niente per non sovrascriverli.")
         }
         .fullScreenCover(isPresented: Binding(
             get: { archivio.primaApertura && !benvenutoVisto }, set: { if !$0 { benvenutoVisto = true } }

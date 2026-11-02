@@ -11,12 +11,15 @@ final class Palestra {
     let demo: Bool
     // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
     @ObservationIgnored private(set) var fileIlleggibile: URL?
+    // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
+    @ObservationIgnored private(set) var salvataggioBloccato = false
 
     init() {
         demo = Avvio.demo
         var illeggibile: URL?
         stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
-        fileIlleggibile = illeggibile
+        salvataggioBloccato = illeggibile?.path == "/bloccato"
+        fileIlleggibile = salvataggioBloccato ? nil : illeggibile
     }
 
     // ---------- File ----------
@@ -46,6 +49,9 @@ final class Palestra {
     private static func carica(_ illeggibile: inout URL?) -> StatoPalestra {
         switch FileDati.leggi(fileDati, come: StatoPalestra.self) {
         case .ok(let s): return s
+        case .bloccato:
+            illeggibile = URL(fileURLWithPath: "/bloccato")
+            return StatoPalestra()
         case .illeggibile(let copia):
             illeggibile = copia
             return StatoPalestra()
@@ -54,6 +60,7 @@ final class Palestra {
     }
 
     private func salva() {
+        guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
             try JSONEncoder().encode(stato).write(to: Self.fileDati, options: .atomic)

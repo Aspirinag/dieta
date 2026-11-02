@@ -57,4 +57,25 @@ struct PianiTests {
         #expect(p.dieta["2026-11-03"]?.slot["2"]?.fatto == true)
         #expect(p.dieta["2026-11-03"]?.slot["0"] == nil)
     }
+
+    @Test func spuntinoDoppioSegueLaSuaPosizione() {
+        var p = Profilo(nome: "Io")
+        p.aggiungiPiano(piano("A", dal: "2026-11-02", pasti: ["Spuntino", "Pranzo", "Spuntino", "Cena"]))
+        var r = Registro()
+        r.slot["2"] = Slot(opt: 1, fatto: true)     // secondo spuntino
+        p.dieta["2026-11-02"] = r
+        p.aggiungiPiano(piano("A2", dal: "2026-11-02", pasti: ["Colazione", "Spuntino", "Pranzo", "spuntino ", "Cena"]))
+        #expect(p.dieta["2026-11-02"]?.slot["3"]?.fatto == true)
+        #expect(p.dieta["2026-11-02"]?.slot["3"]?.opt == 1)
+        #expect(p.dieta["2026-11-02"]?.slot["1"] == nil)
+    }
+
+    @Test func pianoConLaStessaData() {
+        var p = Profilo(nome: "Io")
+        let a = piano("A", dal: "2026-11-02", pasti: ["Cena"])
+        p.aggiungiPiano(a)
+        #expect(p.pianoConStessaData("2026-11-02", escluso: nil)?.nome == "A")
+        #expect(p.pianoConStessaData("2026-11-02", escluso: a) == nil)
+        #expect(p.pianoConStessaData("2026-11-03", escluso: nil) == nil)
+    }
 }

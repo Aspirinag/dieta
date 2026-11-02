@@ -17,7 +17,7 @@ struct SettimanaView: View {
                             Text("Giorni").tag(0)
                             Text("Lista della spesa").tag(1)
                         }
-                        .pickerStyle(.segmented)
+                        .segmentiOMenu()
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())
                     }
@@ -56,7 +56,7 @@ struct SettimanaView: View {
                         Text(String(Giorni.nomi[i].prefix(3))).tag(i)
                     }
                 }
-                .pickerStyle(.segmented)
+                .segmentiOMenu()
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
             } footer: {
@@ -103,7 +103,7 @@ struct SettimanaView: View {
                 Text("Questa settimana").tag(questa)
                 Text("Prossima").tag(Giorni.aggiungi(questa, 7))
             }
-            .pickerStyle(.segmented)
+            .segmentiOMenu()
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets())
         }

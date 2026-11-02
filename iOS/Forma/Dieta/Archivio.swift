@@ -11,6 +11,8 @@ final class Archivio {
     private let demo: Bool
     // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
     @ObservationIgnored private(set) var fileIlleggibile: URL?
+    // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
+    @ObservationIgnored private(set) var salvataggioBloccato = false
     // Nessun dato salvato: è la prima apertura dell'app
     @ObservationIgnored private(set) var primaApertura = false
 
@@ -22,7 +24,8 @@ final class Archivio {
         demo = Avvio.demo
         var illeggibile: URL?
         var s = demo ? Stato.demo : Self.carica(&illeggibile)
-        fileIlleggibile = illeggibile
+        salvataggioBloccato = illeggibile?.path == "/bloccato"
+        fileIlleggibile = salvataggioBloccato ? nil : illeggibile
         primaApertura = !demo && illeggibile == nil && s == .iniziale
         if let p = s.preferito, s.profili[p] != nil { s.attivo = p }
         stato = s
@@ -58,6 +61,9 @@ final class Archivio {
     private static func carica(_ illeggibile: inout URL?) -> Stato {
         switch FileDati.leggi(fileDati, come: Stato.self) {
         case .ok(let s): return s
+        case .bloccato:
+            illeggibile = URL(fileURLWithPath: "/bloccato")
+            return .iniziale
         case .illeggibile(let copia):
             illeggibile = copia
             return .iniziale
@@ -71,6 +77,7 @@ final class Archivio {
     }
 
     private func salva() {
+        guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
             try backup().write(to: Self.fileDati, options: .atomic)
@@ -228,6 +235,22 @@ extension Profilo {
         }
     }
 
+    // Chiave di ogni pasto: nome (senza spazi e maiuscole) e quante volte è già comparso,
+    // così il secondo "Spuntino" corrisponde al secondo "Spuntino"
+    static func chiaviPasti(_ pasti: [Pasto]) -> [String] {
+        var visti: [String: Int] = [:]
+        return pasti.map { p in
+            let n = p.nome.trimmingCharacters(in: .whitespaces).lowercased()
+            visti[n, default: 0] += 1
+            return "\(n)#\(visti[n]!)"
+        }
+    }
+
+    // Piano già presente che inizia la stessa data (quello nuovo lo sostituirebbe)
+    func pianoConStessaData(_ dal: String, escluso: Piano?) -> Piano? {
+        piani.first { $0.dal == dal && $0.id != escluso?.id }
+    }
+
     // Cambia l'elenco dei piani e rimappa per nome del pasto le spunte dei giorni nell'intervallo
     // (le spunte sono salvate per posizione del pasto)
     private mutating func cambiaPiani(giorniDa dal: String, al: String, _ cambia: ([Piano]) -> [Piano]) {
@@ -237,8 +260,8 @@ extension Profilo {
         for iso in giorni {
             guard var r = dieta[iso], let vecchio = prima[iso] ?? nil, let nuovo = piano(per: iso) else { continue }
             let g = Giorni.indice(iso)
-            let nomiVecchi = vecchio.giorni[g].pasti.map(\.nome)
-            let nomiNuovi = nuovo.giorni[g].pasti.map(\.nome)
+            let nomiVecchi = Self.chiaviPasti(vecchio.giorni[g].pasti)
+            let nomiNuovi = Self.chiaviPasti(nuovo.giorni[g].pasti)
             guard nomiVecchi != nomiNuovi else { continue }
             var slot: [String: Slot] = [:]
             for (k, s) in r.slot {

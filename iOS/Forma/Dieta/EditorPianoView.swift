@@ -15,8 +15,10 @@ struct EditorPianoView: View {
 
     init(originale: Piano?) {
         self.originale = originale
-        let p = originale ?? Piano(nome: "Nuovo piano", dal: Giorni.oggi(), al: "",
+        var p = originale ?? Piano(nome: "Nuovo piano", dal: Giorni.oggi(), al: "",
                                    giorni: Giorni.nomi.map { GiornoPiano(nome: $0, palestra: false, pasti: []) })
+        // Piani vecchi o della web app con meno di 7 giorni: si completano
+        while p.giorni.count < 7 { p.giorni.append(GiornoPiano(nome: Giorni.nomi[p.giorni.count], palestra: false, pasti: [])) }
         _piano = State(initialValue: p)
         _dal = State(initialValue: Giorni.data(p.dal))
         _al = State(initialValue: p.al.isEmpty ? Giorni.data(p.dal) : Giorni.data(p.al))
@@ -34,12 +36,17 @@ struct EditorPianoView: View {
                         if !senzaFine {
                             DatePicker("Fino al", selection: $al, in: dal..., displayedComponents: .date)
                         }
+                    } footer: {
+                        if let altro = archivio.profilo.pianoConStessaData(Giorni.iso(dal), escluso: originale) {
+                            Text("Attenzione: sostituisce «\(altro.nome)», che inizia lo stesso giorno.")
+                                .foregroundStyle(.orange)
+                        }
                     }
                     Section {
                         Picker("Giorno", selection: $giorno) {
                             ForEach(0..<7, id: \.self) { Text(String(Giorni.nomi[$0].prefix(3))).tag($0) }
                         }
-                        .pickerStyle(.segmented)
+                        .segmentiOMenu()
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())
                     }
@@ -58,8 +65,12 @@ struct EditorPianoView: View {
                         Text(Giorni.nomi[giorno])
                     }
                     ForEach(piano.giorni[giorno].pasti.indices, id: \.self) { i in
-                        EditorPasto(pasto: $piano.giorni[giorno].pasti[i]) {
-                            piano.giorni[giorno].pasti.remove(at: i)
+                        // Binding protetto: durante un'eliminazione la riga può chiedere un indice che non c'è più
+                        EditorPasto(pasto: Binding(
+                            get: { piano.giorni[giorno].pasti.indices.contains(i) ? piano.giorni[giorno].pasti[i] : Pasto(nome: "", opzioni: []) },
+                            set: { if piano.giorni[giorno].pasti.indices.contains(i) { piano.giorni[giorno].pasti[i] = $0 } }
+                        )) {
+                            if piano.giorni[giorno].pasti.indices.contains(i) { piano.giorni[giorno].pasti.remove(at: i) }
                         }
                     }
                     Section {
@@ -79,9 +90,11 @@ struct EditorPianoView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Salva", systemImage: "checkmark") { salva() }
-                        .disabled(piano.nome.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .disabled(piano.nome.trimmingCharacters(in: .whitespaces).isEmpty
+                                  || (originale == nil && piano.giorni.allSatisfy { $0.pasti.isEmpty }))
                 }
             }
+            .interactiveDismissDisabled()
             .alert("Giorno copiato", isPresented: $copiaFatta) {
                 Button("OK") {}
             } message: {
@@ -124,15 +137,18 @@ private struct EditorPasto: View {
             TextField("Nome del pasto (es. Colazione)", text: $pasto.nome)
                 .font(.headline)
             ForEach(pasto.opzioni.indices, id: \.self) { o in
+                if pasto.opzioni.indices.contains(o) {
                 if pasto.opzioni.count > 1 {
                     HStack {
                         TextField("Alternativa \(o + 1)", text: Binding(
-                            get: { pasto.opzioni[o].titolo ?? "" },
-                            set: { pasto.opzioni[o].titolo = $0.isEmpty ? nil : $0 }
+                            get: { pasto.opzioni.indices.contains(o) ? pasto.opzioni[o].titolo ?? "" : "" },
+                            set: { if pasto.opzioni.indices.contains(o) { pasto.opzioni[o].titolo = $0.isEmpty ? nil : $0 } }
                         ))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.tint)
-                        Button("Elimina alternativa", systemImage: "minus.circle") { pasto.opzioni.remove(at: o) }
+                        Button("Elimina alternativa", systemImage: "minus.circle") {
+                            if pasto.opzioni.indices.contains(o) { pasto.opzioni.remove(at: o) }
+                        }
                             .labelStyle(.iconOnly)
                             .foregroundStyle(.red)
                             .buttonStyle(.borderless)
@@ -140,18 +156,19 @@ private struct EditorPasto: View {
                 }
                 ForEach(pasto.opzioni[o].alimenti.indices, id: \.self) { a in
                     HStack {
-                        TextField("Alimento", text: $pasto.opzioni[o].alimenti[a].nome)
-                        TextField("Quantità", text: $pasto.opzioni[o].alimenti[a].quantita)
+                        TextField("Alimento", text: campo(o, a, \.nome))
+                        TextField("Quantità", text: campo(o, a, \.quantita))
                             .multilineTextAlignment(.trailing)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: 110)
                     }
                 }
-                .onDelete { pasto.opzioni[o].alimenti.remove(atOffsets: $0) }
+                .onDelete { if pasto.opzioni.indices.contains(o) { pasto.opzioni[o].alimenti.remove(atOffsets: $0) } }
                 Button("Aggiungi alimento", systemImage: "plus") {
-                    pasto.opzioni[o].alimenti.append(Alimento(nome: "", quantita: ""))
+                    if pasto.opzioni.indices.contains(o) { pasto.opzioni[o].alimenti.append(Alimento(nome: "", quantita: "")) }
                 }
                 .buttonStyle(.borderless)
+                }
             }
             Button("Aggiungi alternativa", systemImage: "arrow.triangle.branch") {
                 pasto.opzioni.append(Opzione(alimenti: []))
@@ -165,5 +182,19 @@ private struct EditorPasto: View {
         .confirmationDialog("Eliminare \(pasto.nome.isEmpty ? "il pasto" : pasto.nome)?", isPresented: $chiediElimina, titleVisibility: .visible) {
             Button("Elimina", role: .destructive, action: elimina)
         }
+    }
+
+    // Campo di un alimento con controllo degli indici (righe in corso di eliminazione)
+    private func campo(_ o: Int, _ a: Int, _ k: WritableKeyPath<Alimento, String>) -> Binding<String> {
+        Binding(
+            get: {
+                guard pasto.opzioni.indices.contains(o), pasto.opzioni[o].alimenti.indices.contains(a) else { return "" }
+                return pasto.opzioni[o].alimenti[a][keyPath: k]
+            },
+            set: { v in
+                guard pasto.opzioni.indices.contains(o), pasto.opzioni[o].alimenti.indices.contains(a) else { return }
+                pasto.opzioni[o].alimenti[a][keyPath: k] = v
+            }
+        )
     }
 }

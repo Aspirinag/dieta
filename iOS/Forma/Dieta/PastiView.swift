@@ -111,7 +111,7 @@ struct SezionePasto: View {
                     }
                 }
                 if pasto.opzioni.count <= 3 {
-                    scelte.pickerStyle(.segmented)
+                    scelte.segmentiOMenu()
                 } else {
                     scelte.pickerStyle(.menu)
                 }
