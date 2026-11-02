@@ -159,7 +159,7 @@ struct MenuProfilo: View {
     }
 }
 
-// Avviso di pagamento della palestra dal 25 al 2 del mese, finché non è segnato pagato
+// Avviso di pagamento della palestra (da una settimana prima), finché non è segnato pagato
 struct SezionePagamento: View {
     @Environment(Palestra.self) private var palestra
 

@@ -73,4 +73,42 @@ struct PromemoriaTests {
         let s = try JSONDecoder().decode(StatoPalestra.self, from: Data(#"{"oraPagamento":5000}"#.utf8))
         #expect(s.oraPagamento == 1439)
     }
+
+    private func ora(_ iso: String, _ h: Int = 8) -> Date { Giorni.data(iso).addingTimeInterval(TimeInterval(h * 3600)) }
+
+    @Test func pagamentoIlQuindici() {
+        let p = Palestra.prossimoPagamento(dopo: ora("2026-11-10"), pagamenti: [:], minuti: 540, giorno: 15)
+        #expect(p?.quando.day == 15)
+        #expect(p?.primo == true)
+        let q = Palestra.prossimoPagamento(dopo: ora("2026-11-15", 10), pagamenti: [:], minuti: 540, giorno: 15)
+        #expect(q?.quando.day == 16)
+        #expect(q?.primo == false)
+    }
+
+    @Test func avvisoPagamentoUnaSettimanaPrima() {
+        #expect(Palestra.avvisoPagamento(oggi: "2026-11-07", giorno: 15, pagamenti: [:]) == nil)
+        #expect(Palestra.avvisoPagamento(oggi: "2026-11-08", giorno: 15, pagamenti: [:])?.mese == "2026-11")
+        #expect(Palestra.avvisoPagamento(oggi: "2026-11-16", giorno: 15, pagamenti: [:])?.testo == "Ultimo giorno per pagare la palestra.")
+        #expect(Palestra.avvisoPagamento(oggi: "2026-11-17", giorno: 15, pagamenti: [:]) == nil)
+        #expect(Palestra.avvisoPagamento(oggi: "2026-11-10", giorno: 15, pagamenti: ["2026-11": "2026-11-09"]) == nil)
+        // Come prima con il giorno 1: dal 25 del mese prima
+        #expect(Palestra.avvisoPagamento(oggi: "2026-10-25", giorno: 1, pagamenti: [:])?.mese == "2026-11")
+        #expect(Palestra.avvisoPagamento(oggi: "2026-10-24", giorno: 1, pagamenti: [:]) == nil)
+    }
+
+    @Test func pianoABSpento() {
+        var s = StatoPalestra()
+        s.usaAB = false
+        #expect(s.settimana("2026-11-02") == "A")
+        #expect(s.settimana("2026-11-09") == "A")
+        s.usaAB = true
+        #expect(s.settimana("2026-11-02") != s.settimana("2026-11-09"))
+    }
+
+    @Test func campiPagamentoNuoviConValoriDiPrima() throws {
+        let s = try JSONDecoder().decode(StatoPalestra.self, from: Data("{}".utf8))
+        #expect(s.pagamentoAttivo)
+        #expect(s.giornoPagamento == 1)
+        #expect(s.usaAB)
+    }
 }

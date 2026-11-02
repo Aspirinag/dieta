@@ -48,7 +48,7 @@ struct HomeView: View {
         let cardio = palestra.cardio(del: oggi)
         Section {
             LabeledContent {
-                Text("settimana \(palestra.settimana(oggi))")
+                if palestra.stato.usaAB { Text("settimana \(palestra.settimana(oggi))") }
             } label: {
                 Label(t == .riposo ? "Oggi riposo" : "Oggi \(t.nome.lowercased())", systemImage: t.simbolo)
                     .font(.headline)

@@ -40,7 +40,7 @@ struct AllenamentoView: View {
                             Label("Calendario", systemImage: "calendar")
                         }
                         NavigationLink { PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() } } label: {
-                            Label("Piano A/B, pagamento e Watch", systemImage: "gearshape")
+                            Label("Piano, pagamento e Watch", systemImage: "gearshape")
                         }
                     } header: {
                         Text("Progressi e impostazioni")
@@ -108,7 +108,7 @@ struct AllenamentoView: View {
                 .listRowInsets(EdgeInsets())
             }
         } footer: {
-            Text("Oggi: \(t.nome.lowercased()) · settimana \(palestra.settimana(oggi))")
+            Text("Oggi: \(t.nome.lowercased())" + (palestra.stato.usaAB ? " · settimana \(palestra.settimana(oggi))" : ""))
         }
     }
 

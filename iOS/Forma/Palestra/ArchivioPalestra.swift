@@ -86,9 +86,7 @@ final class Palestra {
         return Int((Double(giorni) / 7).rounded(.down)) + 1
     }
 
-    func settimana(_ iso: String) -> String {
-        (Self.numeroSettimana(iso) + (stato.scambia ? 1 : 0)) % 2 == 0 ? "A" : "B"
-    }
+    func settimana(_ iso: String) -> String { stato.settimana(iso) }
 
     func programmato(_ iso: String) -> TipoGiorno {
         let p = stato.piani[settimana(iso)] ?? []
@@ -291,20 +289,37 @@ final class Palestra {
 
     static func mese(_ iso: String) -> String { String(iso.prefix(7)) }
 
-    // Mese da pagare e testo del promemoria, dal 25 al 2 del mese finché non è segnato pagato
+    // Mese da pagare e testo dell'avviso in Oggi, finché non è segnato pagato
     func promemoriaPagamento() -> (mese: String, testo: String)? {
-        let oggi = Giorni.oggi()
-        let giorno = Giorni.calendario.component(.day, from: Date())
-        if giorno > 2 && giorno < 25 { return nil }
-        var mese = Self.mese(oggi)
-        var testo = "Oggi si paga la palestra (1 o 2 del mese)."
-        if giorno >= 25 {
-            let primo = Giorni.calendario.date(byAdding: .month, value: 1, to: Giorni.data(String(oggi.prefix(8)) + "01")) ?? Date()
-            mese = Self.mese(Giorni.iso(primo))
-            let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: primo).day ?? 0
-            testo = mancano == 1 ? "Domani si paga la palestra (1 o 2 del mese)." : "Tra \(mancano) giorni si paga la palestra (1 o 2 del mese)."
+        guard stato.pagamentoAttivo else { return nil }
+        return Self.avvisoPagamento(oggi: Giorni.oggi(), giorno: stato.giornoPagamento, pagamenti: stato.pagamenti)
+    }
+
+    // Giorno di pagamento di un mese (yyyy-MM-01), senza superare la fine del mese
+    private static func giornoDiPagamento(_ primo: String, _ giorno: Int) -> String {
+        let giorni = Giorni.calendario.range(of: .day, in: .month, for: Giorni.data(primo))?.count ?? 28
+        return Giorni.aggiungi(primo, min(giorno, giorni) - 1)
+    }
+
+    // L'avviso compare una settimana prima del giorno di pagamento e resta fino al giorno dopo
+    static func avvisoPagamento(oggi: String, giorno: Int, pagamenti: [String: String]) -> (mese: String, testo: String)? {
+        let primo = String(oggi.prefix(8)) + "01"
+        for m in 0..<2 {
+            let primoMese = Giorni.iso(Giorni.calendario.date(byAdding: .month, value: m, to: Giorni.data(primo)) ?? Date())
+            let paga = giornoDiPagamento(primoMese, giorno)
+            guard oggi >= Giorni.aggiungi(paga, -7), oggi <= Giorni.aggiungi(paga, 1) else { continue }
+            let mese = Self.mese(primoMese)
+            guard pagamenti[mese] == nil else { return nil }
+            let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: Giorni.data(paga)).day ?? 0
+            let testo = switch mancano {
+            case ..<0: "Ultimo giorno per pagare la palestra."
+            case 0: "Oggi si paga la palestra."
+            case 1: "Domani si paga la palestra."
+            default: "Tra \(mancano) giorni si paga la palestra."
+            }
+            return (mese, testo)
         }
-        return stato.pagamenti[mese] == nil ? (mese, testo) : nil
+        return nil
     }
 
     func segnaPagato(_ mese: String) {
@@ -317,28 +332,31 @@ final class Palestra {
         Task { await programmaPagamento() }
     }
 
-    // Una sola notifica, il primo giorno utile (1 o 2 del mese, all'ora scelta) di un mese non ancora pagato
+    // Una sola notifica, il primo giorno utile (giorno scelto o il successivo, all'ora scelta) di un mese non pagato
     func programmaPagamento() async {
         guard !demo else { return }
         Notifiche.cancella(["pagamento"])
-        guard let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento) else { return }
+        guard stato.pagamentoAttivo,
+              let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)
+        else { return }
         await Notifiche.una(id: "pagamento", titolo: "Palestra",
-                            testo: p.primo ? "Oggi si paga la palestra (1 o 2 del mese)." : "Ultimo giorno per pagare la palestra.",
+                            testo: p.primo ? "Oggi si paga la palestra." : "Ultimo giorno per pagare la palestra.",
                             quando: p.quando)
     }
 
-    static func prossimoPagamento(dopo ora: Date, pagamenti: [String: String], minuti: Int) -> (quando: DateComponents, primo: Bool)? {
+    static func prossimoPagamento(dopo ora: Date, pagamenti: [String: String], minuti: Int, giorno: Int = 1) -> (quando: DateComponents, primo: Bool)? {
         let questoMese = Giorni.data(String(Giorni.iso(ora).prefix(8)) + "01")
         for m in 0..<3 {
             guard let mese = Giorni.calendario.date(byAdding: .month, value: m, to: questoMese) else { continue }
-            if pagamenti[Self.mese(Giorni.iso(mese))] != nil { continue }
-            for giorno in [1, 2] {
-                var dc = Giorni.calendario.dateComponents([.year, .month], from: mese)
-                dc.day = giorno
+            let primoMese = Giorni.iso(mese)
+            if pagamenti[Self.mese(primoMese)] != nil { continue }
+            let paga = giornoDiPagamento(primoMese, giorno)
+            for (k, iso) in [paga, Giorni.aggiungi(paga, 1)].enumerated() {
+                var dc = Giorni.calendario.dateComponents([.year, .month, .day], from: Giorni.data(iso))
                 dc.hour = minuti / 60
                 dc.minute = minuti % 60
                 guard let quando = Giorni.calendario.date(from: dc), quando > ora else { continue }
-                return (dc, giorno == 1)
+                return (dc, k == 0)
             }
         }
         return nil
@@ -418,5 +436,13 @@ extension StatoPalestra {
             risultato[a.id] = n
         }
         return risultato
+    }
+}
+
+extension StatoPalestra {
+    // Settimana A o B di una data (sempre A se il piano A/B è spento)
+    func settimana(_ iso: String) -> String {
+        guard usaAB else { return "A" }
+        return (Palestra.numeroSettimana(iso) + (scambia ? 1 : 0)) % 2 == 0 ? "A" : "B"
     }
 }
