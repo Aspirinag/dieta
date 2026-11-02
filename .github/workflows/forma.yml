@@ -44,6 +44,8 @@ jobs:
           gh release create forma-v$VERSIONE Forma.ipa --title "Forma $VERSIONE" --notes "Forma, dieta e palestra" --latest=false
 
   schermate:
+    # Dopo la build: con un solo Mac libero alla volta, due job insieme restavano in coda e venivano annullati
+    needs: build
     if: github.ref != 'refs/heads/main'
     runs-on: macos-26
     steps:

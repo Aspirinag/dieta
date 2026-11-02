@@ -127,16 +127,27 @@ struct RigaAllenamento: View {
             }
             HStack(spacing: 14) {
                 Label(durataTesto(allenamento.durata), systemImage: "clock")
-                Label(volumeTesto(allenamento.volume), systemImage: "scalemass")
+                if allenamento.soloWatch {
+                    if let kcal = allenamento.watch?.calorie { Label("\(Int(kcal.rounded())) kcal", systemImage: "flame") }
+                    if let bpm = allenamento.watch?.battito { Label("\(Int(bpm.rounded())) bpm", systemImage: "heart") }
+                } else {
+                    Label(volumeTesto(allenamento.volume), systemImage: "scalemass")
+                }
                 let record = palestra.nuoviRecord(allenamento).count
                 if record > 0 { Label("\(record)", systemImage: "trophy.fill").foregroundStyle(.yellow) }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
-            Text(allenamento.esercizi.map { "\($0.serie.count) × \(palestra.nome($0.esercizio))" }.joined(separator: ", "))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            if allenamento.soloWatch {
+                Label("Dall'Apple Watch · tocca per aggiungere esercizi e pesi", systemImage: "applewatch")
+                    .font(.caption)
+                    .foregroundStyle(.tint)
+            } else {
+                Text(allenamento.esercizi.map { "\($0.serie.count) × \(palestra.nome($0.esercizio))" }.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
         .padding(.vertical, 2)
     }
