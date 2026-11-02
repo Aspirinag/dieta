@@ -118,11 +118,7 @@ struct SezionePasto: View {
             }
             if let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : nil {
                 ForEach(Array(opz.alimenti.enumerated()), id: \.offset) { _, a in
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(a.nome)
-                        Spacer()
-                        Text(a.quantita).foregroundStyle(.secondary)
-                    }
+                    RigaAlimento(nome: a.nome, quantita: a.quantita)
                     .opacity(s.fatto ? 0.5 : 1)
                 }
             }

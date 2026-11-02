@@ -77,11 +77,7 @@ struct SettimanaView: View {
                                 .foregroundStyle(.tint)
                         }
                         ForEach(Array(o.alimenti.enumerated()), id: \.offset) { _, a in
-                            HStack(alignment: .firstTextBaseline) {
-                                Text(a.nome)
-                                Spacer()
-                                Text(a.quantita).foregroundStyle(.secondary)
-                            }
+                            RigaAlimento(nome: a.nome, quantita: a.quantita)
                         }
                     }
                 }

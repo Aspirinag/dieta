@@ -100,5 +100,29 @@ struct RigaSpunta<Etichetta: View>: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: fatto)
+        .accessibilityValue(fatto ? "fatto" : "da fare")
+        .accessibilityAddTraits(fatto ? .isSelected : [])
+    }
+}
+
+// Alimento con la quantità: sulla stessa riga, oppure sotto il nome con il testo molto grande
+struct RigaAlimento: View {
+    let nome: String
+    let quantita: String
+    @Environment(\.dynamicTypeSize) private var dimensione
+
+    var body: some View {
+        if dimensione.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nome)
+                if !quantita.isEmpty { Text(quantita).foregroundStyle(.secondary) }
+            }
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                Text(nome)
+                Spacer()
+                Text(quantita).foregroundStyle(.secondary)
+            }
+        }
     }
 }

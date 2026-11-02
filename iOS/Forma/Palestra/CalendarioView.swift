@@ -107,6 +107,21 @@ struct GrigliaMese: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(etichetta(iso))
+        .accessibilityAddTraits(iso == scelto ? .isSelected : [])
+    }
+
+    // Per VoiceOver: data e cosa è successo (o cosa era previsto) quel giorno
+    private func etichetta(_ iso: String) -> String {
+        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT")))
+        var parti = [data]
+        if !palestra.allenamenti(del: iso).isEmpty { parti.append("pesi fatti") }
+        if !palestra.cardio(del: iso).isEmpty { parti.append("cardio fatto") }
+        if parti.count == 1 {
+            if palestra.stato.saltati.contains(iso) { parti.append("non andato") }
+            else if palestra.programmato(iso) != .riposo { parti.append("previsto \(palestra.programmato(iso).nome.lowercased())") }
+        }
+        return parti.joined(separator: ", ")
     }
 
     @ViewBuilder private func segno(_ iso: String) -> some View {

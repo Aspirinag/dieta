@@ -265,6 +265,9 @@ struct RigaSerie: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: 32)
+                .accessibilityLabel(s.riscaldamento ? "Serie di riscaldamento" : "Serie \(numero + 1)")
+                .accessibilityValue(s.fatta ? "fatta" : "da fare")
+                .accessibilityHint(s.fatta ? "" : "Segna la serie e fa partire il recupero")
             }
             .listRowBackground(s.fatta ? Color.green.opacity(0.14) : nil)
             .sensoryFeedback(.success, trigger: s.fatta) { _, nuovo in nuovo }

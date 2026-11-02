@@ -245,7 +245,7 @@ enum Libreria {
         ]
     }
 
-    static let tipiCardio = ["Corsa", "Bici", "Ellittica", "Nuoto", "Camminata"]
+    static let tipiCardio = ["Corsa", "Bici", "Ellittica", "Nuoto", "Camminata", "Vogatore", "Scale", "Cardio"]
 
     static func simboloCardio(_ tipo: String) -> String {
         switch tipo {
@@ -253,6 +253,9 @@ enum Libreria {
         case "Ellittica": "figure.elliptical"
         case "Nuoto": "figure.pool.swim"
         case "Camminata": "figure.walk"
+        case "Vogatore": "figure.rower"
+        case "Scale": "figure.stair.stepper"
+        case "Cardio": "figure.mixed.cardio"
         default: "figure.run"
         }
     }

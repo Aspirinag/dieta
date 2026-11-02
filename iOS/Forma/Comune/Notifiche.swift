@@ -56,7 +56,8 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
     var navigazione: Navigazione?
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        // Fine recupero con l'app aperta: c'è già la vibrazione
+        notification.request.identifier == "recupero" ? [] : [.banner, .sound]
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {

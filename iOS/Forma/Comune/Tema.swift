@@ -102,14 +102,20 @@ struct ApplicaTema: ViewModifier {
 struct SfondoTema: ViewModifier {
     @Environment(\.tema) private var tema
     @Environment(\.colorScheme) private var schema
+    @State private var larghezza: CGFloat = 0
 
     func body(content: Content) -> some View {
+        // Su schermi larghi (iPhone in orizzontale, iPhone Duo aperto) il contenuto resta a larghezza leggibile
+        let margine = max((larghezza - 640) / 2, 0)
+        let base = content
+            .contentMargins(.horizontal, margine, for: .scrollContent)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { larghezza = $0 }
         if let sfondo = tema.sfondo(schema) {
-            content
+            base
                 .scrollContentBackground(.hidden)
                 .background(sfondo, ignoresSafeAreaEdges: .all)
         } else {
-            content
+            base
         }
     }
 }

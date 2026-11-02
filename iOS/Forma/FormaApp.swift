@@ -176,10 +176,7 @@ struct SezionePagamento: View {
         if let p = palestra.promemoriaPagamento() {
             Section {
                 Label {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Pagamento palestra").font(.headline)
-                        Text(p.testo).font(.subheadline).foregroundStyle(.secondary)
-                    }
+                    Text(p.testo).font(.subheadline)
                 } icon: {
                     Image(systemName: "creditcard.fill").foregroundStyle(.tint)
                 }
