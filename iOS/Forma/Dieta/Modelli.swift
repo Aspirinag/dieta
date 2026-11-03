@@ -254,10 +254,12 @@ struct Profilo: Codable, Hashable {
     var olioTot: Int?
     var acquaTot: Double?
     var note: String?
-    var spesa: Spesa?
+    var spesa: Spesa?               // settimana più vecchia: è quella che legge anche la web app
+    var spesaProssima: Spesa?       // seconda settimana (solo app), così spuntare la prossima non azzera questa
 
     enum CodingKeys: String, CodingKey {
         case nome, piani, bia, dieta, note, spesa
+        case spesaProssima = "spesa_prossima"
         case olioTot = "olio_tot", acquaTot = "acqua_tot"
     }
 
@@ -277,6 +279,7 @@ struct Profilo: Codable, Hashable {
         acquaTot = c.valore(.acquaTot, nil)
         note = c.valore(.note, nil)
         spesa = c.valore(.spesa, nil)
+        spesaProssima = c.valore(.spesaProssima, nil)
     }
 }
 

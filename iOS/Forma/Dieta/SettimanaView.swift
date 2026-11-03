@@ -128,7 +128,7 @@ struct SettimanaView: View {
             }
             if !presi.isEmpty {
                 Section {
-                    Button("Togli le spunte", systemImage: "arrow.counterclockwise") { archivio.azzeraSpesa() }
+                    Button("Togli le spunte", systemImage: "arrow.counterclockwise") { archivio.azzeraSpesa(lunedi: lun) }
                 }
             }
         }
