@@ -93,7 +93,6 @@ struct SezioniPalestra: View {
             Text("Palestra")
         } footer: {
             if palestra.stato.pagamentoAttivo {
-                let g = palestra.stato.giornoPagamento
                 Text("Una settimana prima compare un avviso in Oggi. Il giorno del pagamento arriva una notifica alle \(ProfiloView.orario(palestra.stato.oraPagamento)), se non hai già segnato il mese come pagato.")
                 if senzaPermesso {
                     Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
