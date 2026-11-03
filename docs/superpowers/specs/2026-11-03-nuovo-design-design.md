@@ -74,7 +74,7 @@ Pagina a sé, aperta da Dieta.
 
 ### Palestra
 Serve a **iniziare**; tutto ciò che guarda indietro va in Progressi.
-1. Titolo «Palestra». In alto a destra **+**: Nuova scheda, Schede pronte, Libreria esercizi.
+1. Titolo «Palestra». In alto a destra **+**: Nuova scheda, Schede pronte, Libreria esercizi, Programma della settimana (quali giorni riposo / pesi / cardio, settimane A/B). *(Posizione del programma: scelta mia, per non allungare le Impostazioni.)*
 2. Riquadro **Prossima scheda**: nome grande, elenco esercizi in una frase, pulsante largo «Inizia».
 3. Riquadro **Questa settimana**: sette pallini (pieni nei giorni con allenamento) e «2 allenamenti · 1 h 27 min».
 4. **Schede**: una riga per scheda con nome, primi esercizi in grigio e un tasto ▶ per partire. Toccare il nome apre la scheda per modificarla. Ultima riga «Allenamento libero».
