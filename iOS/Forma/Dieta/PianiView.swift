@@ -196,6 +196,24 @@ struct AndamentoPagina: View {
         .navigationTitle("Andamento")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-        .navigationDestination(for: String.self) { EditorMisura(dataEsistente: $0) }
+    }
+}
+
+// Pagine della dieta aperte dentro una scheda. Le destinazioni stanno sulla radice della scheda:
+// registrate su una pagina aperta con un collegamento diretto, si perdevano al primo collegamento per valore
+enum PaginaDieta: Hashable {
+    case andamento, piani
+    case misura(String)
+}
+
+extension View {
+    func destinazioniDieta() -> some View {
+        navigationDestination(for: PaginaDieta.self) { pagina in
+            switch pagina {
+            case .andamento: AndamentoPagina()
+            case .piani: PianiDietaView()
+            case .misura(let data): EditorMisura(dataEsistente: data)
+            }
+        }
     }
 }

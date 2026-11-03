@@ -37,6 +37,7 @@ struct HomeView: View {
             }
             .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
             .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
+            .destinazioniDieta()
         }
     }
 
@@ -156,7 +157,7 @@ struct HomeView: View {
                 if let primo = bia.first, primo.data != ultimo.data, let a = primo.peso, let b = ultimo.peso {
                     LabeledContent("Dall'inizio", value: "\(b - a > 0 ? "+" : "")\(num(((b - a) * 10).rounded() / 10)) kg")
                 }
-                NavigationLink { AndamentoPagina() } label: {
+                NavigationLink(value: PaginaDieta.andamento) {
                     Label("Andamento", systemImage: "chart.line.uptrend.xyaxis")
                 }
             }

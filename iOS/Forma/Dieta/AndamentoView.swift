@@ -171,7 +171,7 @@ struct AndamentoView: View {
     private func storico(_ bia: [Misura]) -> some View {
         Section {
             ForEach(bia.reversed()) { m in
-                NavigationLink(value: m.data) {
+                NavigationLink(value: PaginaDieta.misura(m.data)) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Giorni.breve(m.data)).font(.headline)
                         Text("Peso \(num(m.peso)) · grasso \(num(m.grassoKg)) · magra \(num(m.magraKg)) · vita \(num(m.vitaCm))")

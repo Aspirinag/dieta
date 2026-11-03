@@ -46,10 +46,10 @@ struct PastiView: View {
                         }
                     }
                     Section {
-                        NavigationLink { AndamentoPagina() } label: {
+                        NavigationLink(value: PaginaDieta.andamento) {
                             Label("Andamento e misure BIA", systemImage: "chart.line.uptrend.xyaxis")
                         }
-                        NavigationLink { PianiDietaView() } label: {
+                        NavigationLink(value: PaginaDieta.piani) {
                             Label("Piani e referti (PDF)", systemImage: "doc.text")
                         }
                     } header: {
@@ -81,6 +81,7 @@ struct PastiView: View {
             .animation(.default, value: giorno)
             .sheet(isPresented: $settimana) { SettimanaView() }
             .importaPDF($richiesta)
+            .destinazioniDieta()
         }
         // Se l'app resta aperta oltre la mezzanotte, passa al nuovo giorno
         .onChange(of: fase) { _, nuova in
