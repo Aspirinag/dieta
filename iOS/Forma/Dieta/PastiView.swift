@@ -128,6 +128,8 @@ struct SezionePasto: View {
             }) {
                 Text(s.fatto ? "Fatto" : "Segna come fatto")
             }
+            // VoiceOver: «Colazione, fatto» invece di «Fatto, fatto»
+            .accessibilityLabel(pasto.nome)
         } header: {
             Text(pasto.nome)
         }
