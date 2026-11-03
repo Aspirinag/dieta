@@ -427,19 +427,23 @@ extension StatoPalestra {
     // Record battuti da ogni allenamento (come Palestra.nuoviRecord), in una sola passata
     func conteggioRecord() -> [UUID: Int] {
         var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:]
+        var visti: Set<String> = []          // esercizi già comparsi, anche senza serie valide
         var risultato: [UUID: Int] = [:]
         for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
             var n = 0
+            // Ogni voce si confronta con i record di prima dell'allenamento, poi si aggiornano
             for e in a.esercizi {
                 let valide = e.serie.filter(\.valida)
-                guard !valide.isEmpty else { continue }
+                guard !valide.isEmpty, visti.contains(e.esercizio) || (pesoMax[e.esercizio] ?? 0) > 0 else { continue }
                 let peso = valide.compactMap(\.kg).max() ?? 0
                 let mass = valide.map(\.massimale).max() ?? 0
-                if let p = pesoMax[e.esercizio] {
-                    if peso > p || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
-                }
-                pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, peso)
-                massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, mass)
+                if peso > pesoMax[e.esercizio] ?? 0 || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
+            }
+            for e in a.esercizi {
+                let valide = e.serie.filter(\.valida)
+                visti.insert(e.esercizio)
+                pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, valide.compactMap(\.kg).max() ?? 0)
+                massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, valide.map(\.massimale).max() ?? 0)
             }
             risultato[a.id] = n
         }
