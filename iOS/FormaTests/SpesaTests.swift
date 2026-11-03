@@ -99,4 +99,14 @@ struct SpesaTests {
         #expect(json.contains("reparti_spesa"))
         #expect(try JSONDecoder().decode(Profilo.self, from: Data(json.utf8)).repartiSpesa == ["riso": "dispensa"])
     }
+
+    @Test func extraSopravvivonoAlleSpunteTolte() {
+        var p = profilo(cibo: "Riso", quantita: "80 g")
+        p.aggiungiExtra("Biscotti", lunedi: "2026-11-02")
+        p.spesa?.presi["riso"] = true
+        p.togliSpunte()
+        #expect(p.spesa?.presi == [:])
+        #expect(p.spesa?.extra == ["Biscotti"])
+        #expect(p.spesa?.settimana == "2026-11-02")
+    }
 }

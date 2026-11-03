@@ -169,7 +169,7 @@ final class Archivio {
         profilo.spesa = s
     }
 
-    func azzeraSpesa() { profilo.spesa = nil }
+    func azzeraSpesa() { profilo.togliSpunte() }
 
     // ---------- Promemoria ----------
 
@@ -322,6 +322,11 @@ extension Profilo {
         guard !pulito.isEmpty, !s.extra.contains(where: { $0.lowercased() == pulito.lowercased() }) else { return }
         s.extra.append(pulito)
         spesa = s
+    }
+
+    // Toglie le spunte e tiene la settimana e le voci aggiunte a mano
+    mutating func togliSpunte() {
+        spesa?.presi = [:]
     }
 
     mutating func togliExtra(_ nome: String, lunedi lun: String) {
