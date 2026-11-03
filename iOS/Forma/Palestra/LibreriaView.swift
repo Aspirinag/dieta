@@ -30,7 +30,10 @@ struct LibreriaView: View {
 
     var body: some View {
         if inScelta {
-            NavigationStack { contenuto }
+            // In scelta la libreria ha una navigazione sua; sfogliando usa quella della scheda Palestra
+            NavigationStack {
+                contenuto.navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
+            }
         } else {
             contenuto
         }
@@ -102,9 +105,6 @@ struct LibreriaView: View {
         }
         .sheet(isPresented: $nuovo) {
             NuovoEsercizioView { e in if inScelta { scelti.append(e.id) } }
-        }
-        .navigationDestination(for: Esercizio.self) { e in
-            DettaglioEsercizioView(idEsercizio: e.id)
         }
     }
 

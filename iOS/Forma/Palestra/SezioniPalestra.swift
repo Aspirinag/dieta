@@ -39,14 +39,14 @@ struct SezioniPalestra: View {
         let mese = Palestra.mese(Giorni.oggi())
         let pagato = palestra.stato.pagamenti[mese]
         Section {
-            NavigationLink { PianoSettimanaleView() } label: {
+            NavigationLink(value: PaginaPalestraDest.pianoSettimanale) {
                 LabeledContent {
                     Text(palestra.stato.usaAB ? "questa settimana: \(palestra.settimana(Giorni.oggi()))" : "uguale ogni settimana")
                 } label: {
                     Label("Piano settimanale", systemImage: "calendar.badge.clock")
                 }
             }
-            NavigationLink { LibreriaView(modo: .sfoglia) } label: {
+            NavigationLink(value: PaginaPalestraDest.libreria) {
                 LabeledContent {
                     Text("\(palestra.stato.esercizi.count)")
                 } label: {

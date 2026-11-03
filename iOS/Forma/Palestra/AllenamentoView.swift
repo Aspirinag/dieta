@@ -21,25 +21,25 @@ struct AllenamentoView: View {
                     schede
                     sezioneCardio
                     Section {
-                        NavigationLink { LibreriaView(modo: .sfoglia) } label: {
+                        NavigationLink(value: PaginaPalestraDest.libreria) {
                             Label("Libreria esercizi", systemImage: "books.vertical")
                         }
-                        NavigationLink { ModelliView(percorso: $percorso) } label: {
+                        NavigationLink(value: PaginaPalestraDest.modelli) {
                             Label("Schede pronte", systemImage: "square.stack.3d.up")
                         }
                     }
                     Section {
-                        NavigationLink { PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() } } label: {
+                        NavigationLink(value: PaginaPalestraDest.storico) {
                             LabeledContent {
                                 Text("\(palestra.stato.allenamenti.count)")
                             } label: {
                                 Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
                             }
                         }
-                        NavigationLink { PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() } } label: {
+                        NavigationLink(value: PaginaPalestraDest.calendario) {
                             Label("Calendario", systemImage: "calendar")
                         }
-                        NavigationLink { PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() } } label: {
+                        NavigationLink(value: PaginaPalestraDest.impostazioni) {
                             Label("Piano, pagamento e Watch", systemImage: "gearshape")
                         }
                     } header: {
@@ -50,6 +50,16 @@ struct AllenamentoView: View {
             }
             .sfondoTema()
             .navigationTitle("Palestra")
+            .navigationDestination(for: PaginaPalestraDest.self) { pagina in
+                switch pagina {
+                case .libreria: LibreriaView(modo: .sfoglia)
+                case .modelli: ModelliView(percorso: $percorso)
+                case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
+                case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
+                case .impostazioni: PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() }
+                case .pianoSettimanale: PianoSettimanaleView()
+                }
+            }
             .navigationDestination(for: ApriScheda.self) { EditorSchedaView(idScheda: $0.id) }
             .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
             .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
@@ -369,6 +379,12 @@ struct NuovoCardioView: View {
 }
 
 // Pagina della scheda Palestra con il contenuto di una lista (storico, calendario, impostazioni)
+// Pagine della Palestra aperte per valore: le destinazioni stanno sulla radice della scheda.
+// Con collegamenti diretti, il primo collegamento per valore (allenamento, esercizio) le chiudeva
+enum PaginaPalestraDest: Hashable {
+    case libreria, modelli, storico, calendario, impostazioni, pianoSettimanale
+}
+
 struct PaginaPalestra<Contenuto: View>: View {
     let titolo: String
     @ViewBuilder let contenuto: Contenuto
