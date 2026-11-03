@@ -11,6 +11,11 @@ struct BenvenutoView: View {
     @State private var watch = Salute.disponibile
     @State private var attesa = false
 
+    // Solo a chi parte davvero da zero: dieta nuova e nessun file della palestra
+    static func daMostrare(dietaNuova: Bool, datiPalestra: Bool, visto: Bool) -> Bool {
+        dietaNuova && !datiPalestra && !visto
+    }
+
     var body: some View {
         NavigationStack {
             Form {

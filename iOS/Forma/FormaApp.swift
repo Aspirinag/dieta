@@ -102,13 +102,13 @@ struct Radice: View {
             Text("Non riesco ad aprire i dati salvati (succede se il telefono è bloccato). Chiudi e riapri l'app: finché non si risolve, Forma non salva niente per non sovrascriverli.")
         }
         .fullScreenCover(isPresented: Binding(
-            get: { archivio.primaApertura && !benvenutoVisto }, set: { if !$0 { benvenutoVisto = true } }
+            get: { benvenuto }, set: { if !$0 { benvenutoVisto = true } }
         )) {
             BenvenutoView { benvenutoVisto = true }.applicaTema(tema)
         }
         .task(id: benvenutoVisto) {
             // Alla prima apertura i permessi si chiedono nel benvenuto, con la spiegazione
-            guard !palestra.demo, !(archivio.primaApertura && !benvenutoVisto) else { return }
+            guard !palestra.demo, !benvenuto else { return }
             if await Notifiche.consentite() {
                 await palestra.programmaPagamento()
                 await archivio.programmaPromemoria()
@@ -214,4 +214,10 @@ func durataTesto(_ secondi: TimeInterval) -> String {
 // Volume leggibile: 12.450 kg
 func volumeTesto(_ kg: Double) -> String {
     "\(Int(kg.rounded()).formatted(.number.locale(Locale(identifier: "it_IT")))) kg"
+}
+
+extension Radice {
+    var benvenuto: Bool {
+        BenvenutoView.daMostrare(dietaNuova: archivio.primaApertura, datiPalestra: palestra.datiPresenti, visto: benvenutoVisto)
+    }
 }

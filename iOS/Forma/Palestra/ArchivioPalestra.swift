@@ -14,8 +14,12 @@ final class Palestra {
     // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
     @ObservationIgnored private(set) var salvataggioBloccato = false
 
+    // C'era già un file della palestra all'avvio (allora non è una prima apertura)
+    @ObservationIgnored private(set) var datiPresenti = false
+
     init() {
         demo = Avvio.demo
+        datiPresenti = !demo && FileManager.default.fileExists(atPath: Self.fileDati.path(percentEncoded: false))
         var illeggibile: URL?
         stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
         salvataggioBloccato = illeggibile?.path == "/bloccato"
