@@ -1,6 +1,6 @@
 # Compila Forma (dieta + palestra in un'unica app SwiftUI).
-# Su main pubblica la .ipa in una release; sugli altri branch fa le schermate nel simulatore
-# e le mette nel branch "schermate-forma"
+# Esegue sempre i test; su main pubblica la .ipa in una release; sugli altri branch fa le schermate
+# nel simulatore e le mette nel branch "schermate-forma"
 name: Forma iOS
 
 on:
@@ -8,6 +8,8 @@ on:
     paths:
       - 'iOS/Forma/**'
       - 'iOS/Forma.xcodeproj/**'
+      - 'iOS/FormaTests/**'
+      - 'iOS/FormaUITests/**'
       - '.github/workflows/forma.yml'
       - 'scripts/schermate.sh'
   workflow_dispatch:
@@ -36,16 +38,51 @@ jobs:
           codesign --force --sign - --entitlements iOS/Forma.entitlements Payload/Forma.app
           codesign -d --entitlements - Payload/Forma.app
           zip -qry Forma.ipa Payload
+      - name: Conserva la .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: forma-ipa
+          path: Forma.ipa
+
+  pubblica:
+    # Su main la release esce solo se i test sono passati
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      VERSIONE: 1.0.${{ github.run_number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: forma-ipa
       - name: Pubblica la release
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create forma-v$VERSIONE Forma.ipa --title "Forma $VERSIONE" --notes "Forma, dieta e palestra" --latest=false
+          gh release create forma-v$VERSIONE Forma.ipa --repo ${{ github.repository }} \
+            --title "Forma $VERSIONE" --notes "Forma, dieta e palestra" --latest
+
+  test:
+    # Test di unità e dell'interfaccia nel simulatore, dopo la build (un Mac alla volta)
+    needs: build
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Esegui i test
+        run: |
+          SIM=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in sorted(d, reverse=True) if 'iOS' in k for x in d[k] if x['name'].startswith('iPhone')))")
+          echo "Simulatore: $SIM"
+          xcodebuild test -project iOS/Forma.xcodeproj -scheme Forma -destination "id=$SIM" \
+            -resultBundlePath risultati.xcresult -quiet
+      - name: Conserva i risultati
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risultati-test
+          path: risultati.xcresult
 
   schermate:
-    # Dopo la build: con un solo Mac libero alla volta, due job insieme restavano in coda e venivano annullati
-    needs: build
+    # Dopo i test: con un solo Mac libero alla volta, due job insieme restavano in coda e venivano annullati
+    needs: test
     if: github.ref != 'refs/heads/main'
     runs-on: macos-26
     steps:

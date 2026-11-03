@@ -4,3 +4,4 @@ xcuserdata/
 *.ipa
 Payload/
 .DS_Store
+.superpowers/
