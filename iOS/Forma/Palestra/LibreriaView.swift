@@ -58,7 +58,7 @@ struct LibreriaView: View {
                                 }
                             }
                             if muscolo != nil || attrezzo != nil {
-                                Button("Azzera", systemImage: "xmark.circle.fill") {
+                                Button("Togli i filtri", systemImage: "xmark.circle.fill") {
                                     muscolo = nil
                                     attrezzo = nil
                                 }

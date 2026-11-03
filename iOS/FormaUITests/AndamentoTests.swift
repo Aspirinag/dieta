@@ -8,7 +8,7 @@ final class AndamentoTests: XCTestCase {
         app.launchArguments = ["-demo", "-tab", "dieta"]
         app.launch()
 
-        let andamento = app.buttons["Andamento e misure BIA"]
+        let andamento = app.buttons["Andamento e misure (BIA)"]
         for _ in 0..<5 where !andamento.isHittable { app.swipeUp() }
         XCTAssertTrue(andamento.waitForExistence(timeout: 8), "Manca il collegamento all'Andamento")
         andamento.tap()

@@ -48,7 +48,7 @@ struct ImportaPDF: ViewModifier {
                 }
             }
             .sheet(item: $nuovoPiano) { FoglioNuovoPiano(piano: $0) }
-            .alert("Aggiungo la BIA del \(Giorni.breve(nuovaBia?.data ?? ""))?", isPresented: Binding(
+            .alert("Aggiungere la BIA del \(Giorni.breve(nuovaBia?.data ?? ""))?", isPresented: Binding(
                 get: { nuovaBia != nil }, set: { if !$0 { nuovaBia = nil } }
             ), presenting: nuovaBia) { m in
                 Button("Aggiungi") { archivio.salvaMisura(m) }
@@ -56,7 +56,7 @@ struct ImportaPDF: ViewModifier {
             } message: { m in
                 Text(riassuntoBia(m))
             }
-            .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
+            .alert("Non riesco a leggere il PDF", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
             } message: {
                 Text(errore ?? "")
@@ -81,7 +81,7 @@ struct ImportaPDF: ViewModifier {
         case .schema:
             let g = giorni ?? []
             guard g.count == 7, g.allSatisfy({ !$0.pasti.isEmpty }) else {
-                return .errore("Non riesco a leggere lo schema da questo PDF (trovati \(g.count) giorni su 7). Controlla che sia lo schema dietetico, oppure crea il piano a mano da Piani e referti.")
+                return .errore("Non riesco a leggere lo schema da questo PDF (trovati \(g.count) giorni su 7). Controlla che sia il piano alimentare, oppure crealo a mano da Dieta → Piani e misure.")
             }
             return .piano(g)
         case .bia:
@@ -119,7 +119,7 @@ extension View {
     }
 }
 
-// Dieta → Piani e referti: piani alimentari dai PDF e misurazioni BIA
+// Dieta → Piani e misure: piani alimentari dai PDF e misurazioni BIA
 struct PianiDietaView: View {
     @Environment(Archivio.self) private var archivio
     @State private var richiesta: TipoPDF?
@@ -147,15 +147,15 @@ struct PianiDietaView: View {
                             Button("Elimina", systemImage: "trash", role: .destructive) { pianoDaEliminare = p }
                         }
                     }
-                    Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { richiesta = .schema }
+                    Button("Carica il piano alimentare (PDF)", systemImage: "doc.badge.plus") { richiesta = .schema }
                     Button("Nuovo piano a mano", systemImage: "square.and.pencil") { nuovoVuoto = true }
                 } header: {
                     Text("Piani alimentari")
                 } footer: {
-                    Text("Lo schema in PDF viene letto e diventa il piano dei pasti. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.")
+                    Text("Forma legge il PDF e ricava i pasti di ogni giorno. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.")
                 }
                 Section {
-                    Button("Carica referto BIA (PDF)", systemImage: "doc.text.magnifyingglass") { richiesta = .bia }
+                    Button("Carica la BIA (PDF)", systemImage: "doc.text.magnifyingglass") { richiesta = .bia }
                     Button("Aggiungi misurazione a mano", systemImage: "square.and.pencil") { nuovaMisura = true }
                 } header: {
                     Text("Misurazioni BIA")
@@ -166,7 +166,7 @@ struct PianiDietaView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle("Piani e referti")
+        .navigationTitle("Piani e misure")
         .navigationBarTitleDisplayMode(.inline)
         .importaPDF($richiesta)
         .sheet(item: $pianoDaModificare) { EditorPianoView(originale: $0) }

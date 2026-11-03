@@ -114,14 +114,14 @@ struct HomeView: View {
                 if pastiAperti {
                     righePasti(pasti, oggi: oggi)
                 }
-                Button("Dettagli e quantità", systemImage: "fork.knife") { navigazione.scheda = .dieta }
+                Button("Apri la dieta di oggi", systemImage: "fork.knife") { navigazione.scheda = .dieta }
             } header: {
                 Text("Dieta · \(archivio.profilo.nome)")
             }
         } else {
             Section {
                 Text("Non c'è ancora un piano alimentare.").foregroundStyle(.secondary)
-                Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { richiesta = .schema }
+                Button("Carica il piano alimentare (PDF)", systemImage: "doc.badge.plus") { richiesta = .schema }
             } header: {
                 Text("Dieta · \(archivio.profilo.nome)")
             }
@@ -152,7 +152,7 @@ struct HomeView: View {
     @ViewBuilder private var peso: some View {
         let bia = archivio.profilo.bia.filter { $0.peso != nil }.sorted { $0.data < $1.data }
         if let ultimo = bia.last {
-            Section("Corpo") {
+            Section("Peso") {
                 LabeledContent("Ultimo peso (\(Giorni.breve(ultimo.data)))", value: "\(num(ultimo.peso)) kg")
                 if let primo = bia.first, primo.data != ultimo.data, let a = primo.peso, let b = ultimo.peso {
                     LabeledContent("Dall'inizio", value: "\(b - a > 0 ? "+" : "")\(num(((b - a) * 10).rounded() / 10)) kg")

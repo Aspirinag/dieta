@@ -81,7 +81,7 @@ struct BarraAllenamento: View {
                 Label("Recupero", systemImage: "timer").foregroundStyle(.secondary)
                 Spacer()
                 ForEach([60, 90, 120], id: \.self) { s in
-                    Button("\(s)s") { timer.avvia(s) }
+                    Button("\(s) s") { timer.avvia(s) }
                         .font(.subheadline.weight(.semibold))
                 }
             }

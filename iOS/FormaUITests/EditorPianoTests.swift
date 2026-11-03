@@ -8,7 +8,7 @@ final class EditorPianoTests: XCTestCase {
         app.launchArguments = ["-demo", "-tab", "dieta"]
         app.launch()
 
-        let piani = app.buttons["Piani e referti (PDF)"]
+        let piani = app.buttons["Piani e misure"]
         for _ in 0..<5 where !piani.isHittable { app.swipeUp() }
         XCTAssertTrue(piani.waitForExistence(timeout: 8))
         piani.tap()

@@ -19,7 +19,7 @@ struct CalendarioContenuto: View {
             .buttonStyle(.borderless)
             GrigliaMese(mese: mese, scelto: $scelto)
         } footer: {
-            Text("Pallini colorati: pesi e cardio (i due colori del tema). Grigio: programmato. ✕: non andato.")
+            Text("Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato.")
         }
         giorno
     }
@@ -45,7 +45,7 @@ struct CalendarioContenuto: View {
                 Label("\(c.tipo) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""), systemImage: Libreria.simboloCardio(c.tipo))
             }
             if scelto <= Giorni.oggi() && t != .riposo && palestra.allenamenti(del: scelto).isEmpty && palestra.cardio(del: scelto).isEmpty {
-                Toggle("Non sono andato", isOn: Binding(
+                Toggle("Saltato", isOn: Binding(
                     get: { saltato },
                     set: { v in
                         palestra.stato.saltati.removeAll { $0 == scelto }
@@ -118,7 +118,7 @@ struct GrigliaMese: View {
         if !palestra.allenamenti(del: iso).isEmpty { parti.append("pesi fatti") }
         if !palestra.cardio(del: iso).isEmpty { parti.append("cardio fatto") }
         if parti.count == 1 {
-            if palestra.stato.saltati.contains(iso) { parti.append("non andato") }
+            if palestra.stato.saltati.contains(iso) { parti.append("saltato") }
             else if palestra.programmato(iso) != .riposo { parti.append("previsto \(palestra.programmato(iso).nome.lowercased())") }
         }
         return parti.joined(separator: ", ")

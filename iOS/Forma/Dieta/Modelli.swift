@@ -331,7 +331,7 @@ struct Promemoria: Codable, Hashable {
     // Le notifiche giornaliere da programmare con le scelte attuali
     var notifiche: [Notifica] {
         var n: [Notifica] = []
-        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Controlla la dieta odierna 🥗")) }
+        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Ecco la dieta di oggi 🥗")) }
         if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: "Dieta", testo: "Hai segnato i pasti di oggi?")) }
         if acqua {
             n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.") }

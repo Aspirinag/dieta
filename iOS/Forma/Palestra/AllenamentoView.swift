@@ -40,7 +40,7 @@ struct AllenamentoView: View {
                             Label("Calendario", systemImage: "calendar")
                         }
                         NavigationLink(value: PaginaPalestraDest.impostazioni) {
-                            Label("Piano, pagamento e Watch", systemImage: "gearshape")
+                            Label("Impostazioni palestra", systemImage: "gearshape")
                         }
                     } header: {
                         Text("Progressi e impostazioni")
