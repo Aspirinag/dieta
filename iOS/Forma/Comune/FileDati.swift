@@ -17,11 +17,17 @@ enum FileDati {
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return .assente }
         guard let dati = try? Data(contentsOf: url) else { return .bloccato }
         if let valore = try? JSONDecoder().decode(T.self, from: dati) { return .ok(valore) }
+        let nomeFile = url.deletingPathExtension().lastPathComponent
+        // Stesso contenuto già messo da parte a un'apertura precedente: niente copia nuova
+        if let esistente = copie(in: url.deletingLastPathComponent()).first(where: {
+            $0.lastPathComponent.hasPrefix(nomeFile + marcaCopia) && (try? Data(contentsOf: $0)) == dati
+        }) {
+            return .illeggibile(copia: esistente)
+        }
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyyMMdd-HHmmss"
-        let nome = url.deletingPathExtension().lastPathComponent
-        let copia = url.deletingLastPathComponent().appending(path: "\(nome)\(marcaCopia)\(f.string(from: Date())).json")
+        let copia = url.deletingLastPathComponent().appending(path: "\(nomeFile)\(marcaCopia)\(f.string(from: Date())).json")
         do { try dati.write(to: copia, options: .atomic) } catch { return .bloccato }
         return .illeggibile(copia: copia)
     }

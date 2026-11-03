@@ -25,4 +25,22 @@ struct SpesaTests {
         #expect(Profilo.lunediSpesa(oggi: "2026-11-06") == "2026-11-09")   // venerdì
         #expect(Profilo.lunediSpesa(oggi: "2026-11-08") == "2026-11-09")   // domenica
     }
+
+    @Test func spunteDiDueSettimaneConvivono() {
+        var p = Profilo(nome: "Io")
+        p.spunta("riso", lunedi: "2026-11-02")
+        p.spunta("pasta", lunedi: "2026-11-09")
+        #expect(p.spunteSpesa(lunedi: "2026-11-02") == ["riso": true])
+        #expect(p.spunteSpesa(lunedi: "2026-11-09") == ["pasta": true])
+        // Per la web app la settimana in «spesa» resta quella corrente
+        #expect(p.spesa?.settimana == "2026-11-02")
+        // Una terza settimana fa uscire la più vecchia
+        p.spunta("pane", lunedi: "2026-11-16")
+        #expect(p.spunteSpesa(lunedi: "2026-11-02").isEmpty)
+        #expect(p.spunteSpesa(lunedi: "2026-11-09") == ["pasta": true])
+        // Togliere le spunte vale solo per la settimana scelta
+        p.azzeraSpesa(lunedi: "2026-11-16")
+        #expect(p.spunteSpesa(lunedi: "2026-11-09") == ["pasta": true])
+        #expect(p.spunteSpesa(lunedi: "2026-11-16").isEmpty)
+    }
 }

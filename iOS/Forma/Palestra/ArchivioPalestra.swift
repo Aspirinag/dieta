@@ -14,8 +14,12 @@ final class Palestra {
     // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
     @ObservationIgnored private(set) var salvataggioBloccato = false
 
+    // C'era già un file della palestra all'avvio (allora non è una prima apertura)
+    @ObservationIgnored private(set) var datiPresenti = false
+
     init() {
         demo = Avvio.demo
+        datiPresenti = !demo && FileManager.default.fileExists(atPath: Self.fileDati.path(percentEncoded: false))
         var illeggibile: URL?
         stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
         salvataggioBloccato = illeggibile?.path == "/bloccato"
@@ -311,12 +315,13 @@ final class Palestra {
     // L'avviso compare una settimana prima del giorno di pagamento e resta fino al giorno dopo
     static func avvisoPagamento(oggi: String, giorno: Int, pagamenti: [String: String]) -> (mese: String, testo: String)? {
         let primo = String(oggi.prefix(8)) + "01"
-        for m in 0..<2 {
+        // Mese prima (il giorno dopo può cadere nel mese nuovo), mese corrente, mese dopo
+        for m in -1..<2 {
             let primoMese = Giorni.iso(Giorni.calendario.date(byAdding: .month, value: m, to: Giorni.data(primo)) ?? Date())
             let paga = giornoDiPagamento(primoMese, giorno)
             guard oggi >= Giorni.aggiungi(paga, -7), oggi <= Giorni.aggiungi(paga, 1) else { continue }
             let mese = Self.mese(primoMese)
-            guard pagamenti[mese] == nil else { return nil }
+            guard pagamenti[mese] == nil else { continue }
             let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: Giorni.data(paga)).day ?? 0
             let testo = switch mancano {
             case ..<0: "Ultimo giorno per pagare la palestra."
@@ -426,19 +431,23 @@ extension StatoPalestra {
     // Record battuti da ogni allenamento (come Palestra.nuoviRecord), in una sola passata
     func conteggioRecord() -> [UUID: Int] {
         var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:]
+        var visti: Set<String> = []          // esercizi già comparsi, anche senza serie valide
         var risultato: [UUID: Int] = [:]
         for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
             var n = 0
+            // Ogni voce si confronta con i record di prima dell'allenamento, poi si aggiornano
             for e in a.esercizi {
                 let valide = e.serie.filter(\.valida)
-                guard !valide.isEmpty else { continue }
+                guard !valide.isEmpty, visti.contains(e.esercizio) || (pesoMax[e.esercizio] ?? 0) > 0 else { continue }
                 let peso = valide.compactMap(\.kg).max() ?? 0
                 let mass = valide.map(\.massimale).max() ?? 0
-                if let p = pesoMax[e.esercizio] {
-                    if peso > p || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
-                }
-                pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, peso)
-                massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, mass)
+                if peso > pesoMax[e.esercizio] ?? 0 || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
+            }
+            for e in a.esercizi {
+                let valide = e.serie.filter(\.valida)
+                visti.insert(e.esercizio)
+                pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, valide.compactMap(\.kg).max() ?? 0)
+                massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, valide.map(\.massimale).max() ?? 0)
             }
             risultato[a.id] = n
         }

@@ -11,7 +11,7 @@ struct EditorPianoView: View {
     @State private var dal: Date
     @State private var al: Date
     @State private var senzaFine: Bool
-    @State private var copiaFatta = false
+    @State private var chiediCopia = false
 
     init(originale: Piano?) {
         self.originale = originale
@@ -53,12 +53,7 @@ struct EditorPianoView: View {
                     Section {
                         Toggle("Giorno di palestra", isOn: $piano.giorni[giorno].palestra)
                         Button("Copia \(Giorni.nomi[giorno]) su tutti i giorni", systemImage: "doc.on.doc") {
-                            let g = piano.giorni[giorno]
-                            for i in piano.giorni.indices where i != giorno {
-                                piano.giorni[i].pasti = g.pasti
-                                piano.giorni[i].palestra = g.palestra
-                            }
-                            copiaFatta = true
+                            chiediCopia = true
                         }
                         .disabled(piano.giorni[giorno].pasti.isEmpty)
                     } header: {
@@ -95,10 +90,16 @@ struct EditorPianoView: View {
                 }
             }
             .interactiveDismissDisabled()
-            .alert("Giorno copiato", isPresented: $copiaFatta) {
-                Button("OK") {}
+            .confirmationDialog("Copiare \(Giorni.nomi[giorno]) su tutti i giorni?", isPresented: $chiediCopia, titleVisibility: .visible) {
+                Button("Sostituisci gli altri giorni", role: .destructive) {
+                    let g = piano.giorni[giorno]
+                    for i in piano.giorni.indices where i != giorno {
+                        piano.giorni[i].pasti = g.pasti
+                        piano.giorni[i].palestra = g.palestra
+                    }
+                }
             } message: {
-                Text("I pasti di \(Giorni.nomi[giorno]) ora valgono per tutta la settimana: puoi cambiare i singoli giorni.")
+                Text("I pasti degli altri giorni vengono sostituiti da quelli di \(Giorni.nomi[giorno]). Dopo puoi cambiare i singoli giorni.")
             }
         }
     }

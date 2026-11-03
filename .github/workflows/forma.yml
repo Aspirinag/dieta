@@ -58,18 +58,19 @@ jobs:
           name: forma-ipa
       - name: Pubblica la release
         run: |
-          gh release create forma-v$VERSIONE Forma.ipa --repo ${{ github.repository }} \
+          gh release create forma-v$VERSIONE Forma.ipa --repo ${{ github.repository }} --target ${{ github.sha }} \
             --title "Forma $VERSIONE" --notes "Forma, dieta e palestra" --latest
 
   test:
     # Test di unità e dell'interfaccia nel simulatore, dopo la build (un Mac alla volta)
     needs: build
     runs-on: macos-26
+    timeout-minutes: 30          # un test bloccato non tiene occupato il Mac per ore
     steps:
       - uses: actions/checkout@v4
       - name: Esegui i test
         run: |
-          SIM=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in sorted(d, reverse=True) if 'iOS' in k for x in d[k] if x['name'].startswith('iPhone')))")
+          SIM=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k in sorted(d, key=lambda k: [int(n) for n in k.split('iOS-')[-1].split('-') if n.isdigit()], reverse=True) if 'iOS' in k for x in d[k] if x['name'].startswith('iPhone')))")
           echo "Simulatore: $SIM"
           xcodebuild test -project iOS/Forma.xcodeproj -scheme Forma -destination "id=$SIM" \
             -resultBundlePath risultati.xcresult -quiet

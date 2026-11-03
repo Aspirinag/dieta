@@ -158,18 +158,9 @@ final class Archivio {
 
     // ---------- Lista della spesa ----------
 
-    // Le spunte valgono per una settimana alla volta (quella dell'ultima spunta)
-    func spunteSpesa(lunedi lun: String) -> [String: Bool] {
-        return profilo.spesa?.settimana == lun ? profilo.spesa?.presi ?? [:] : [:]
-    }
-
-    func spunta(_ chiave: String, lunedi lun: String) {
-        var s = profilo.spesa?.settimana == lun ? profilo.spesa! : Spesa(settimana: lun)
-        s.presi[chiave] = !(s.presi[chiave] ?? false)
-        profilo.spesa = s
-    }
-
-    func azzeraSpesa() { profilo.spesa = nil }
+    func spunteSpesa(lunedi lun: String) -> [String: Bool] { profilo.spunteSpesa(lunedi: lun) }
+    func spunta(_ chiave: String, lunedi lun: String) { profilo.spunta(chiave, lunedi: lun) }
+    func azzeraSpesa(lunedi lun: String) { profilo.azzeraSpesa(lunedi: lun) }
 
     // ---------- Promemoria ----------
 
@@ -216,23 +207,25 @@ extension Profilo {
     // quelli che iniziano lo stesso giorno. Le spunte dei giorni già segnati da lì in poi
     // seguono il nome del pasto (le spunte sono salvate per posizione)
     mutating func aggiungiPiano(_ p: Piano) {
-        cambiaPiani(giorniDa: p.dal, al: p.al) { piani in
-            var nuovi = piani.filter { $0.dal != p.dal }
-            for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
-                nuovi[i].al = Giorni.aggiungi(p.dal, -1)
-            }
-            nuovi.append(p)
-            return nuovi
+        cambiaPiani(giorniDa: p.dal, al: p.al) { Self.inserisci(p, in: $0) }
+    }
+
+    // Piano modificato a mano: prende il posto dell'originale con le stesse regole di un piano nuovo
+    // (sostituisce quello che inizia lo stesso giorno, chiude quelli aperti prima); le spunte seguono il nome del pasto
+    mutating func sostituisciPiano(_ originale: Piano, con nuovo: Piano) {
+        let dal = min(originale.dal, nuovo.dal)
+        cambiaPiani(giorniDa: dal, al: "") { piani in
+            Self.inserisci(nuovo, in: piani.filter { $0.id != originale.id })
         }
     }
 
-    // Piano modificato a mano: prende il posto dell'originale, le spunte seguono il nome del pasto
-    mutating func sostituisciPiano(_ originale: Piano, con nuovo: Piano) {
-        let dal = min(originale.dal, nuovo.dal)
-        let al = originale.al.isEmpty || nuovo.al.isEmpty ? "" : max(originale.al, nuovo.al)
-        cambiaPiani(giorniDa: dal, al: al) { piani in
-            piani.map { $0.id == originale.id ? nuovo : $0 }
+    private static func inserisci(_ p: Piano, in piani: [Piano]) -> [Piano] {
+        var nuovi = piani.filter { $0.dal != p.dal }
+        for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
+            nuovi[i].al = Giorni.aggiungi(p.dal, -1)
         }
+        nuovi.append(p)
+        return nuovi
     }
 
     // Chiave di ogni pasto: nome (senza spazi e maiuscole) e quante volte è già comparso,
@@ -339,5 +332,33 @@ extension Profilo {
                 let tot = v.unita.sorted { $0.key < $1.key }.map { "\(num($0.value)) \($0.key)" }.joined(separator: " + ")
                 return VoceSpesa(chiave: k, nome: v.nome, quanto: tot.isEmpty ? volte : "\(tot) (\(volte))")
             }
+    }
+}
+
+// Spunte della spesa: si tengono le due settimane più recenti (di solito questa e la prossima)
+extension Profilo {
+    private var settimaneSpesa: [Spesa] { [spesa, spesaProssima].compactMap { $0 } }
+
+    func spunteSpesa(lunedi lun: String) -> [String: Bool] {
+        settimaneSpesa.first { $0.settimana == lun }?.presi ?? [:]
+    }
+
+    mutating func spunta(_ chiave: String, lunedi lun: String) {
+        var settimane = settimaneSpesa
+        if !settimane.contains(where: { $0.settimana == lun }) { settimane.append(Spesa(settimana: lun)) }
+        if let i = settimane.firstIndex(where: { $0.settimana == lun }) {
+            settimane[i].presi[chiave] = !(settimane[i].presi[chiave] ?? false)
+        }
+        salvaSettimane(settimane)
+    }
+
+    mutating func azzeraSpesa(lunedi lun: String) {
+        salvaSettimane(settimaneSpesa.filter { $0.settimana != lun })
+    }
+
+    private mutating func salvaSettimane(_ settimane: [Spesa]) {
+        let ultime = settimane.sorted { $0.settimana < $1.settimana }.suffix(2)
+        spesa = ultime.first
+        spesaProssima = ultime.count > 1 ? ultime.last : nil
     }
 }

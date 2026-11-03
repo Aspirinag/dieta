@@ -78,4 +78,28 @@ struct PianiTests {
         #expect(p.pianoConStessaData("2026-11-02", escluso: a) == nil)
         #expect(p.pianoConStessaData("2026-11-03", escluso: nil) == nil)
     }
+
+    @Test func modificaConStessaDataDiUnAltroLoSostituisce() {
+        var p = Profilo(nome: "Io")
+        p.aggiungiPiano(piano("A", dal: "2026-10-01", pasti: ["Pranzo"]))
+        p.aggiungiPiano(piano("B", dal: "2026-11-02", pasti: ["Cena"]))
+        var b = p.piani.first { $0.nome == "B" }!
+        let originale = b
+        b.dal = "2026-10-01"
+        p.sostituisciPiano(originale, con: b)
+        #expect(p.piani.count == 1)
+        #expect(p.piano(per: "2026-10-15")?.nome == "B")
+    }
+
+    @Test func modificaConDataPrimaChiudeIlPianoPrecedente() {
+        var p = Profilo(nome: "Io")
+        p.aggiungiPiano(piano("A", dal: "2026-10-01", pasti: ["Pranzo"]))
+        p.aggiungiPiano(piano("B", dal: "2026-11-02", pasti: ["Cena"]))
+        var b = p.piani.first { $0.nome == "B" }!
+        let originale = b
+        b.dal = "2026-10-20"
+        p.sostituisciPiano(originale, con: b)
+        #expect(p.piani.first { $0.nome == "A" }?.al == "2026-10-19")
+        #expect(p.piano(per: "2026-10-25")?.nome == "B")
+    }
 }

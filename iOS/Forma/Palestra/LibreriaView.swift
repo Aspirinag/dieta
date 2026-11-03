@@ -30,7 +30,10 @@ struct LibreriaView: View {
 
     var body: some View {
         if inScelta {
-            NavigationStack { contenuto }
+            // In scelta la libreria ha una navigazione sua; sfogliando usa quella della scheda Palestra
+            NavigationStack {
+                contenuto.navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
+            }
         } else {
             contenuto
         }
@@ -55,7 +58,7 @@ struct LibreriaView: View {
                                 }
                             }
                             if muscolo != nil || attrezzo != nil {
-                                Button("Azzera", systemImage: "xmark.circle.fill") {
+                                Button("Togli i filtri", systemImage: "xmark.circle.fill") {
                                     muscolo = nil
                                     attrezzo = nil
                                 }
@@ -102,9 +105,6 @@ struct LibreriaView: View {
         }
         .sheet(isPresented: $nuovo) {
             NuovoEsercizioView { e in if inScelta { scelti.append(e.id) } }
-        }
-        .navigationDestination(for: Esercizio.self) { e in
-            DettaglioEsercizioView(idEsercizio: e.id)
         }
     }
 

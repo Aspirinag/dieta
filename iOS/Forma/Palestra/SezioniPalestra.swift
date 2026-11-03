@@ -39,14 +39,14 @@ struct SezioniPalestra: View {
         let mese = Palestra.mese(Giorni.oggi())
         let pagato = palestra.stato.pagamenti[mese]
         Section {
-            NavigationLink { PianoSettimanaleView() } label: {
+            NavigationLink(value: PaginaPalestraDest.pianoSettimanale) {
                 LabeledContent {
                     Text(palestra.stato.usaAB ? "questa settimana: \(palestra.settimana(Giorni.oggi()))" : "uguale ogni settimana")
                 } label: {
                     Label("Piano settimanale", systemImage: "calendar.badge.clock")
                 }
             }
-            NavigationLink { LibreriaView(modo: .sfoglia) } label: {
+            NavigationLink(value: PaginaPalestraDest.libreria) {
                 LabeledContent {
                     Text("\(palestra.stato.esercizi.count)")
                 } label: {
@@ -81,7 +81,7 @@ struct SezioniPalestra: View {
                     Button("Annulla", systemImage: "arrow.uturn.backward", role: .destructive) { palestra.annullaPagamento(mese) }
                 }
             } else {
-                Button("Segna pagato questo mese", systemImage: "creditcard") { palestra.segnaPagato(mese) }
+                Button("Segna questo mese come pagato", systemImage: "creditcard") { palestra.segnaPagato(mese) }
             }
             if palestra.stato.pagamentoAttivo {
                 SceltaOrario(titolo: "Promemoria del pagamento alle", minuti: palestra.stato.oraPagamento) { m in
@@ -93,8 +93,7 @@ struct SezioniPalestra: View {
             Text("Palestra")
         } footer: {
             if palestra.stato.pagamentoAttivo {
-                let g = palestra.stato.giornoPagamento
-                Text("L'avviso in Oggi compare una settimana prima. Il promemoria arriva il \(g) (o il \(g + 1)) del mese alle \(ProfiloView.orario(palestra.stato.oraPagamento)), solo se il mese non è già segnato pagato.")
+                Text("Una settimana prima compare un avviso in Oggi. Il giorno del pagamento arriva una notifica alle \(ProfiloView.orario(palestra.stato.oraPagamento)), se non hai già segnato il mese come pagato.")
                 if senzaPermesso {
                     Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
                         .foregroundStyle(.orange)

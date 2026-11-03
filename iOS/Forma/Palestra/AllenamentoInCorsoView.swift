@@ -68,7 +68,7 @@ struct AllenamentoInCorsoView: View {
     @ToolbarContentBuilder
     private func barra(_ a: Allenamento) -> some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Button("Riduci", systemImage: "chevron.down") { navigazione.allenamentoAperto = false }
+            Button("Nascondi", systemImage: "chevron.down") { navigazione.allenamentoAperto = false }
         }
         ToolbarItem(placement: .confirmationAction) {
             Button("Fine") {
@@ -155,12 +155,14 @@ struct SezioneEsercizioInCorso: View {
             Section {
                 intestazione(ex, e, i)
                 HStack(spacing: 8) {
-                    Text("SERIE").frame(width: 36)
-                    Text("PRECEDENTE").frame(maxWidth: .infinity)
-                    Text("KG").frame(width: 64)
-                    Text("RIP").frame(width: 52)
+                    Text("Serie").frame(width: 36)
+                    Text("Ultima volta").frame(maxWidth: .infinity)
+                    Text("Kg").frame(width: 64)
+                    Text("Ripetizioni").frame(width: 52)
                     Image(systemName: "checkmark").frame(width: 32)
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 ForEach(e.serie) { s in

@@ -49,4 +49,17 @@ struct FileDatiTests {
         _ = FileDati.leggi(u, come: Prova.self)
         #expect(FileDati.copie(in: c).count == 1)
     }
+
+    @Test func stessoFileRottoNonCreaAltreCopie() throws {
+        let c = try cartella()
+        let u = c.appending(path: "dati.json")
+        let rotto = Data(#"{"n": tre"#.utf8)
+        try rotto.write(to: u)
+        // Copia già fatta a un'apertura precedente
+        let vecchia = c.appending(path: "dati.illeggibile-20261101-080000.json")
+        try rotto.write(to: vecchia)
+        guard case .illeggibile(let copia) = FileDati.leggi(u, come: Prova.self) else { Issue.record("atteso .illeggibile"); return }
+        #expect(copia.lastPathComponent == vecchia.lastPathComponent)
+        #expect(FileDati.copie(in: c).count == 1)
+    }
 }

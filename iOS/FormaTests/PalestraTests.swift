@@ -40,4 +40,20 @@ struct PalestraTests {
         #expect(r[y.id] == 1)
         #expect(r[z.id] == 0)
     }
+
+    // Stesse regole del dettaglio (Palestra.nuoviRecord): l'esercizio conta se c'era già prima,
+    // anche senza serie valide, e ogni voce si confronta con i record prima dell'allenamento
+    @Test func recordComeNelDettaglio() {
+        var s = stato([])
+        var x = fatto(nil, giorno: 1, kg: 50)
+        x.esercizi[0].serie[0].fatta = false                 // c'era, ma nessuna serie valida
+        let y = fatto(nil, giorno: 2, kg: 40)
+        s.allenamenti = [x, y]
+        #expect(s.conteggioRecord()[y.id] == 1)
+
+        var z = fatto(nil, giorno: 3, kg: 60)
+        z.esercizi.append(EsercizioFatto(esercizio: "Panca piana", serie: [SerieFatta(kg: 55, rip: 8, fatta: true)]))
+        s.allenamenti.append(z)
+        #expect(s.conteggioRecord()[z.id] == 2)                // 60 e 55 battono entrambi il 40 di prima
+    }
 }

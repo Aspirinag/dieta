@@ -86,7 +86,7 @@ struct SettimanaView: View {
             ContentUnavailableView(
                 "Nessun piano attivo",
                 systemImage: "calendar",
-                description: Text("Carica lo schema dietetico in PDF da Dieta → Piani e referti.")
+                description: Text("Carica il piano alimentare da Dieta → Piani e misure.")
             )
         }
     }
@@ -101,7 +101,7 @@ struct SettimanaView: View {
         Section {
             Picker("Settimana", selection: $lunSpesa) {
                 Text("Questa settimana").tag(questa)
-                Text("Prossima").tag(Giorni.aggiungi(questa, 7))
+                Text("Prossima settimana").tag(Giorni.aggiungi(questa, 7))
             }
             .segmentiOMenu()
             .listRowBackground(Color.clear)
@@ -124,11 +124,11 @@ struct SettimanaView: View {
             } header: {
                 Text("Dal \(Giorni.breve(lun)) al \(Giorni.breve(Giorni.aggiungi(lun, 6)))")
             } footer: {
-                Text("Per ogni pasto conta l'alternativa scelta, altrimenti la prima. Le spunte valgono per una settimana alla volta.")
+                Text("Per ogni pasto conta l'alternativa scelta, altrimenti la prima. Le spunte restano per questa settimana e la prossima.")
             }
             if !presi.isEmpty {
                 Section {
-                    Button("Togli le spunte", systemImage: "arrow.counterclockwise") { archivio.azzeraSpesa() }
+                    Button("Togli le spunte", systemImage: "arrow.counterclockwise") { archivio.azzeraSpesa(lunedi: lun) }
                 }
             }
         }

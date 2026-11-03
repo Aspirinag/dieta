@@ -11,13 +11,18 @@ struct BenvenutoView: View {
     @State private var watch = Salute.disponibile
     @State private var attesa = false
 
+    // Solo a chi parte davvero da zero: dieta nuova e nessun file della palestra
+    static func daMostrare(dietaNuova: Bool, datiPalestra: Bool, visto: Bool) -> Bool {
+        dietaNuova && !datiPalestra && !visto
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 Group {
                     Section {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Benvenuto in Forma").font(.largeTitle.bold())
+                            Text("Ti presento Forma").font(.largeTitle.bold())
                             Text("Dieta e palestra in un posto solo. I dati restano sul tuo iPhone.")
                                 .foregroundStyle(.secondary)
                         }
@@ -37,7 +42,7 @@ struct BenvenutoView: View {
                             Label("Promemoria", systemImage: "bell")
                         }
                     } footer: {
-                        Text("Un avviso al mattino per la dieta del giorno e, se lo attivi, per pasti, acqua e pagamento della palestra. Gli orari li scegli in Impostazioni.")
+                        Text("Ogni mattina ti ricorda la dieta del giorno. In Impostazioni puoi aggiungere pasti, acqua e pagamento della palestra, e scegliere gli orari.")
                     }
                     if Salute.disponibile {
                         Section {

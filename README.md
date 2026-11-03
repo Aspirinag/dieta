@@ -33,7 +33,7 @@ Da Xcode: apri `iOS/Forma.xcodeproj`, in *Signing & Capabilities* scegli il tuo 
 | `docs/superpowers/` | Progetti (`specs/`) e piani di lavoro (`plans/`) |
 | `.claude/agents/` | Subagent di Claude Code (es. `ui-checker`) |
 
-La vecchia app separata «Dieta» è stata ritirata: l'ultima versione è nel tag `dieta-finale`, i branch non uniti nei tag `archivio/*`.
+La vecchia app separata «Dieta» è stata ritirata: l'ultima versione è nel tag `dieta-finale`, i branch non uniti nei tag `archivio/*`. La sorgente SideStore di Dieta (`…/releases/latest/download/sidestore.json`) non è più aggiornata: ora l'ultima release è Forma.
 
 ## Come si lavora
 

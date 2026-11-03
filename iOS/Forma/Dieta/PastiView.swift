@@ -39,18 +39,18 @@ struct PastiView: View {
                         ContentUnavailableView {
                             Label("Nessun piano per questo giorno", systemImage: "fork.knife")
                         } description: {
-                            Text("Carica lo schema dietetico che ti ha dato il nutrizionista, in PDF.")
+                            Text("Carica il PDF del piano alimentare che ti ha dato il nutrizionista.")
                         } actions: {
-                            Button("Carica schema dietetico", systemImage: "doc.badge.plus") { richiesta = .schema }
+                            Button("Carica il piano alimentare", systemImage: "doc.badge.plus") { richiesta = .schema }
                                 .pulsanteVetro(evidente: true)
                         }
                     }
                     Section {
-                        NavigationLink { AndamentoPagina() } label: {
-                            Label("Andamento e misure BIA", systemImage: "chart.line.uptrend.xyaxis")
+                        NavigationLink(value: PaginaDieta.andamento) {
+                            Label("Andamento e misure (BIA)", systemImage: "chart.line.uptrend.xyaxis")
                         }
-                        NavigationLink { PianiDietaView() } label: {
-                            Label("Piani e referti (PDF)", systemImage: "doc.text")
+                        NavigationLink(value: PaginaDieta.piani) {
+                            Label("Piani e misure", systemImage: "doc.text")
                         }
                     } header: {
                         Text("Progressi e piani")
@@ -81,6 +81,7 @@ struct PastiView: View {
             .animation(.default, value: giorno)
             .sheet(isPresented: $settimana) { SettimanaView() }
             .importaPDF($richiesta)
+            .destinazioniDieta()
         }
         // Se l'app resta aperta oltre la mezzanotte, passa al nuovo giorno
         .onChange(of: fase) { _, nuova in
@@ -127,6 +128,8 @@ struct SezionePasto: View {
             }) {
                 Text(s.fatto ? "Fatto" : "Segna come fatto")
             }
+            // VoiceOver: «Colazione, fatto» invece di «Fatto, fatto»
+            .accessibilityLabel(pasto.nome)
         } header: {
             Text(pasto.nome)
         }
@@ -149,7 +152,7 @@ struct SezioneOlioAcqua: View {
                 LabeledContent {
                     Text("\(r.olio) / \(p.olio)").foregroundStyle(r.olio > p.olio ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
                 } label: {
-                    Text("Olio extra vergine")
+                    Text("Olio (cucchiaini)")
                 }
             }
             Stepper(value: Binding(
@@ -162,7 +165,7 @@ struct SezioneOlioAcqua: View {
             Text("Olio e acqua")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Olio in cucchiaini. Un bicchiere d'acqua è circa 0,25 L.")
+                Text("Un bicchiere d'acqua è circa 0,25 L.")
                 if !p.testoNote.isEmpty { Text(p.testoNote) }
             }
         }

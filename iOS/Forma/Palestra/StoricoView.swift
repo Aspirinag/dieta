@@ -25,17 +25,17 @@ struct DettaglioEsercizioView: View {
                 if r.pesoMax > 0 || r.ripMax > 0 {
                     Section("Record personali") {
                         LabeledContent("Peso massimo", value: "\(num(r.pesoMax)) kg")
-                        LabeledContent("Massimale stimato (1RM)", value: "\(num((r.massimale * 10).rounded() / 10)) kg")
-                        LabeledContent("Miglior serie (volume)", value: volumeTesto(r.volumeSerie))
+                        LabeledContent("Massimale stimato", value: "\(num((r.massimale * 10).rounded() / 10)) kg")
+                        LabeledContent("Serie migliore (kg × ripetizioni)", value: volumeTesto(r.volumeSerie))
                         LabeledContent("Più ripetizioni", value: "\(r.ripMax)")
                     }
                 }
                 if punti.count >= 2 {
                     Section("Andamento") {
                         Picker("Misura", selection: $metrica) {
-                            Text("Peso max").tag(0)
-                            Text("1RM stimato").tag(1)
-                            Text("Volume").tag(2)
+                            Text("Peso massimo").tag(0)
+                            Text("Massimale").tag(1)
+                            Text("Kg totali").tag(2)
                         }
                         .pickerStyle(.segmented)
                         Chart(punti) { p in
@@ -88,7 +88,7 @@ struct StoricoAllenamenti: View {
                 let settimana = lista.filter { $0.inizio > Date().addingTimeInterval(-7 * 86400) }
                 HStack {
                     statistica("Questa settimana", "\(settimana.count)")
-                    statistica("Volume", volumeTesto(settimana.reduce(0) { $0 + $1.volume }))
+                    statistica("Kg totali", volumeTesto(settimana.reduce(0) { $0 + $1.volume }))
                     statistica("Totale", "\(lista.count)")
                 }
             }
@@ -204,7 +204,7 @@ struct ContenutoAllenamento: View {
             LabeledContent("Data", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute().locale(Locale(identifier: "it_IT"))))
             LabeledContent("Durata", value: durataTesto(a.durata))
             if !a.esercizi.isEmpty {
-                LabeledContent("Volume", value: volumeTesto(a.volume))
+                LabeledContent("Kg totali", value: volumeTesto(a.volume))
                 LabeledContent("Serie", value: "\(a.serieFatte)")
             }
         }
@@ -252,7 +252,7 @@ struct RiepilogoView: View {
                                 .font(.system(size: 56))
                                 .foregroundStyle(.tint)
                                 .symbolEffect(.bounce, value: allenamento.id)
-                            Text("Allenamento completato!").font(.title2.weight(.bold))
+                            Text("Allenamento finito!").font(.title2.weight(.bold))
                             Text(allenamento.nome).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
