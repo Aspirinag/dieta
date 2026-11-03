@@ -1,14 +1,22 @@
+import SwiftUI
 import UserNotifications
 
 // Notifiche locali (promemoria della dieta, pagamento della palestra, fine recupero)
 enum Notifiche {
+    // Notifiche già consentite (senza chiedere)
+    static func consentite() async -> Bool {
+        let s = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        return s == .authorized || s == .provisional || s == .ephemeral
+    }
+
     static func permesso() async -> Bool {
         (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
     }
 
-    static func giornaliera(id: String, titolo: String, testo: String, ora: Int) async {
+    // Ogni giorno all'orario dato in minuti dalla mezzanotte
+    static func giornaliera(id: String, titolo: String, testo: String, minuti: Int) async {
         await aggiungi(id: id, titolo: titolo, testo: testo,
-                       trigger: UNCalendarNotificationTrigger(dateMatching: DateComponents(hour: ora, minute: 0), repeats: true))
+                       trigger: UNCalendarNotificationTrigger(dateMatching: DateComponents(hour: minuti / 60, minute: minuti % 60), repeats: true))
     }
 
     static func una(id: String, titolo: String, testo: String, quando: DateComponents) async {
@@ -48,7 +56,8 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
     var navigazione: Navigazione?
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        // Fine recupero con l'app aperta: c'è già la vibrazione
+        notification.request.identifier == "recupero" ? [] : [.banner, .sound]
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
@@ -58,5 +67,22 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
             navigazione?.scheda = .allenamento
             navigazione?.compila = id
         }
+    }
+}
+
+// Scelta di un orario salvato in minuti dalla mezzanotte
+struct SceltaOrario: View {
+    let titolo: String
+    let minuti: Int
+    let cambia: (Int) -> Void
+
+    var body: some View {
+        DatePicker(titolo, selection: Binding(
+            get: { Giorni.calendario.date(bySettingHour: minuti / 60, minute: minuti % 60, second: 0, of: Date()) ?? Date() },
+            set: { d in
+                let c = Giorni.calendario.dateComponents([.hour, .minute], from: d)
+                cambia((c.hour ?? 0) * 60 + (c.minute ?? 0))
+            }
+        ), displayedComponents: .hourAndMinute)
     }
 }

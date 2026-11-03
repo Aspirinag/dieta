@@ -1,12 +1,14 @@
 import SwiftUI
 
-// Sezioni della palestra nella scheda Profilo: piano settimanale A/B, pagamento, libreria
+// Impostazioni della palestra (dalla scheda Palestra): piano settimanale A/B, pagamento, libreria
 struct SezioniPalestra: View {
     @Environment(Palestra.self) private var palestra
     @AppStorage(Salute.chiave) private var watch = true
+    @State private var senzaPermesso = false
 
     var body: some View {
         sezionePalestra
+            .task { await controllaPermesso() }
         Section {
             Toggle(isOn: Binding(get: { watch }, set: { v in cambiaWatch(v) })) {
                 Label("Allenamenti dall'Apple Watch", systemImage: "applewatch")
@@ -14,6 +16,11 @@ struct SezioniPalestra: View {
         } footer: {
             Text("Le sessioni di palestra registrate sul Watch entrano da sole in Forma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno \(Salute.minutiCardio) minuti diventano cardio. Forma legge da Salute, non scrive niente.")
         }
+    }
+
+    // Il promemoria del pagamento promesso nelle impostazioni ha bisogno delle notifiche
+    private func controllaPermesso() async {
+        if palestra.stato.pagamentoAttivo, !(await Notifiche.permesso()) { senzaPermesso = true }
     }
 
     private func cambiaWatch(_ v: Bool) {
@@ -34,9 +41,9 @@ struct SezioniPalestra: View {
         Section {
             NavigationLink { PianoSettimanaleView() } label: {
                 LabeledContent {
-                    Text("questa settimana: \(palestra.settimana(Giorni.oggi()))")
+                    Text(palestra.stato.usaAB ? "questa settimana: \(palestra.settimana(Giorni.oggi()))" : "uguale ogni settimana")
                 } label: {
-                    Label("Piano settimanale A/B", systemImage: "calendar.badge.clock")
+                    Label("Piano settimanale", systemImage: "calendar.badge.clock")
                 }
             }
             NavigationLink { LibreriaView(modo: .sfoglia) } label: {
@@ -45,6 +52,24 @@ struct SezioniPalestra: View {
                 } label: {
                     Label("Libreria esercizi", systemImage: "books.vertical")
                 }
+            }
+            Toggle(isOn: Binding(get: { palestra.stato.pagamentoAttivo }, set: { v in
+                palestra.stato.pagamentoAttivo = v
+                Task {
+                    if v, !(await Notifiche.permesso()) { senzaPermesso = true }
+                    await palestra.programmaPagamento()
+                }
+            })) {
+                Label("Ricordami il pagamento", systemImage: "bell.badge")
+            }
+            if palestra.stato.pagamentoAttivo {
+                Stepper("Si paga il \(palestra.stato.giornoPagamento) del mese", value: Binding(
+                    get: { palestra.stato.giornoPagamento },
+                    set: { v in
+                        palestra.stato.giornoPagamento = v
+                        Task { await palestra.programmaPagamento() }
+                    }
+                ), in: 1...28)
             }
             if let pagato {
                 LabeledContent {
@@ -58,10 +83,23 @@ struct SezioniPalestra: View {
             } else {
                 Button("Segna pagato questo mese", systemImage: "creditcard") { palestra.segnaPagato(mese) }
             }
+            if palestra.stato.pagamentoAttivo {
+                SceltaOrario(titolo: "Promemoria del pagamento alle", minuti: palestra.stato.oraPagamento) { m in
+                    palestra.stato.oraPagamento = m
+                    Task { await palestra.programmaPagamento() }
+                }
+            }
         } header: {
             Text("Palestra")
         } footer: {
-            Text("Il promemoria del pagamento arriva il 1 (o il 2) del mese alle 9, solo se il mese non è già segnato pagato.")
+            if palestra.stato.pagamentoAttivo {
+                let g = palestra.stato.giornoPagamento
+                Text("L'avviso in Oggi compare una settimana prima. Il promemoria arriva il \(g) (o il \(g + 1)) del mese alle \(ProfiloView.orario(palestra.stato.oraPagamento)), solo se il mese non è già segnato pagato.")
+                if senzaPermesso {
+                    Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
+                        .foregroundStyle(.orange)
+                }
+            }
         }
     }
 }
@@ -73,13 +111,18 @@ struct PianoSettimanaleView: View {
         List {
             Group {
                 Section {
-                    LabeledContent("Questa settimana", value: palestra.settimana(Giorni.oggi()))
-                    Toggle("Scambia A e B", isOn: Binding(get: { palestra.stato.scambia }, set: { palestra.stato.scambia = $0 }))
+                    Toggle("Alterna settimane A e B", isOn: Binding(get: { palestra.stato.usaAB }, set: { palestra.stato.usaAB = $0 }))
+                    if palestra.stato.usaAB {
+                        LabeledContent("Questa settimana", value: palestra.settimana(Giorni.oggi()))
+                        Toggle("Scambia A e B", isOn: Binding(get: { palestra.stato.scambia }, set: { palestra.stato.scambia = $0 }))
+                    }
                 } footer: {
-                    Text("Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
+                    Text(palestra.stato.usaAB
+                         ? "Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo."
+                         : "Ogni settimana vale lo stesso piano. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
                 }
-                ForEach(["A", "B"], id: \.self) { w in
-                    Section("Settimana \(w)") {
+                ForEach(palestra.stato.usaAB ? ["A", "B"] : ["A"], id: \.self) { w in
+                    Section(palestra.stato.usaAB ? "Settimana \(w)" : "Ogni settimana") {
                         ForEach(0..<7, id: \.self) { i in
                             Picker(Giorni.nomi[i], selection: Binding(
                                 get: { palestra.stato.piani[w]?[i] ?? .riposo },

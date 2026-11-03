@@ -5,26 +5,62 @@ import UserNotifications
 @Observable
 final class Palestra {
     var stato: StatoPalestra {
-        didSet { if !demo { salva() } }
+        didSet { if !demo { programmaSalvataggio() } }
     }
 
     let demo: Bool
+    // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
+    @ObservationIgnored private(set) var fileIlleggibile: URL?
+    // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
+    @ObservationIgnored private(set) var salvataggioBloccato = false
 
     init() {
         demo = Avvio.demo
-        stato = demo ? StatoPalestra.demo : Self.carica()
+        var illeggibile: URL?
+        stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
+        salvataggioBloccato = illeggibile?.path == "/bloccato"
+        fileIlleggibile = salvataggioBloccato ? nil : illeggibile
     }
 
     // ---------- File ----------
 
+    // Salvataggio raggruppato: più modifiche ravvicinate (es. digitare i kg) scrivono il file una volta sola
+    @ObservationIgnored private var salvataggio: Task<Void, Never>?
+
+    private func programmaSalvataggio() {
+        salvataggio?.cancel()
+        salvataggio = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            salva()
+        }
+    }
+
+    // Scrive subito (quando l'app va in background)
+    func salvaOra() {
+        guard salvataggio != nil else { return }
+        salvataggio?.cancel()
+        salvataggio = nil
+        if !demo { salva() }
+    }
+
     private static var fileDati: URL { URL.applicationSupportDirectory.appending(path: "palestra.json") }
 
-    private static func carica() -> StatoPalestra {
-        if let d = try? Data(contentsOf: fileDati), let s = try? JSONDecoder().decode(StatoPalestra.self, from: d) { return s }
-        return StatoPalestra()
+    private static func carica(_ illeggibile: inout URL?) -> StatoPalestra {
+        switch FileDati.leggi(fileDati, come: StatoPalestra.self) {
+        case .ok(let s): return s
+        case .bloccato:
+            illeggibile = URL(fileURLWithPath: "/bloccato")
+            return StatoPalestra()
+        case .illeggibile(let copia):
+            illeggibile = copia
+            return StatoPalestra()
+        case .assente: return StatoPalestra()
+        }
     }
 
     private func salva() {
+        guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
             try JSONEncoder().encode(stato).write(to: Self.fileDati, options: .atomic)
@@ -57,9 +93,7 @@ final class Palestra {
         return Int((Double(giorni) / 7).rounded(.down)) + 1
     }
 
-    func settimana(_ iso: String) -> String {
-        (Self.numeroSettimana(iso) + (stato.scambia ? 1 : 0)) % 2 == 0 ? "A" : "B"
-    }
+    func settimana(_ iso: String) -> String { stato.settimana(iso) }
 
     func programmato(_ iso: String) -> TipoGiorno {
         let p = stato.piani[settimana(iso)] ?? []
@@ -262,20 +296,37 @@ final class Palestra {
 
     static func mese(_ iso: String) -> String { String(iso.prefix(7)) }
 
-    // Mese da pagare e testo del promemoria, dal 25 al 2 del mese finché non è segnato pagato
+    // Mese da pagare e testo dell'avviso in Oggi, finché non è segnato pagato
     func promemoriaPagamento() -> (mese: String, testo: String)? {
-        let oggi = Giorni.oggi()
-        let giorno = Giorni.calendario.component(.day, from: Date())
-        if giorno > 2 && giorno < 25 { return nil }
-        var mese = Self.mese(oggi)
-        var testo = "Oggi si paga la palestra (1 o 2 del mese)."
-        if giorno >= 25 {
-            let primo = Giorni.calendario.date(byAdding: .month, value: 1, to: Giorni.data(String(oggi.prefix(8)) + "01")) ?? Date()
-            mese = Self.mese(Giorni.iso(primo))
-            let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: primo).day ?? 0
-            testo = mancano == 1 ? "Domani si paga la palestra (1 o 2 del mese)." : "Tra \(mancano) giorni si paga la palestra (1 o 2 del mese)."
+        guard stato.pagamentoAttivo else { return nil }
+        return Self.avvisoPagamento(oggi: Giorni.oggi(), giorno: stato.giornoPagamento, pagamenti: stato.pagamenti)
+    }
+
+    // Giorno di pagamento di un mese (yyyy-MM-01), senza superare la fine del mese
+    private static func giornoDiPagamento(_ primo: String, _ giorno: Int) -> String {
+        let giorni = Giorni.calendario.range(of: .day, in: .month, for: Giorni.data(primo))?.count ?? 28
+        return Giorni.aggiungi(primo, min(giorno, giorni) - 1)
+    }
+
+    // L'avviso compare una settimana prima del giorno di pagamento e resta fino al giorno dopo
+    static func avvisoPagamento(oggi: String, giorno: Int, pagamenti: [String: String]) -> (mese: String, testo: String)? {
+        let primo = String(oggi.prefix(8)) + "01"
+        for m in 0..<2 {
+            let primoMese = Giorni.iso(Giorni.calendario.date(byAdding: .month, value: m, to: Giorni.data(primo)) ?? Date())
+            let paga = giornoDiPagamento(primoMese, giorno)
+            guard oggi >= Giorni.aggiungi(paga, -7), oggi <= Giorni.aggiungi(paga, 1) else { continue }
+            let mese = Self.mese(primoMese)
+            guard pagamenti[mese] == nil else { return nil }
+            let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: Giorni.data(paga)).day ?? 0
+            let testo = switch mancano {
+            case ..<0: "Ultimo giorno per pagare la palestra."
+            case 0: "Oggi si paga la palestra."
+            case 1: "Domani si paga la palestra."
+            default: "Tra \(mancano) giorni si paga la palestra."
+            }
+            return (mese, testo)
         }
-        return stato.pagamenti[mese] == nil ? (mese, testo) : nil
+        return nil
     }
 
     func segnaPagato(_ mese: String) {
@@ -288,27 +339,34 @@ final class Palestra {
         Task { await programmaPagamento() }
     }
 
-    // Una sola notifica, il primo giorno utile (1 o 2 alle 9:00) di un mese non ancora pagato
+    // Una sola notifica, il primo giorno utile (giorno scelto o il successivo, all'ora scelta) di un mese non pagato
     func programmaPagamento() async {
         guard !demo else { return }
-        let centro = UNUserNotificationCenter.current()
-        centro.removePendingNotificationRequests(withIdentifiers: ["pagamento"])
-        let ora = Date()
-        let questoMese = Giorni.data(String(Giorni.oggi().prefix(8)) + "01")
+        Notifiche.cancella(["pagamento"])
+        guard stato.pagamentoAttivo,
+              let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)
+        else { return }
+        await Notifiche.una(id: "pagamento", titolo: "Palestra",
+                            testo: p.primo ? "Oggi si paga la palestra." : "Ultimo giorno per pagare la palestra.",
+                            quando: p.quando)
+    }
+
+    static func prossimoPagamento(dopo ora: Date, pagamenti: [String: String], minuti: Int, giorno: Int = 1) -> (quando: DateComponents, primo: Bool)? {
+        let questoMese = Giorni.data(String(Giorni.iso(ora).prefix(8)) + "01")
         for m in 0..<3 {
             guard let mese = Giorni.calendario.date(byAdding: .month, value: m, to: questoMese) else { continue }
-            if stato.pagamenti[Self.mese(Giorni.iso(mese))] != nil { continue }
-            for giorno in [1, 2] {
-                var dc = Giorni.calendario.dateComponents([.year, .month], from: mese)
-                dc.day = giorno
-                dc.hour = 9
+            let primoMese = Giorni.iso(mese)
+            if pagamenti[Self.mese(primoMese)] != nil { continue }
+            let paga = giornoDiPagamento(primoMese, giorno)
+            for (k, iso) in [paga, Giorni.aggiungi(paga, 1)].enumerated() {
+                var dc = Giorni.calendario.dateComponents([.year, .month, .day], from: Giorni.data(iso))
+                dc.hour = minuti / 60
+                dc.minute = minuti % 60
                 guard let quando = Giorni.calendario.date(from: dc), quando > ora else { continue }
-                await Notifiche.una(id: "pagamento", titolo: "Palestra",
-                                    testo: giorno == 1 ? "Oggi si paga la palestra (1 o 2 del mese)." : "Ultimo giorno per pagare la palestra.",
-                                    quando: dc)
-                return
+                return (dc, k == 0)
             }
         }
+        return nil
     }
 
     // ---------- Backup della vecchia app Palestra ----------
@@ -354,5 +412,44 @@ final class Palestra {
         s.saltati = Array(Set(s.saltati + (v.log ?? [:]).filter { $0.value == "saltato" }.map(\.key))).sorted()
         s.pagamenti.merge(v.payments ?? [:]) { a, _ in a }
         stato = s
+    }
+}
+
+extension StatoPalestra {
+    // Scheda da proporre: quella dopo l'ultima fatta (a giro); senza storico la prima
+    func prossimaRoutine() -> Routine? {
+        guard let ultima = allenamenti.sorted(by: { $0.inizio < $1.inizio }).last(where: { a in routine.contains { $0.id == a.routine } }),
+              let i = routine.firstIndex(where: { $0.id == ultima.routine }) else { return routine.first }
+        return routine[(i + 1) % routine.count]
+    }
+
+    // Record battuti da ogni allenamento (come Palestra.nuoviRecord), in una sola passata
+    func conteggioRecord() -> [UUID: Int] {
+        var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:]
+        var risultato: [UUID: Int] = [:]
+        for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
+            var n = 0
+            for e in a.esercizi {
+                let valide = e.serie.filter(\.valida)
+                guard !valide.isEmpty else { continue }
+                let peso = valide.compactMap(\.kg).max() ?? 0
+                let mass = valide.map(\.massimale).max() ?? 0
+                if let p = pesoMax[e.esercizio] {
+                    if peso > p || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
+                }
+                pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, peso)
+                massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, mass)
+            }
+            risultato[a.id] = n
+        }
+        return risultato
+    }
+}
+
+extension StatoPalestra {
+    // Settimana A o B di una data (sempre A se il piano A/B è spento)
+    func settimana(_ iso: String) -> String {
+        guard usaAB else { return "A" }
+        return (Palestra.numeroSettimana(iso) + (scambia ? 1 : 0)) % 2 == 0 ? "A" : "B"
     }
 }

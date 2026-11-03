@@ -33,7 +33,7 @@ struct FormaApp: App {
 }
 
 enum Scheda: String {
-    case oggi, dieta, allenamento, progressi, profilo
+    case oggi, dieta, allenamento, profilo
 }
 
 // Scheda selezionata e allenamento aperto: anche i pulsanti dentro le schermate possono cambiarli
@@ -48,8 +48,12 @@ final class Navigazione {
 struct Radice: View {
     @Environment(Archivio.self) private var archivio
     @Environment(Palestra.self) private var palestra
+    @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
     @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
+    @State private var avvisoDati = true
+    @Environment(\.scenePhase) private var fase
+    @AppStorage("benvenutoVisto") private var benvenutoVisto = false
 
     private var tema: Tema { Tema(rawValue: scelto) ?? .predefinito }
 
@@ -58,11 +62,11 @@ struct Radice: View {
         TabView(selection: $navigazione.scheda) {
             Tab("Oggi", systemImage: "sun.max", value: .oggi) { HomeView() }
             Tab("Dieta", systemImage: "fork.knife", value: .dieta) { PastiView() }
-            Tab("Allenamento", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
-            Tab("Progressi", systemImage: "chart.line.uptrend.xyaxis", value: .progressi) { ProgressiView() }
-            Tab("Profilo", systemImage: "person.crop.circle", value: .profilo) { ProfiloView() }
+            Tab("Palestra", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
+            Tab("Impostazioni", systemImage: "gearshape", value: .profilo) { ProfiloView() }
         }
-        .accessorioAllenamento()
+        // La barra compare solo con un allenamento in corso o un recupero che scorre
+        .accessorioAllenamento(visibile: palestra.stato.inCorso != nil || timer.attivo)
         .fullScreenCover(isPresented: Binding(
             get: { navigazione.allenamentoAperto && palestra.stato.inCorso != nil },
             set: { navigazione.allenamentoAperto = $0 }
@@ -76,10 +80,39 @@ struct Radice: View {
             if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema(tema) }
         }
         .applicaTema(tema)
-        .task {
-            guard !palestra.demo else { return }
-            if await Notifiche.permesso() { await palestra.programmaPagamento() }
-            await archivio.programmaPromemoria()
+        .onChange(of: fase) { _, f in
+            if f != .active {
+                archivio.salvaOra()
+                palestra.salvaOra()
+            }
+        }
+        .alert("Dati non letti", isPresented: Binding(
+            get: { avvisoDati && copieIlleggibili != nil }, set: { if !$0 { avvisoDati = false } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text("Non riesco a leggere i dati salvati, quindi l'app è ripartita da zero. Ne ho tenuto una copia: la trovi in Impostazioni → Backup → Copie dei dati non letti, da dove puoi inviarla per recuperarla.")
+        }
+        .alert("Dati non disponibili", isPresented: Binding(
+            get: { avvisoDati && (archivio.salvataggioBloccato || palestra.salvataggioBloccato) },
+            set: { if !$0 { avvisoDati = false } }
+        )) {
+            Button("OK") {}
+        } message: {
+            Text("Non riesco ad aprire i dati salvati (succede se il telefono è bloccato). Chiudi e riapri l'app: finché non si risolve, Forma non salva niente per non sovrascriverli.")
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { archivio.primaApertura && !benvenutoVisto }, set: { if !$0 { benvenutoVisto = true } }
+        )) {
+            BenvenutoView { benvenutoVisto = true }.applicaTema(tema)
+        }
+        .task(id: benvenutoVisto) {
+            // Alla prima apertura i permessi si chiedono nel benvenuto, con la spiegazione
+            guard !palestra.demo, !(archivio.primaApertura && !benvenutoVisto) else { return }
+            if await Notifiche.consentite() {
+                await palestra.programmaPagamento()
+                await archivio.programmaPromemoria()
+            }
             if Salute.attivo, await Salute.shared.chiediPermesso() {
                 Salute.shared.avvia(palestra)
                 await Salute.shared.importa()
@@ -88,21 +121,35 @@ struct Radice: View {
     }
 }
 
+extension Radice {
+    // Nomi delle copie dei file dati illeggibili trovate all'avvio
+    var copieIlleggibili: String? {
+        let nomi = [archivio.fileIlleggibile, palestra.fileIlleggibile].compactMap { $0?.lastPathComponent }
+        return nomi.isEmpty ? nil : nomi.joined(separator: ", ")
+    }
+}
+
 extension View {
     // Su iOS 26 timer di recupero e allenamento in corso stanno sopra la tab bar, in vetro
     @ViewBuilder
-    func accessorioAllenamento() -> some View {
-        if #available(iOS 26.0, *) {
+    func accessorioAllenamento(visibile: Bool) -> some View {
+        if #available(iOS 26.1, *) {
+            tabViewBottomAccessory(isEnabled: visibile) { BarraAllenamento() }
+        } else if #available(iOS 26.0, *) {
             tabViewBottomAccessory { BarraAllenamento() }
         } else {
             safeAreaInset(edge: .bottom) {
-                BarraAllenamento()
-                    .padding(.vertical, 10)
-                    .background(.bar, in: .capsule)
-                    .padding(.horizontal)
-                    .padding(.bottom, 56)
+                if visibile { barraClassica }
             }
         }
+    }
+
+    private var barraClassica: some View {
+        BarraAllenamento()
+            .padding(.vertical, 10)
+            .background(.bar, in: .capsule)
+            .padding(.horizontal)
+            .padding(.bottom, 56)
     }
 }
 
@@ -129,7 +176,7 @@ struct MenuProfilo: View {
     }
 }
 
-// Avviso di pagamento della palestra dal 25 al 2 del mese, finché non è segnato pagato
+// Avviso di pagamento della palestra (da una settimana prima), finché non è segnato pagato
 struct SezionePagamento: View {
     @Environment(Palestra.self) private var palestra
 
@@ -137,10 +184,7 @@ struct SezionePagamento: View {
         if let p = palestra.promemoriaPagamento() {
             Section {
                 Label {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Pagamento palestra").font(.headline)
-                        Text(p.testo).font(.subheadline).foregroundStyle(.secondary)
-                    }
+                    Text(p.testo).font(.subheadline)
                 } icon: {
                     Image(systemName: "creditcard.fill").foregroundStyle(.tint)
                 }

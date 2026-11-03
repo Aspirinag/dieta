@@ -1,21 +1,15 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Piani e PDF, misurazioni, profili, impostazioni, promemoria e backup
+// Impostazioni: profili, olio e acqua, promemoria, tema e backup.
+// Piani e referti stanno in Dieta, le impostazioni della palestra in Palestra
 struct ProfiloView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(Palestra.self) private var palestra
 
-    private enum Importa { case schema, bia, backup }
-
-    @State private var importa: Importa?
-    @State private var nuovoPiano: Piano?
-    @State private var nuovaBia: Misura?
+    @State private var importaBackup = false
     @State private var backupLetto: Data?
     @State private var errore: String?
-    @State private var lettura = false
-    @State private var nuovaMisura = false
-    @State private var pianoDaEliminare: Piano?
     @State private var nomeProfilo = ""
     @State private var profiloDaRinominare: String?
     @State private var aggiungiProfilo = false
@@ -29,73 +23,49 @@ struct ProfiloView: View {
     private var lista: some View {
         List {
             Group {
-                piani
-                misure
                 profili
                 impostazioni
                 promemoria
-                SezioniPalestra()
                 SezioneTema()
                 backup
             }
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle("Profilo")
+        .navigationTitle("Impostazioni")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-        .overlay {
-            if lettura {
-                ProgressView("Lettura del PDF…")
-                    .padding(24)
-                    .background(.regularMaterial, in: .rect(cornerRadius: 20))
-            }
-        }
     }
 
-    private var conImporta: some View {
+    private var conAvvisi: some View {
         lista
-            .fileImporter(
-                isPresented: Binding(get: { importa != nil }, set: { if !$0 { importa = nil } }),
-                allowedContentTypes: importa == .backup ? [.json] : [.pdf]
-            ) { risultato in
-                let tipo = importa
-                importa = nil
-                guard case .success(let url) = risultato, let tipo else { return }
+            .fileImporter(isPresented: $importaBackup, allowedContentTypes: [.json]) { risultato in
+                guard case .success(let url) = risultato else {
+                    errore = "Non riesco ad aprire il file."
+                    return
+                }
                 let accesso = url.startAccessingSecurityScopedResource()
                 defer { if accesso { url.stopAccessingSecurityScopedResource() } }
                 guard let dati = try? Data(contentsOf: url) else {
                     errore = "Non riesco ad aprire il file."
                     return
                 }
-                Task { await leggi(tipo, dati, nome: url.deletingPathExtension().lastPathComponent) }
-            }
-            .sheet(item: $nuovoPiano) { p in
-                FoglioNuovoPiano(piano: p)
-            }
-            .sheet(isPresented: $nuovaMisura) {
-                NavigationStack { EditorMisura(dataEsistente: nil) }
-            }
-    }
-
-    private var conAvvisi: some View {
-        conImporta
-            .alert("Aggiungo la BIA del \(Giorni.breve(nuovaBia?.data ?? ""))?", isPresented: Binding(
-                get: { nuovaBia != nil }, set: { if !$0 { nuovaBia = nil } }
-            ), presenting: nuovaBia) { m in
-                Button("Aggiungi") { archivio.salvaMisura(m) }
-                Button("Annulla", role: .cancel) {}
-            } message: { m in
-                Text(riassuntoBia(m))
+                backupLetto = dati
             }
             .alert("Importare il backup?", isPresented: Binding(
                 get: { backupLetto != nil }, set: { if !$0 { backupLetto = nil } }
             ), presenting: backupLetto) { dati in
                 Button("Importa", role: .destructive) {
-                    do { try Backup.importa(dati, archivio: archivio, palestra: palestra) } catch { errore = "File non valido: scegli un backup di Forma, Dieta o Palestra." }
+                    do {
+                        try Backup.importa(dati, archivio: archivio, palestra: palestra)
+                        Task {
+                            await archivio.programmaPromemoria()
+                            await palestra.programmaPagamento()
+                        }
+                    } catch { errore = "File non valido: scegli un backup di Forma, Dieta o Palestra." }
                 }
                 Button("Annulla", role: .cancel) {}
             } message: { _ in
-                Text("Un backup di Forma o di Dieta sostituisce i dati della dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
+                Text("Un backup di Forma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
             }
             .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
@@ -106,15 +76,6 @@ struct ProfiloView: View {
 
     private var conDialoghi: some View {
         conAvvisi
-            .confirmationDialog("Eliminare il piano?", isPresented: Binding(
-                get: { pianoDaEliminare != nil }, set: { if !$0 { pianoDaEliminare = nil } }
-            ), titleVisibility: .visible, presenting: pianoDaEliminare) { p in
-                Button("Elimina \(p.nome)", role: .destructive) {
-                    archivio.profilo.piani.removeAll { $0.id == p.id }
-                }
-            } message: { _ in
-                Text("I pasti già segnati restano.")
-            }
             .confirmationDialog("Eliminare il profilo?", isPresented: Binding(
                 get: { profiloDaEliminare != nil }, set: { if !$0 { profiloDaEliminare = nil } }
             ), titleVisibility: .visible, presenting: profiloDaEliminare) { id in
@@ -144,78 +105,7 @@ struct ProfiloView: View {
             }
     }
 
-    private func riassuntoBia(_ m: Misura) -> String {
-        var t = "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm"
-        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\nSostituisce la misurazione della stessa data." }
-        return t
-    }
-
-    private func leggi(_ tipo: Importa, _ dati: Data, nome: String) async {
-        switch tipo {
-        case .backup:
-            backupLetto = dati
-        case .schema:
-            lettura = true
-            defer { lettura = false }
-            do {
-                let giorni = try await LettorePDF.condiviso.schema(dati)
-                guard giorni.count == 7, giorni.allSatisfy({ !$0.pasti.isEmpty }) else {
-                    errore = "Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico."
-                    return
-                }
-                nuovoPiano = Piano(nome: nome, dal: Giorni.oggi(), al: "", giorni: giorni)
-            } catch {
-                errore = "Non riesco a leggere questo PDF."
-            }
-        case .bia:
-            lettura = true
-            defer { lettura = false }
-            do {
-                let m = try await LettorePDF.condiviso.bia(dati)
-                guard !m.data.isEmpty, m.peso != nil else {
-                    errore = "Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA."
-                    return
-                }
-                nuovaBia = m
-            } catch {
-                errore = "Non riesco a leggere questo PDF."
-            }
-        }
-    }
-
     // ---------- Sezioni ----------
-
-    private var piani: some View {
-        Section {
-            ForEach(archivio.profilo.piani.sorted { $0.dal > $1.dal }) { p in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(p.nome).font(.headline)
-                    Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? "in corso" : Giorni.breve(p.al))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .swipeActions {
-                    Button("Elimina", systemImage: "trash", role: .destructive) { pianoDaEliminare = p }
-                }
-            }
-            Button("Carica schema dietetico (PDF)", systemImage: "doc.badge.plus") { importa = .schema }
-        } header: {
-            Text("Piani alimentari")
-        } footer: {
-            Text("Lo schema in PDF viene letto e diventa il piano di Oggi e Settimana. Scorri a sinistra su un piano per eliminarlo.")
-        }
-    }
-
-    private var misure: some View {
-        Section {
-            Button("Carica referto BIA (PDF)", systemImage: "doc.text.magnifyingglass") { importa = .bia }
-            Button("Aggiungi misurazione a mano", systemImage: "square.and.pencil") { nuovaMisura = true }
-        } header: {
-            Text("Misurazioni BIA")
-        } footer: {
-            Text("Le misurazioni si vedono, modificano ed eliminano in Andamento.")
-        }
-    }
 
     private var profili: some View {
         Section {
@@ -278,44 +168,57 @@ struct ProfiloView: View {
     private var promemoria: some View {
         let pr = archivio.stato.promemoria ?? Promemoria()
         return Section {
-            Toggle(isOn: Binding(get: { pr.acqua }, set: { v in Task { await cambiaPromemoria { $0.acqua = v } } })) {
-                Label {
-                    VStack(alignment: .leading) {
-                        Text("Bevi acqua")
-                        Text("alle " + Archivio.oreAcqua.map(String.init).joined(separator: ", ")).font(.caption).foregroundStyle(.secondary)
-                    }
-                } icon: { Image(systemName: "drop.fill") }
+            Toggle(isOn: Binding(get: { pr.mattino }, set: { v in cambiaPromemoria { $0.mattino = v } })) {
+                Label("Controlla la dieta odierna", systemImage: "sun.horizon")
             }
-            Toggle(isOn: Binding(get: { pr.mattino }, set: { v in Task { await cambiaPromemoria { $0.mattino = v } } })) {
-                Label {
-                    VStack(alignment: .leading) {
-                        Text("Controlla la dieta odierna")
-                        Text("ogni mattina alle 9").font(.caption).foregroundStyle(.secondary)
-                    }
-                } icon: { Image(systemName: "sun.horizon") }
+            if pr.mattino {
+                SceltaOrario(titolo: "Ogni mattina alle", minuti: pr.oraMattino) { m in cambiaPromemoria { $0.oraMattino = m } }
             }
-            Toggle(isOn: Binding(get: { pr.pasti }, set: { v in Task { await cambiaPromemoria { $0.pasti = v } } })) {
-                Label {
-                    VStack(alignment: .leading) {
-                        Text("Segna i pasti")
-                        Text("ogni sera alle 21").font(.caption).foregroundStyle(.secondary)
-                    }
-                } icon: { Image(systemName: "checklist") }
+            Toggle(isOn: Binding(get: { pr.pasti }, set: { v in cambiaPromemoria { $0.pasti = v } })) {
+                Label("Segna i pasti", systemImage: "checklist")
+            }
+            if pr.pasti {
+                SceltaOrario(titolo: "Ogni sera alle", minuti: pr.oraPasti) { m in cambiaPromemoria { $0.oraPasti = m } }
+            }
+            Toggle(isOn: Binding(get: { pr.acqua }, set: { v in cambiaPromemoria { $0.acqua = v } })) {
+                Label("Bevi acqua", systemImage: "drop.fill")
+            }
+            if pr.acqua {
+                SceltaOrario(titolo: "Dalle", minuti: pr.acquaDalle) { m in cambiaPromemoria { $0.acquaDalle = m; $0.acquaAlle = max($0.acquaAlle, m) } }
+                SceltaOrario(titolo: "Alle", minuti: pr.acquaAlle) { m in cambiaPromemoria { $0.acquaAlle = m; $0.acquaDalle = min($0.acquaDalle, m) } }
+                Stepper(pr.acquaOgni == 1 ? "Ogni ora" : "Ogni \(pr.acquaOgni) ore", value: Binding(
+                    get: { pr.acquaOgni }, set: { v in cambiaPromemoria { $0.acquaOgni = v } }
+                ), in: 1...6)
             }
         } header: {
             Text("Promemoria")
+        } footer: {
+            if pr.acqua {
+                Text("Acqua alle " + pr.orariAcqua.map(Self.orario).joined(separator: ", ") + ".")
+            }
         }
     }
 
-    private func cambiaPromemoria(_ modifica: (inout Promemoria) -> Void) async {
-        var p = archivio.stato.promemoria ?? Promemoria()
+    static func orario(_ minuti: Int) -> String { String(format: "%d:%02d", minuti / 60, minuti % 60) }
+
+    // Salva subito la modifica (così due tocchi veloci non si sovrascrivono), poi riprogramma
+    private func cambiaPromemoria(_ modifica: (inout Promemoria) -> Void) {
+        let prima = archivio.stato.promemoria ?? Promemoria()
+        var p = prima
         modifica(&p)
-        if (p.acqua || p.pasti || p.mattino), !(await Notifiche.permesso()) {
-            errore = "Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Dieta."
-            return
-        }
         archivio.stato.promemoria = p
-        await archivio.programmaPromemoria()
+        let acceso = (p.mattino && !prima.mattino) || (p.pasti && !prima.pasti) || (p.acqua && !prima.acqua)
+        Task {
+            if acceso, !(await Notifiche.permesso()) {
+                var q = archivio.stato.promemoria ?? Promemoria()
+                if !prima.mattino { q.mattino = false }
+                if !prima.pasti { q.pasti = false }
+                if !prima.acqua { q.acqua = false }
+                archivio.stato.promemoria = q
+                errore = "Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma."
+            }
+            await archivio.programmaPromemoria()
+        }
     }
 
     private var backup: some View {
@@ -326,7 +229,18 @@ struct ProfiloView: View {
             ) {
                 Label("Esporta backup", systemImage: "square.and.arrow.up")
             }
-            Button("Importa backup", systemImage: "square.and.arrow.down") { importa = .backup }
+            Button("Importa backup", systemImage: "square.and.arrow.down") { importaBackup = true }
+            let copie = FileDati.copie(in: URL.applicationSupportDirectory)
+            if !copie.isEmpty {
+                DisclosureGroup("Copie dei dati non letti (\(copie.count))") {
+                    ForEach(copie, id: \.self) { u in
+                        ShareLink(item: u) {
+                            Label(u.lastPathComponent, systemImage: "doc.badge.exclamationmark")
+                                .font(.caption)
+                        }
+                    }
+                }
+            }
         } header: {
             Text("Backup")
         } footer: {
@@ -350,7 +264,11 @@ struct FoglioNuovoPiano: View {
                         TextField("Nome", text: $piano.nome)
                         DatePicker("Valido dal", selection: $dal, displayedComponents: .date)
                     } footer: {
-                        Text("Il piano precedente si chiude il giorno prima.")
+                        if let altro = archivio.profilo.pianoConStessaData(Giorni.iso(dal), escluso: nil) {
+                            Text("Sostituisce «\(altro.nome)», che inizia lo stesso giorno.").foregroundStyle(.orange)
+                        } else {
+                            Text("Il piano precedente si chiude il giorno prima.")
+                        }
                     }
                     Section("Anteprima: \(piano.giorni.first?.nome ?? "")") {
                         ForEach(Array((piano.giorni.first?.pasti ?? []).enumerated()), id: \.offset) { _, pasto in

@@ -261,8 +261,10 @@ struct Profilo: Codable, Hashable {
         case olioTot = "olio_tot", acquaTot = "acqua_tot"
     }
 
-    init(nome: String) {
+    // I profili nuovi partono senza note; quelli salvati senza il campo tengono il testo predefinito
+    init(nome: String, note: String? = nil) {
         self.nome = nome
+        self.note = note
     }
 
     init(from decoder: Decoder) throws {
@@ -278,18 +280,60 @@ struct Profilo: Codable, Hashable {
     }
 }
 
+// Promemoria della dieta; gli orari sono minuti dalla mezzanotte e li sceglie l'utente
 struct Promemoria: Codable, Hashable {
     var acqua = false
     var pasti = false
     var mattino = true
+    var oraMattino = 9 * 60
+    var oraPasti = 21 * 60
+    var acquaDalle = 10 * 60
+    var acquaAlle = 20 * 60
+    var acquaOgni = 2           // ore tra un promemoria dell'acqua e il successivo
+
+    struct Notifica: Equatable {
+        let id: String
+        let minuti: Int
+        let titolo: String
+        let testo: String
+    }
 
     init() {}
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        let base = Promemoria()
         acqua = c.valore(.acqua, false)
         pasti = c.valore(.pasti, false)
         mattino = c.valore(.mattino, true)
+        oraMattino = c.valore(.oraMattino, base.oraMattino)
+        oraPasti = c.valore(.oraPasti, base.oraPasti)
+        acquaDalle = c.valore(.acquaDalle, base.acquaDalle)
+        acquaAlle = c.valore(.acquaAlle, base.acquaAlle)
+        acquaOgni = c.valore(.acquaOgni, base.acquaOgni)
+        // Valori da un backup modificato o rovinato: riportati nei limiti
+        oraMattino = minutiValidi(oraMattino)
+        oraPasti = minutiValidi(oraPasti)
+        acquaDalle = minutiValidi(acquaDalle)
+        acquaAlle = max(minutiValidi(acquaAlle), acquaDalle)
+        acquaOgni = min(max(acquaOgni, 1), 6)
+    }
+
+    // Dalle `acquaDalle` alle `acquaAlle`, ogni `acquaOgni` ore (almeno il primo)
+    var orariAcqua: [Int] {
+        let passo = max(acquaOgni, 1) * 60
+        return Array(stride(from: acquaDalle, through: max(acquaAlle, acquaDalle), by: passo))
+    }
+
+    // Le notifiche giornaliere da programmare con le scelte attuali
+    var notifiche: [Notifica] {
+        var n: [Notifica] = []
+        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Controlla la dieta odierna 🥗")) }
+        if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: "Dieta", testo: "Hai segnato i pasti di oggi?")) }
+        if acqua {
+            n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.") }
+        }
+        return n
     }
 }
 
@@ -299,13 +343,8 @@ struct Stato: Codable, Hashable {
     var preferito: String?
     var promemoria: Promemoria?
 
-    static let iniziale = Stato(
-        profili: [
-            "raffaele": Profilo(nome: "Raffaele"),
-            "alessandra": Profilo(nome: "Alessandra"),
-        ],
-        attivo: "raffaele"
-    )
+    // Prima installazione: un solo profilo, senza note (si rinomina in Impostazioni)
+    static let iniziale = Stato(profili: ["io": Profilo(nome: "Io", note: "")], attivo: "io")
 
     init(profili: [String: Profilo], attivo: String, preferito: String? = nil, promemoria: Promemoria? = nil) {
         self.profili = profili
@@ -326,6 +365,9 @@ struct Stato: Codable, Hashable {
         if profili[attivo] == nil { attivo = profili.keys.sorted()[0] }
     }
 }
+
+// Minuti dalla mezzanotte tra 0:00 e 23:59
+func minutiValidi(_ m: Int) -> Int { min(max(m, 0), 24 * 60 - 1) }
 
 extension KeyedDecodingContainer {
     // Legge un campo se c'è ed è valido, altrimenti usa il valore predefinito

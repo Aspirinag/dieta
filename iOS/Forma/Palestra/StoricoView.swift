@@ -92,11 +92,12 @@ struct StoricoAllenamenti: View {
                     statistica("Totale", "\(lista.count)")
                 }
             }
+            let record = palestra.stato.conteggioRecord()
             let mesi = Dictionary(grouping: lista) { String($0.giorno.prefix(7)) }
             ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
                 Section(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized) {
                     ForEach(mesi[m] ?? []) { a in
-                        NavigationLink(value: a.id) { RigaAllenamento(allenamento: a) }
+                        NavigationLink(value: a.id) { RigaAllenamento(allenamento: a, record: record[a.id]) }
                     }
                 }
             }
@@ -115,6 +116,7 @@ struct StoricoAllenamenti: View {
 struct RigaAllenamento: View {
     @Environment(Palestra.self) private var palestra
     let allenamento: Allenamento
+    var record: Int? = nil      // già calcolato dall'elenco; altrimenti si calcola qui
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -133,7 +135,7 @@ struct RigaAllenamento: View {
                 } else {
                     Label(volumeTesto(allenamento.volume), systemImage: "scalemass")
                 }
-                let record = palestra.nuoviRecord(allenamento).count
+                let record = self.record ?? palestra.nuoviRecord(allenamento).count
                 if record > 0 { Label("\(record)", systemImage: "trophy.fill").foregroundStyle(.yellow) }
             }
             .font(.caption)

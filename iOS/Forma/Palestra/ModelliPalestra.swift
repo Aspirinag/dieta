@@ -271,6 +271,10 @@ struct StatoPalestra: Codable, Hashable {
     var saltati: [String] = []                  // giorni segnati "non sono andato"
     var pagamenti: [String: String] = [:]       // yyyy-MM → data del pagamento
     var importati: [String] = []                // allenamenti di Salute già letti (anche se poi eliminati)
+    var oraPagamento = 9 * 60                   // ora del promemoria del pagamento, minuti dalla mezzanotte
+    var pagamentoAttivo = true                  // avviso e promemoria del pagamento della palestra
+    var giornoPagamento = 1                     // si paga questo giorno del mese o il successivo
+    var usaAB = true                            // settimane A e B alternate; spento vale sempre il piano A
 
     init() {}
 
@@ -287,6 +291,10 @@ struct StatoPalestra: Codable, Hashable {
         saltati = c.valore(.saltati, [])
         pagamenti = c.valore(.pagamenti, [:])
         importati = c.valore(.importati, [])
+        oraPagamento = minutiValidi(c.valore(.oraPagamento, base.oraPagamento))
+        pagamentoAttivo = c.valore(.pagamentoAttivo, true)
+        giornoPagamento = min(max(c.valore(.giornoPagamento, 1), 1), 28)
+        usaAB = c.valore(.usaAB, true)
         // Aggiunge alla libreria gli esercizi predefiniti nuovi
         for e in Libreria.predefiniti where !esercizi.contains(where: { $0.id == e.id }) { esercizi.append(e) }
     }

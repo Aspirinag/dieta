@@ -8,6 +8,7 @@ struct PastiView: View {
     @State private var giorno = Giorni.oggi()
     @State private var ultimoOggi = Giorni.oggi()
     @State private var settimana = ["settimana", "spesa"].contains(Avvio.valore("-vista") ?? "")
+    @State private var richiesta: TipoPDF?
 
     private var titolo: String {
         let oggi = Giorni.oggi()
@@ -35,11 +36,24 @@ struct PastiView: View {
                         }
                         SezioneOlioAcqua(giorno: giorno)
                     } else {
-                        ContentUnavailableView(
-                            "Nessun piano per questo giorno",
-                            systemImage: "fork.knife",
-                            description: Text("Carica lo schema dietetico in PDF dalla scheda Profilo.")
-                        )
+                        ContentUnavailableView {
+                            Label("Nessun piano per questo giorno", systemImage: "fork.knife")
+                        } description: {
+                            Text("Carica lo schema dietetico che ti ha dato il nutrizionista, in PDF.")
+                        } actions: {
+                            Button("Carica schema dietetico", systemImage: "doc.badge.plus") { richiesta = .schema }
+                                .pulsanteVetro(evidente: true)
+                        }
+                    }
+                    Section {
+                        NavigationLink { AndamentoPagina() } label: {
+                            Label("Andamento e misure BIA", systemImage: "chart.line.uptrend.xyaxis")
+                        }
+                        NavigationLink { PianiDietaView() } label: {
+                            Label("Piani e referti (PDF)", systemImage: "doc.text")
+                        }
+                    } header: {
+                        Text("Progressi e piani")
                     }
                 }
                 .righeTema()
@@ -66,6 +80,7 @@ struct PastiView: View {
             }
             .animation(.default, value: giorno)
             .sheet(isPresented: $settimana) { SettimanaView() }
+            .importaPDF($richiesta)
         }
         // Se l'app resta aperta oltre la mezzanotte, passa al nuovo giorno
         .onChange(of: fase) { _, nuova in
@@ -96,18 +111,14 @@ struct SezionePasto: View {
                     }
                 }
                 if pasto.opzioni.count <= 3 {
-                    scelte.pickerStyle(.segmented)
+                    scelte.segmentiOMenu()
                 } else {
                     scelte.pickerStyle(.menu)
                 }
             }
             if let opz = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta] : nil {
                 ForEach(Array(opz.alimenti.enumerated()), id: \.offset) { _, a in
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(a.nome)
-                        Spacer()
-                        Text(a.quantita).foregroundStyle(.secondary)
-                    }
+                    RigaAlimento(nome: a.nome, quantita: a.quantita)
                     .opacity(s.fatto ? 0.5 : 1)
                 }
             }
@@ -133,13 +144,18 @@ struct SezioneOlioAcqua: View {
             Stepper(value: Binding(
                 get: { r.olio },
                 set: { v in archivio.cambiaRegistro(giorno) { $0.olio = v } }
-            ), in: 0...max(p.olio, 0)) {
-                LabeledContent("Olio extra vergine", value: "\(r.olio) / \(p.olio)")
+            ), in: 0...max(p.olio * 2, 10)) {
+                // Si può segnare anche oltre la dose: il numero diventa arancione
+                LabeledContent {
+                    Text("\(r.olio) / \(p.olio)").foregroundStyle(r.olio > p.olio ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                } label: {
+                    Text("Olio extra vergine")
+                }
             }
             Stepper(value: Binding(
                 get: { r.acqua },
                 set: { v in archivio.cambiaRegistro(giorno) { $0.acqua = v } }
-            ), in: 0...max(p.acqua, 0), step: 0.25) {
+            ), in: 0...max(p.acqua * 2, 4), step: 0.25) {
                 LabeledContent("Acqua", value: "\(num(r.acqua)) / \(num(p.acqua)) L")
             }
         } header: {

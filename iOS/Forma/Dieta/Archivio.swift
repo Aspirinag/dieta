@@ -5,10 +5,16 @@ import UserNotifications
 @Observable
 final class Archivio {
     var stato: Stato {
-        didSet { if !demo { salva() } }
+        didSet { if !demo { programmaSalvataggio() } }
     }
 
     private let demo: Bool
+    // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
+    @ObservationIgnored private(set) var fileIlleggibile: URL?
+    // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
+    @ObservationIgnored private(set) var salvataggioBloccato = false
+    // Nessun dato salvato: è la prima apertura dell'app
+    @ObservationIgnored private(set) var primaApertura = false
 
     static let oliPredefiniti = 6       // cucchiaini al giorno
     static let acquaPredefinita = 2.0   // litri al giorno
@@ -16,21 +22,52 @@ final class Archivio {
 
     init() {
         demo = Avvio.demo
-        var s = demo ? Stato.demo : Self.carica()
+        var illeggibile: URL?
+        var s = demo ? Stato.demo : Self.carica(&illeggibile)
+        salvataggioBloccato = illeggibile?.path == "/bloccato"
+        fileIlleggibile = salvataggioBloccato ? nil : illeggibile
+        primaApertura = !demo && illeggibile == nil && s == .iniziale
         if let p = s.preferito, s.profili[p] != nil { s.attivo = p }
         stato = s
     }
 
     // ---------- File ----------
 
+    // Salvataggio raggruppato: più modifiche ravvicinate (es. digitare i kg) scrivono il file una volta sola
+    @ObservationIgnored private var salvataggio: Task<Void, Never>?
+
+    private func programmaSalvataggio() {
+        salvataggio?.cancel()
+        salvataggio = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            salva()
+        }
+    }
+
+    // Scrive subito (quando l'app va in background)
+    func salvaOra() {
+        guard salvataggio != nil else { return }
+        salvataggio?.cancel()
+        salvataggio = nil
+        if !demo { salva() }
+    }
+
     private static var fileDati: URL {
         URL.applicationSupportDirectory.appending(path: "dieta.json")
     }
 
     // Ordine: file dell'app, poi i dati della prima versione dell'app (Capacitor), poi i profili iniziali
-    private static func carica() -> Stato {
-        if let d = try? Data(contentsOf: fileDati), let s = try? JSONDecoder().decode(Stato.self, from: d) {
-            return s
+    private static func carica(_ illeggibile: inout URL?) -> Stato {
+        switch FileDati.leggi(fileDati, come: Stato.self) {
+        case .ok(let s): return s
+        case .bloccato:
+            illeggibile = URL(fileURLWithPath: "/bloccato")
+            return .iniziale
+        case .illeggibile(let copia):
+            illeggibile = copia
+            return .iniziale
+        case .assente: break
         }
         if let j = UserDefaults.standard.string(forKey: "CapacitorStorage.dieta:v1"),
            let s = try? JSONDecoder().decode(Stato.self, from: Data(j.utf8)) {
@@ -40,6 +77,7 @@ final class Archivio {
     }
 
     private func salva() {
+        guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
             try backup().write(to: Self.fileDati, options: .atomic)
@@ -76,7 +114,7 @@ final class Archivio {
 
     func aggiungiProfilo(_ nome: String) {
         let id = "p\(Int(Date().timeIntervalSince1970 * 1000))"
-        stato.profili[id] = Profilo(nome: nome)
+        stato.profili[id] = Profilo(nome: nome, note: "")
         stato.attivo = id
     }
 
@@ -109,15 +147,7 @@ final class Archivio {
 
     // ---------- Piani ----------
 
-    // Un nuovo piano chiude quelli aperti il giorno prima della sua data di inizio
-    func aggiungiPiano(_ p: Piano) {
-        var piani = profilo.piani.filter { !($0.nome == p.nome && $0.dal == p.dal) }
-        for i in piani.indices where piani[i].dal < p.dal && (piani[i].al.isEmpty || piani[i].al >= p.dal) {
-            piani[i].al = Giorni.aggiungi(p.dal, -1)
-        }
-        piani.append(p)
-        profilo.piani = piani
-    }
+    func aggiungiPiano(_ p: Piano) { profilo.aggiungiPiano(p) }
 
     // ---------- BIA ----------
 
@@ -128,13 +158,12 @@ final class Archivio {
 
     // ---------- Lista della spesa ----------
 
-    func spunteSpesa() -> [String: Bool] {
-        let lun = Giorni.lunedi(Giorni.oggi())
+    // Le spunte valgono per una settimana alla volta (quella dell'ultima spunta)
+    func spunteSpesa(lunedi lun: String) -> [String: Bool] {
         return profilo.spesa?.settimana == lun ? profilo.spesa?.presi ?? [:] : [:]
     }
 
-    func spunta(_ chiave: String) {
-        let lun = Giorni.lunedi(Giorni.oggi())
+    func spunta(_ chiave: String, lunedi lun: String) {
         var s = profilo.spesa?.settimana == lun ? profilo.spesa! : Spesa(settimana: lun)
         s.presi[chiave] = !(s.presi[chiave] ?? false)
         profilo.spesa = s
@@ -144,23 +173,26 @@ final class Archivio {
 
     // ---------- Promemoria ----------
 
-    static let oreAcqua = [10, 12, 14, 16, 18, 20]
+    // Una programmazione alla volta: se ne parte un'altra aspetta la precedente,
+    // così non restano promemoria con orari vecchi
+    @ObservationIgnored private var programmazione: Task<Void, Never>?
 
     func programmaPromemoria() async {
         guard !demo else { return }
+        let precedente = programmazione
+        let t = Task { await precedente?.value; await eseguiProgrammazione() }
+        programmazione = t
+        await t.value
+    }
+
+    private func eseguiProgrammazione() async {
         let centro = UNUserNotificationCenter.current()
-        centro.removePendingNotificationRequests(withIdentifiers: Self.oreAcqua.map { "acqua-\($0)" } + ["pasti", "mattino"])
-        let p = stato.promemoria ?? Promemoria()
-        if p.acqua {
-            for ora in Self.oreAcqua {
-                await Notifiche.giornaliera(id: "acqua-\(ora)", titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.", ora: ora)
-            }
-        }
-        if p.mattino {
-            await Notifiche.giornaliera(id: "mattino", titolo: "Dieta", testo: "Controlla la dieta odierna 🥗", ora: 9)
-        }
-        if p.pasti {
-            await Notifiche.giornaliera(id: "pasti", titolo: "Dieta", testo: "Hai segnato i pasti di oggi?", ora: 21)
+        // Toglie tutti i promemoria della dieta, anche quelli con orari vecchi
+        let vecchi = await centro.pendingNotificationRequests().map(\.identifier)
+            .filter { $0 == "mattino" || $0 == "pasti" || $0.hasPrefix("acqua-") }
+        centro.removePendingNotificationRequests(withIdentifiers: vecchi)
+        for n in (stato.promemoria ?? Promemoria()).notifiche {
+            await Notifiche.giornaliera(id: n.id, titolo: n.titolo, testo: n.testo, minuti: n.minuti)
         }
     }
 }
@@ -171,10 +203,75 @@ extension Profilo {
     var testoNote: String { note ?? Archivio.notePredefinite }
 
     // Piano valido in una data: se più piani la coprono vince quello iniziato più di recente
+    // (a parità di data, l'ultimo aggiunto)
     func piano(per iso: String) -> Piano? {
-        piani
-            .filter { $0.dal <= iso && ($0.al.isEmpty || iso <= $0.al) && $0.giorni.count == 7 }
-            .max { $0.dal < $1.dal }
+        var scelto: Piano?
+        for p in piani where p.dal <= iso && (p.al.isEmpty || iso <= p.al) && p.giorni.count == 7 {
+            if scelto == nil || p.dal >= scelto!.dal { scelto = p }
+        }
+        return scelto
+    }
+
+    // Un nuovo piano chiude quelli aperti il giorno prima della sua data di inizio e sostituisce
+    // quelli che iniziano lo stesso giorno. Le spunte dei giorni già segnati da lì in poi
+    // seguono il nome del pasto (le spunte sono salvate per posizione)
+    mutating func aggiungiPiano(_ p: Piano) {
+        cambiaPiani(giorniDa: p.dal, al: p.al) { piani in
+            var nuovi = piani.filter { $0.dal != p.dal }
+            for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
+                nuovi[i].al = Giorni.aggiungi(p.dal, -1)
+            }
+            nuovi.append(p)
+            return nuovi
+        }
+    }
+
+    // Piano modificato a mano: prende il posto dell'originale, le spunte seguono il nome del pasto
+    mutating func sostituisciPiano(_ originale: Piano, con nuovo: Piano) {
+        let dal = min(originale.dal, nuovo.dal)
+        let al = originale.al.isEmpty || nuovo.al.isEmpty ? "" : max(originale.al, nuovo.al)
+        cambiaPiani(giorniDa: dal, al: al) { piani in
+            piani.map { $0.id == originale.id ? nuovo : $0 }
+        }
+    }
+
+    // Chiave di ogni pasto: nome (senza spazi e maiuscole) e quante volte è già comparso,
+    // così il secondo "Spuntino" corrisponde al secondo "Spuntino"
+    static func chiaviPasti(_ pasti: [Pasto]) -> [String] {
+        var visti: [String: Int] = [:]
+        return pasti.map { p in
+            let n = p.nome.trimmingCharacters(in: .whitespaces).lowercased()
+            visti[n, default: 0] += 1
+            return "\(n)#\(visti[n]!)"
+        }
+    }
+
+    // Piano già presente che inizia la stessa data (quello nuovo lo sostituirebbe)
+    func pianoConStessaData(_ dal: String, escluso: Piano?) -> Piano? {
+        piani.first { $0.dal == dal && $0.id != escluso?.id }
+    }
+
+    // Cambia l'elenco dei piani e rimappa per nome del pasto le spunte dei giorni nell'intervallo
+    // (le spunte sono salvate per posizione del pasto)
+    private mutating func cambiaPiani(giorniDa dal: String, al: String, _ cambia: ([Piano]) -> [Piano]) {
+        let giorni = dieta.keys.filter { $0 >= dal && (al.isEmpty || $0 <= al) }
+        let prima = Dictionary(uniqueKeysWithValues: giorni.map { ($0, piano(per: $0)) })
+        piani = cambia(piani)
+        for iso in giorni {
+            guard var r = dieta[iso], let vecchio = prima[iso] ?? nil, let nuovo = piano(per: iso) else { continue }
+            let g = Giorni.indice(iso)
+            let nomiVecchi = Self.chiaviPasti(vecchio.giorni[g].pasti)
+            let nomiNuovi = Self.chiaviPasti(nuovo.giorni[g].pasti)
+            guard nomiVecchi != nomiNuovi else { continue }
+            var slot: [String: Slot] = [:]
+            for (k, s) in r.slot {
+                guard let i = Int(k), nomiVecchi.indices.contains(i),
+                      let j = nomiNuovi.firstIndex(of: nomiVecchi[i]) else { continue }
+                slot[String(j)] = s
+            }
+            r.slot = slot
+            dieta[iso] = r
+        }
     }
 
     // Percentuale di pasti segnati negli ultimi 7 giorni, oggi escluso
@@ -201,8 +298,13 @@ extension Profilo {
 
     // Alimenti della settimana in corso: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
     // Le quantità in g, ml, kg o l si sommano, le altre si contano
-    func vociSpesa() -> [VoceSpesa] {
-        let lun = Giorni.lunedi(Giorni.oggi())
+    // Settimana proposta per la spesa: da venerdì si pensa già alla prossima
+    static func lunediSpesa(oggi: String) -> String {
+        let lun = Giorni.lunedi(oggi)
+        return Giorni.indice(oggi) >= 4 ? Giorni.aggiungi(lun, 7) : lun
+    }
+
+    func vociSpesa(lunedi lun: String) -> [VoceSpesa] {
         var voci: [String: (nome: String, unita: [String: Double], volte: Int)] = [:]
         let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
         for i in 0..<7 {

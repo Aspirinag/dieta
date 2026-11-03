@@ -100,5 +100,46 @@ struct RigaSpunta<Etichetta: View>: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: fatto)
+        .accessibilityValue(fatto ? "fatto" : "da fare")
+        .accessibilityAddTraits(fatto ? .isSelected : [])
+    }
+}
+
+// Alimento con la quantità: sulla stessa riga, oppure sotto il nome con il testo molto grande
+struct RigaAlimento: View {
+    let nome: String
+    let quantita: String
+    @Environment(\.dynamicTypeSize) private var dimensione
+
+    var body: some View {
+        if dimensione.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nome)
+                if !quantita.isEmpty { Text(quantita).foregroundStyle(.secondary) }
+            }
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                Text(nome)
+                Spacer()
+                Text(quantita).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+extension View {
+    // Selettore a segmenti, che con il testo molto grande diventa un menu (i segmenti si taglierebbero)
+    func segmentiOMenu() -> some View { modifier(SegmentiOMenu()) }
+}
+
+struct SegmentiOMenu: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dimensione
+
+    func body(content: Content) -> some View {
+        if dimensione.isAccessibilitySize {
+            content.pickerStyle(.menu)
+        } else {
+            content.pickerStyle(.segmented)
+        }
     }
 }

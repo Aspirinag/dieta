@@ -1,43 +1,5 @@
 import SwiftUI
 
-// Progressi: corpo (BIA), allenamenti (storico e record) e calendario
-struct ProgressiView: View {
-    @State private var vista = ["corpo", "allenamenti", "calendario"].firstIndex(of: Avvio.valore("-vista") ?? "") ?? 1
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Group {
-                    Section {
-                        Picker("Vista", selection: $vista) {
-                            Text("Allenamenti").tag(1)
-                            Text("Corpo").tag(0)
-                            Text("Calendario").tag(2)
-                        }
-                        .pickerStyle(.segmented)
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets())
-                    }
-                    switch vista {
-                    case 0: AndamentoView()
-                    case 2: CalendarioContenuto()
-                    default: StoricoAllenamenti()
-                    }
-                }
-                .righeTema()
-            }
-            .sfondoTema()
-            .navigationTitle("Progressi")
-            .toolbar {
-                if vista == 0 { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-            }
-            .navigationDestination(for: String.self) { EditorMisura(dataEsistente: $0) }
-            .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
-            .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
-        }
-    }
-}
-
 // Calendario del mese: allenamenti, cardio, giorni programmati e saltati
 struct CalendarioContenuto: View {
     @Environment(Palestra.self) private var palestra
@@ -145,6 +107,21 @@ struct GrigliaMese: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(etichetta(iso))
+        .accessibilityAddTraits(iso == scelto ? .isSelected : [])
+    }
+
+    // Per VoiceOver: data e cosa è successo (o cosa era previsto) quel giorno
+    private func etichetta(_ iso: String) -> String {
+        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT")))
+        var parti = [data]
+        if !palestra.allenamenti(del: iso).isEmpty { parti.append("pesi fatti") }
+        if !palestra.cardio(del: iso).isEmpty { parti.append("cardio fatto") }
+        if parti.count == 1 {
+            if palestra.stato.saltati.contains(iso) { parti.append("non andato") }
+            else if palestra.programmato(iso) != .riposo { parti.append("previsto \(palestra.programmato(iso).nome.lowercased())") }
+        }
+        return parti.joined(separator: ", ")
     }
 
     @ViewBuilder private func segno(_ iso: String) -> some View {

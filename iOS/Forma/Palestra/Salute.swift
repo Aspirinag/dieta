@@ -63,6 +63,8 @@ final class Salute {
         let q = HKObserverQuery(sampleType: HKObjectType.workoutType(), predicate: nil) { @Sendable _, fatto, errore in
             Task { @MainActor in
                 if errore == nil { await Salute.shared.importa() }
+                // In background iOS può sospendere l'app subito dopo: si salva prima di dirgli che è finita
+                Salute.shared.palestra?.salvaOra()
                 fatto()
             }
         }
@@ -109,6 +111,9 @@ final class Salute {
         case .running: genere = .cardio("Corsa")
         case .cycling: genere = .cardio("Bici")
         case .elliptical: genere = .cardio("Ellittica")
+        case .rowing: genere = .cardio("Vogatore")
+        case .stairClimbing, .stairs, .stepTraining: genere = .cardio("Scale")
+        case .mixedCardio: genere = .cardio("Cardio")
         case .swimming: genere = .cardio("Nuoto")
         default: return nil
         }

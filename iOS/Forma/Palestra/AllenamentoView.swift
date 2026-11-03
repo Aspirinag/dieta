@@ -1,12 +1,17 @@
 import SwiftUI
 
-// Scheda Allenamento: inizia un allenamento, le mie schede, schede pronte, cardio e libreria esercizi
+// Apre l'editor di una scheda (tipo a parte: gli UUID semplici aprono il dettaglio di un allenamento)
+struct ApriScheda: Hashable { let id: UUID }
+
+// Scheda Palestra: inizia un allenamento, le mie schede, cardio, storico e calendario, impostazioni
 struct AllenamentoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
     @State private var percorso = NavigationPath()
     @State private var daAvviare: Routine??
     @State private var cardio = false
+    @State private var schedaDaEliminare: Routine?
+    @State private var cardioDaEliminare: SessioneCardio?
 
     var body: some View {
         NavigationStack(path: $percorso) {
@@ -23,13 +28,44 @@ struct AllenamentoView: View {
                             Label("Schede pronte", systemImage: "square.stack.3d.up")
                         }
                     }
+                    Section {
+                        NavigationLink { PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() } } label: {
+                            LabeledContent {
+                                Text("\(palestra.stato.allenamenti.count)")
+                            } label: {
+                                Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
+                            }
+                        }
+                        NavigationLink { PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() } } label: {
+                            Label("Calendario", systemImage: "calendar")
+                        }
+                        NavigationLink { PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() } } label: {
+                            Label("Piano, pagamento e Watch", systemImage: "gearshape")
+                        }
+                    } header: {
+                        Text("Progressi e impostazioni")
+                    }
                 }
                 .righeTema()
             }
             .sfondoTema()
-            .navigationTitle("Allenamento")
-            .navigationDestination(for: UUID.self) { EditorSchedaView(idScheda: $0) }
+            .navigationTitle("Palestra")
+            .navigationDestination(for: ApriScheda.self) { EditorSchedaView(idScheda: $0.id) }
+            .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
+            .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
             .sheet(isPresented: $cardio) { NuovoCardioView() }
+            .confirmationDialog("Eliminare la scheda?", isPresented: Binding(
+                get: { schedaDaEliminare != nil }, set: { if !$0 { schedaDaEliminare = nil } }
+            ), titleVisibility: .visible, presenting: schedaDaEliminare) { r in
+                Button("Elimina \(r.nome)", role: .destructive) { palestra.stato.routine.removeAll { $0.id == r.id } }
+            } message: { _ in
+                Text("Gli allenamenti già fatti con questa scheda restano nello storico.")
+            }
+            .confirmationDialog("Eliminare questo cardio?", isPresented: Binding(
+                get: { cardioDaEliminare != nil }, set: { if !$0 { cardioDaEliminare = nil } }
+            ), titleVisibility: .visible, presenting: cardioDaEliminare) { c in
+                Button("Elimina", role: .destructive) { palestra.stato.cardio.removeAll { $0.id == c.id } }
+            }
             .confirmationDialog("C'è già un allenamento in corso", isPresented: Binding(
                 get: { daAvviare != nil }, set: { if !$0 { daAvviare = nil } }
             ), titleVisibility: .visible) {
@@ -72,7 +108,7 @@ struct AllenamentoView: View {
                 .listRowInsets(EdgeInsets())
             }
         } footer: {
-            Text("Oggi: \(t.nome.lowercased()) · settimana \(palestra.settimana(oggi))")
+            Text("Oggi: \(t.nome.lowercased())" + (palestra.stato.usaAB ? " · settimana \(palestra.settimana(oggi))" : ""))
         }
     }
 
@@ -81,7 +117,7 @@ struct AllenamentoView: View {
             ForEach(palestra.stato.routine) { r in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        NavigationLink(value: r.id) {
+                        NavigationLink(value: ApriScheda(id: r.id)) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(r.nome).font(.headline)
                                 Text(r.voci.map { palestra.nome($0.esercizio) }.joined(separator: ", "))
@@ -98,9 +134,8 @@ struct AllenamentoView: View {
                 }
                 .padding(.vertical, 4)
                 .swipeActions {
-                    Button("Elimina", systemImage: "trash", role: .destructive) {
-                        palestra.stato.routine.removeAll { $0.id == r.id }
-                    }
+                    Button("Elimina", systemImage: "trash") { schedaDaEliminare = r }
+                        .tint(.red)
                     Button("Duplica", systemImage: "plus.square.on.square") {
                         var copia = r
                         copia.id = UUID()
@@ -114,7 +149,7 @@ struct AllenamentoView: View {
             Button("Nuova scheda", systemImage: "square.and.pencil") {
                 let r = Routine(nome: "Nuova scheda")
                 palestra.stato.routine.append(r)
-                percorso.append(r.id)
+                percorso.append(ApriScheda(id: r.id))
             }
         } header: {
             Text("Le mie schede")
@@ -133,9 +168,8 @@ struct AllenamentoView: View {
                     Image(systemName: Libreria.simboloCardio(c.tipo)).foregroundStyle(.tint)
                 }
                 .swipeActions {
-                    Button("Elimina", systemImage: "trash", role: .destructive) {
-                        palestra.stato.cardio.removeAll { $0.id == c.id }
-                    }
+                    Button("Elimina", systemImage: "trash") { cardioDaEliminare = c }
+                        .tint(.red)
                 }
             }
             Button("Registra cardio", systemImage: "figure.run") { cardio = true }
@@ -152,6 +186,7 @@ struct EditorSchedaView: View {
     @Environment(\.dismiss) private var chiudi
     let idScheda: UUID
     @State private var aggiungi = false
+    @State private var chiediElimina = false
 
     private var indice: Int? { palestra.stato.routine.firstIndex { $0.id == idScheda } }
 
@@ -185,10 +220,7 @@ struct EditorSchedaView: View {
                         Text("Tocca un esercizio per cambiare serie, ripetizioni e recupero. Tieni premuto e trascina per riordinare.")
                     }
                     Section {
-                        Button("Elimina scheda", systemImage: "trash", role: .destructive) {
-                            palestra.stato.routine.remove(at: i)
-                            chiudi()
-                        }
+                        Button("Elimina scheda", systemImage: "trash", role: .destructive) { chiediElimina = true }
                     }
                 }
                 .righeTema()
@@ -209,6 +241,14 @@ struct EditorSchedaView: View {
                     }
                     .disabled(r.voci.isEmpty)
                 }
+            }
+            .confirmationDialog("Eliminare la scheda?", isPresented: $chiediElimina, titleVisibility: .visible) {
+                Button("Elimina \(r.nome)", role: .destructive) {
+                    palestra.stato.routine.removeAll { $0.id == idScheda }
+                    chiudi()
+                }
+            } message: {
+                Text("Gli allenamenti già fatti con questa scheda restano nello storico.")
             }
             .sheet(isPresented: $aggiungi) {
                 LibreriaView(modo: .scelta { ids in
@@ -267,7 +307,7 @@ struct ModelliView: View {
                             var copia = m
                             copia.id = UUID()
                             palestra.stato.routine.append(copia)
-                            percorso = NavigationPath([copia.id])
+                            percorso = NavigationPath([ApriScheda(id: copia.id)])
                         }
                     } header: {
                         Text(m.nome)
@@ -325,5 +365,20 @@ struct NuovoCardioView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+}
+
+// Pagina della scheda Palestra con il contenuto di una lista (storico, calendario, impostazioni)
+struct PaginaPalestra<Contenuto: View>: View {
+    let titolo: String
+    @ViewBuilder let contenuto: Contenuto
+
+    var body: some View {
+        List {
+            Group { contenuto }.righeTema()
+        }
+        .sfondoTema()
+        .navigationTitle(titolo)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
