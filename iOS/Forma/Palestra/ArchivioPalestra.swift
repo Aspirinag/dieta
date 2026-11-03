@@ -311,12 +311,13 @@ final class Palestra {
     // L'avviso compare una settimana prima del giorno di pagamento e resta fino al giorno dopo
     static func avvisoPagamento(oggi: String, giorno: Int, pagamenti: [String: String]) -> (mese: String, testo: String)? {
         let primo = String(oggi.prefix(8)) + "01"
-        for m in 0..<2 {
+        // Mese prima (il giorno dopo può cadere nel mese nuovo), mese corrente, mese dopo
+        for m in -1..<2 {
             let primoMese = Giorni.iso(Giorni.calendario.date(byAdding: .month, value: m, to: Giorni.data(primo)) ?? Date())
             let paga = giornoDiPagamento(primoMese, giorno)
             guard oggi >= Giorni.aggiungi(paga, -7), oggi <= Giorni.aggiungi(paga, 1) else { continue }
             let mese = Self.mese(primoMese)
-            guard pagamenti[mese] == nil else { return nil }
+            guard pagamenti[mese] == nil else { continue }
             let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: Giorni.data(paga)).day ?? 0
             let testo = switch mancano {
             case ..<0: "Ultimo giorno per pagare la palestra."
