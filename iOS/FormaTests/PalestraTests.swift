@@ -40,4 +40,35 @@ struct PalestraTests {
         #expect(r[y.id] == 1)
         #expect(r[z.id] == 0)
     }
+
+    private func allenamento(_ iso: String, ore: Double = 1, kg: Double = 10, rip: Int = 10) -> Allenamento {
+        var a = Allenamento(nome: "Pesi", inizio: Giorni.data(iso).addingTimeInterval(18 * 3600))
+        a.fine = a.inizio.addingTimeInterval(ore * 3600)
+        a.esercizi = [EsercizioFatto(esercizio: "Panca piana", serie: [SerieFatta(kg: kg, rip: rip, fatta: true)])]
+        return a
+    }
+
+    @Test func giorniAllenatiDellaSettimana() {
+        var s = stato([])
+        s.allenamenti = [allenamento("2026-11-02"), allenamento("2026-11-04"), allenamento("2026-11-09")]
+        s.cardio = [SessioneCardio(data: "2026-11-08", tipo: "Corsa", minuti: 30, km: 5)]
+        #expect(s.giorniAllenati(settimanaDi: "2026-11-05") == [0, 2, 6])
+        #expect(s.giorniAllenati(settimanaDi: "2026-11-09") == [0])
+    }
+
+    @Test func volumiDelleUltimeSettimane() {
+        var s = stato([])
+        // settimana scorsa (26 ott): 100; questa (2 nov): 200 + 300
+        s.allenamenti = [allenamento("2026-10-28", kg: 10, rip: 10), allenamento("2026-11-02", kg: 20, rip: 10), allenamento("2026-11-05", kg: 30, rip: 10)]
+        #expect(s.volumiSettimanali(ultime: 3, oggi: "2026-11-06") == [0, 100, 500])
+        #expect(s.volumiSettimanali(ultime: 1, oggi: "2026-11-06") == [500])
+    }
+
+    @Test func durataDellaSettimana() {
+        var s = stato([])
+        s.allenamenti = [allenamento("2026-11-02", ore: 1), allenamento("2026-11-04", ore: 0.5), allenamento("2026-11-09", ore: 2)]
+        s.cardio = [SessioneCardio(data: "2026-11-06", tipo: "Corsa", minuti: 30, km: 5)]
+        #expect(s.durataSettimana("2026-11-03") == 2 * 3600)
+        #expect(s.durataSettimana("2026-11-09") == 2 * 3600)
+    }
 }

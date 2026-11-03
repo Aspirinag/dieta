@@ -453,3 +453,29 @@ extension StatoPalestra {
         return (Palestra.numeroSettimana(iso) + (scambia ? 1 : 0)) % 2 == 0 ? "A" : "B"
     }
 }
+
+extension StatoPalestra {
+    // Giorni (lun = 0 … dom = 6) della settimana di una data con almeno un allenamento o una sessione di cardio
+    func giorniAllenati(settimanaDi iso: String) -> Set<Int> {
+        let lun = Giorni.lunedi(iso)
+        let giorni = Set(allenamenti.map(\.giorno) + cardio.map(\.data))
+        return Set((0..<7).filter { giorni.contains(Giorni.aggiungi(lun, $0)) })
+    }
+
+    // Tempo totale di pesi e cardio nella settimana di una data
+    func durataSettimana(_ iso: String) -> TimeInterval {
+        let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
+        let pesi = allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }.reduce(0) { $0 + $1.durata }
+        let corsa = cardio.filter { $0.data >= lun && $0.data <= dom }.reduce(0) { $0 + Double($1.minuti) * 60 }
+        return pesi + corsa
+    }
+
+    // Volume (kg × ripetizioni) delle ultime n settimane, dalla più vecchia a quella di oggi
+    func volumiSettimanali(ultime n: Int, oggi: String) -> [Double] {
+        let lun = Giorni.lunedi(oggi)
+        return (0..<n).reversed().map { k in
+            let da = Giorni.aggiungi(lun, -7 * k), a = Giorni.aggiungi(da, 6)
+            return allenamenti.filter { $0.giorno >= da && $0.giorno <= a }.reduce(0) { $0 + $1.volume }
+        }
+    }
+}

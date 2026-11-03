@@ -233,16 +233,19 @@ enum CampoMisura: String, CaseIterable, Identifiable {
 struct Spesa: Codable, Hashable {
     var settimana: String   // lunedì della settimana a cui valgono le spunte
     var presi: [String: Bool]
+    var extra: [String] = []    // voci aggiunte a mano per questa settimana
 
-    init(settimana: String, presi: [String: Bool] = [:]) {
+    init(settimana: String, presi: [String: Bool] = [:], extra: [String] = []) {
         self.settimana = settimana
         self.presi = presi
+        self.extra = extra
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         settimana = c.valore(.settimana, "")
         presi = c.valore(.presi, [:])
+        extra = c.valore(.extra, [])
     }
 }
 
@@ -255,10 +258,11 @@ struct Profilo: Codable, Hashable {
     var acquaTot: Double?
     var note: String?
     var spesa: Spesa?
+    var repartiSpesa: [String: String]?     // nome dell'alimento in minuscolo → Reparto.rawValue scelto a mano
 
     enum CodingKeys: String, CodingKey {
         case nome, piani, bia, dieta, note, spesa
-        case olioTot = "olio_tot", acquaTot = "acqua_tot"
+        case olioTot = "olio_tot", acquaTot = "acqua_tot", repartiSpesa = "reparti_spesa"
     }
 
     // I profili nuovi partono senza note; quelli salvati senza il campo tengono il testo predefinito
@@ -277,6 +281,7 @@ struct Profilo: Codable, Hashable {
         acquaTot = c.valore(.acquaTot, nil)
         note = c.valore(.note, nil)
         spesa = c.valore(.spesa, nil)
+        repartiSpesa = c.valore(.repartiSpesa, nil)
     }
 }
 

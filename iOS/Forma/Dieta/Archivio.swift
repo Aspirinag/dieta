@@ -292,20 +292,58 @@ extension Profilo {
     struct VoceSpesa: Identifiable {
         let chiave: String
         let nome: String
-        let quanto: String
+        let quanto: String              // vuoto per le voci aggiunte a mano
+        let reparto: Reparto
+        let giorni: [(giorno: String, quanto: String)]
+        let aggiunta: Bool
         var id: String { chiave }
     }
 
-    // Alimenti della settimana in corso: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
-    // Le quantità in g, ml, kg o l si sommano, le altre si contano
     // Settimana proposta per la spesa: da venerdì si pensa già alla prossima
     static func lunediSpesa(oggi: String) -> String {
         let lun = Giorni.lunedi(oggi)
         return Giorni.indice(oggi) >= 4 ? Giorni.aggiungi(lun, 7) : lun
     }
 
+    // Reparto scelto a mano, altrimenti stimato dal nome
+    func reparto(di chiave: String) -> Reparto {
+        repartiSpesa?[chiave].flatMap(Reparto.init(rawValue:)) ?? Reparto.indovina(chiave)
+    }
+
+    mutating func sposta(_ chiave: String, in r: Reparto) {
+        var m = repartiSpesa ?? [:]
+        m[chiave] = r.rawValue
+        repartiSpesa = m
+    }
+
+    mutating func aggiungiExtra(_ nome: String, lunedi lun: String) {
+        let pulito = nome.trimmingCharacters(in: .whitespaces)
+        var s = spesa?.settimana == lun ? spesa! : Spesa(settimana: lun)
+        guard !pulito.isEmpty, !s.extra.contains(where: { $0.lowercased() == pulito.lowercased() }) else { return }
+        s.extra.append(pulito)
+        spesa = s
+    }
+
+    mutating func togliExtra(_ nome: String, lunedi lun: String) {
+        guard var s = spesa, s.settimana == lun else { return }
+        s.extra.removeAll { $0.lowercased() == nome.lowercased() }
+        spesa = s
+    }
+
+    // Quantità somma di grammi/millilitri (kg e l si convertono); senza quantità si contano le porzioni
+    private static func testoQuantita(_ unita: [String: Double], porzioni: Int) -> String {
+        var parti: [String] = []
+        if let g = unita["g"] { parti.append(g >= 1000 ? "\(num(g / 1000)) kg" : "\(num(g)) g") }
+        if let ml = unita["ml"] { parti.append(ml >= 1000 ? "\(num(ml / 1000)) L" : "\(num(ml)) ml") }
+        if !parti.isEmpty { return parti.joined(separator: " + ") }
+        return porzioni == 1 ? "1 porzione" : "\(porzioni) porzioni"
+    }
+
+    // Alimenti della settimana: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
+    // Le quantità in g, ml, kg o l si sommano, le altre si contano come porzioni
     func vociSpesa(lunedi lun: String) -> [VoceSpesa] {
-        var voci: [String: (nome: String, unita: [String: Double], volte: Int)] = [:]
+        struct Somma { var unita: [String: Double] = [:]; var volte = 0 }
+        var voci: [String: (nome: String, tot: Somma, giorni: [Int: Somma])] = [:]
         let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
         for i in 0..<7 {
             let iso = Giorni.aggiungi(lun, i)
@@ -321,23 +359,39 @@ extension Profilo {
                     pulito = pulito.trimmingCharacters(in: .whitespaces)
                     let nome = pulito.prefix(1).uppercased() + pulito.dropFirst()
                     let k = nome.lowercased()
-                    var v = voci[k] ?? (nome: nome, unita: [:], volte: 0)
-                    v.volte += 1
-                    if let m = a.quantita.firstMatch(of: regex), let n = leggiNumero(String(m.1)) {
+                    var v = voci[k] ?? (nome: nome, tot: Somma(), giorni: [:])
+                    var g = v.giorni[i] ?? Somma()
+                    v.tot.volte += 1
+                    g.volte += 1
+                    if let m = a.quantita.firstMatch(of: regex), var n = leggiNumero(String(m.1)) {
                         var u = m.2.lowercased()
                         if u == "gr" { u = "g" }
-                        v.unita[u, default: 0] += n
+                        if u == "kg" { u = "g"; n *= 1000 }
+                        if u == "l" { u = "ml"; n *= 1000 }
+                        v.tot.unita[u, default: 0] += n
+                        g.unita[u, default: 0] += n
                     }
+                    v.giorni[i] = g
                     voci[k] = v
                 }
             }
         }
-        return voci
+        var risultato = voci
             .sorted { $0.value.nome.localizedCompare($1.value.nome) == .orderedAscending }
             .map { k, v in
-                let volte = v.volte == 1 ? "1 volta" : "\(v.volte) volte"
-                let tot = v.unita.sorted { $0.key < $1.key }.map { "\(num($0.value)) \($0.key)" }.joined(separator: " + ")
-                return VoceSpesa(chiave: k, nome: v.nome, quanto: tot.isEmpty ? volte : "\(tot) (\(volte))")
+                VoceSpesa(chiave: k, nome: v.nome,
+                          quanto: Self.testoQuantita(v.tot.unita, porzioni: v.tot.volte),
+                          reparto: reparto(di: k),
+                          giorni: v.giorni.sorted { $0.key < $1.key }.map { (String(Giorni.nomi[$0.key].prefix(3)).lowercased(), Self.testoQuantita($0.value.unita, porzioni: $0.value.volte)) },
+                          aggiunta: false)
             }
+        if spesa?.settimana == lun {
+            for nome in spesa?.extra ?? [] {
+                let k = nome.lowercased()
+                guard !risultato.contains(where: { $0.chiave == k }) else { continue }
+                risultato.append(VoceSpesa(chiave: k, nome: nome, quanto: "", reparto: reparto(di: k), giorni: [], aggiunta: true))
+            }
+        }
+        return risultato
     }
 }

@@ -116,7 +116,7 @@ struct SettimanaView: View {
                     RigaSpunta(fatto: preso, azione: { archivio.spunta(v.chiave, lunedi: lun) }) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(v.nome).strikethrough(preso)
-                            Text(v.quanto).font(.caption).foregroundStyle(.secondary)
+                            if !v.quanto.isEmpty { Text(v.quanto).font(.caption).foregroundStyle(.secondary) }
                         }
                         .opacity(preso ? 0.5 : 1)
                     }
@@ -136,7 +136,7 @@ struct SettimanaView: View {
 
     private var testoSpesa: String {
         let presi = archivio.spunteSpesa(lunedi: lunSpesa)
-        let righe = archivio.profilo.vociSpesa(lunedi: lunSpesa).filter { presi[$0.chiave] != true }.map { "- \($0.nome): \($0.quanto)" }
+        let righe = archivio.profilo.vociSpesa(lunedi: lunSpesa).filter { presi[$0.chiave] != true }.map { ($0.quanto.isEmpty ? "- \($0.nome)" : "- \($0.nome): \($0.quanto)") }
         return (["Lista della spesa"] + righe).joined(separator: "\n")
     }
 }
