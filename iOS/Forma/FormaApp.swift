@@ -50,12 +50,9 @@ struct Radice: View {
     @Environment(Palestra.self) private var palestra
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
-    @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
     @State private var avvisoDati = true
     @Environment(\.scenePhase) private var fase
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
-
-    private var tema: Tema { Tema(rawValue: scelto) ?? .predefinito }
 
     var body: some View {
         @Bindable var navigazione = navigazione
@@ -71,15 +68,15 @@ struct Radice: View {
             get: { navigazione.allenamentoAperto && palestra.stato.inCorso != nil },
             set: { navigazione.allenamentoAperto = $0 }
         )) {
-            AllenamentoInCorsoView().applicaTema(tema)
+            AllenamentoInCorsoView().applicaTema()
         }
         .sheet(item: $navigazione.riepilogo) { a in
-            RiepilogoView(allenamento: a).applicaTema(tema)
+            RiepilogoView(allenamento: a).applicaTema()
         }
         .sheet(isPresented: Binding(get: { navigazione.compila != nil }, set: { if !$0 { navigazione.compila = nil } })) {
-            if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema(tema) }
+            if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema() }
         }
-        .applicaTema(tema)
+        .applicaTema()
         .onChange(of: fase) { _, f in
             if f != .active {
                 archivio.salvaOra()
@@ -104,7 +101,7 @@ struct Radice: View {
         .fullScreenCover(isPresented: Binding(
             get: { archivio.primaApertura && !benvenutoVisto }, set: { if !$0 { benvenutoVisto = true } }
         )) {
-            BenvenutoView { benvenutoVisto = true }.applicaTema(tema)
+            BenvenutoView { benvenutoVisto = true }.applicaTema()
         }
         .task(id: benvenutoVisto) {
             // Alla prima apertura i permessi si chiedono nel benvenuto, con la spiegazione

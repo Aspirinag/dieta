@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Impostazioni: profili, olio e acqua, promemoria, tema e backup.
+// Impostazioni: profili, olio e acqua, promemoria e backup.
 // Piani e referti stanno in Dieta, le impostazioni della palestra in Palestra
 struct ProfiloView: View {
     @Environment(Archivio.self) private var archivio
@@ -26,7 +26,6 @@ struct ProfiloView: View {
                 profili
                 impostazioni
                 promemoria
-                SezioneTema()
                 backup
             }
             .righeTema()

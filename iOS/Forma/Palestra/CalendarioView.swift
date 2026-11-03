@@ -19,7 +19,7 @@ struct CalendarioContenuto: View {
             .buttonStyle(.borderless)
             GrigliaMese(mese: mese, scelto: $scelto)
         } footer: {
-            Text("Pallini colorati: pesi e cardio (i due colori del tema). Grigio: programmato. ✕: non andato.")
+            Text("Pallini: verde per i pesi, azzurro per il cardio. Grigio: programmato. ✕: non andato.")
         }
         giorno
     }
@@ -59,8 +59,6 @@ struct CalendarioContenuto: View {
 
 struct GrigliaMese: View {
     @Environment(Palestra.self) private var palestra
-    @Environment(\.tema) private var tema
-    @Environment(\.colorScheme) private var schema
     let mese: Date
     @Binding var scelto: String
 
@@ -130,7 +128,7 @@ struct GrigliaMese: View {
         if pesi || cardio {
             HStack(spacing: 2) {
                 if pesi { Circle().fill(.tint).frame(width: 6, height: 6) }
-                if cardio { Circle().fill(tema.secondo(schema)).frame(width: 6, height: 6) }
+                if cardio { Circle().fill(Colori.acqua).frame(width: 6, height: 6) }
             }
         } else if palestra.stato.saltati.contains(iso) {
             Image(systemName: "xmark").font(.system(size: 8, weight: .heavy)).foregroundStyle(.red).frame(height: 6)
