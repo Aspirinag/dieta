@@ -42,7 +42,7 @@ struct SfondoTema: ViewModifier {
         // Su schermi larghi (iPhone in orizzontale, iPhone Duo aperto) il contenuto resta a larghezza leggibile
         let margine = max((larghezza - 640) / 2, 0)
         content
-            .contentMargins(.horizontal, margine, for: .scrollContent)
+            .modifier(MargineLeggibile(margine: margine))
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { larghezza = $0 }
             .scrollContentBackground(.hidden)
             .background(Color(.systemGroupedBackground), ignoresSafeAreaEdges: .all)
@@ -54,7 +54,7 @@ struct RigheTema: ViewModifier {
     func body(content: Content) -> some View {
         let righe = content.listRowBackground(Color(.secondarySystemGroupedBackground))
         // Sull'iPhone Duo il margine destro delle righe sparisce: lo si rimette
-        if #available(iOS 26, *) { righe.listRowInsets(.trailing, 20) } else { righe }
+        righe
     }
 }
 
@@ -75,4 +75,11 @@ extension View {
     func applicaTema() -> some View { modifier(ApplicaTema()) }
     func sfondoTema() -> some View { modifier(SfondoTema()) }
     func righeTema() -> some View { modifier(RigheTema()) }
+}
+
+struct MargineLeggibile: ViewModifier {
+    let margine: CGFloat
+    func body(content: Content) -> some View {
+        if margine > 0 { content.contentMargins(.horizontal, margine, for: .scrollContent) } else { content }
+    }
 }
