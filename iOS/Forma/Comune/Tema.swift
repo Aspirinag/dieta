@@ -46,7 +46,9 @@ struct SfondoTema: ViewModifier {
 // Righe delle liste: sfondo di sistema
 struct RigheTema: ViewModifier {
     func body(content: Content) -> some View {
-        content.listRowBackground(Color(.secondarySystemGroupedBackground))
+        let righe = content.listRowBackground(Color(.secondarySystemGroupedBackground))
+        // Sull'iPhone Duo il margine destro delle righe sparisce: lo si rimette
+        if #available(iOS 26, *) { righe.listRowInsets(.trailing, 20) } else { righe }
     }
 }
 

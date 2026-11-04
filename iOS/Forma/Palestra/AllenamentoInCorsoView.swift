@@ -6,6 +6,7 @@ struct AllenamentoInCorsoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
+    @Environment(\.dynamicTypeSize) private var dimensione
     @State private var aggiungi = false
     @State private var chiediFine = false
     @State private var chiediAnnulla = false
@@ -85,7 +86,8 @@ struct AllenamentoInCorsoView: View {
 
     private func statistiche(_ a: Allenamento) -> some View {
         Section {
-            HStack {
+            let layout = dimensione.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout())
+            layout {
                 dato("Durata") {
                     // Sessione del Watch completata dopo: durata fissa; altrimenti cronometro
                     if a.fine != nil { Text(durataTesto(a.durata)) }

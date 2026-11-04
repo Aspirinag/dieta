@@ -1,6 +1,8 @@
 #!/bin/bash
 # Fa le schermate dell'app nel simulatore iPhone, in modalità chiara e scura, con i dati di prova (-demo).
 # Uso: scripts/schermate.sh <App.app> <bundle id> "<scheda[:vista]> ..."
+# Schede: oggi dieta allenamento progressi inCorso impostazioni; vista: dieta:spesa.
+# In inglese: LINGUA=en scripts/schermate.sh ... (aggiunge -AppleLanguages "(en)" -AppleLocale en_US)
 set -euo pipefail
 APP=$1; BUNDLE=$2; SCHEDE=$3
 
@@ -25,6 +27,7 @@ for aspetto in light dark; do
     scheda=${s%%:*}; vista=${s#*:}
     args=(-demo -tab "$scheda")
     [ "$vista" != "$s" ] && args+=(-vista "$vista")
+    [ "${LINGUA:-}" = "en" ] && args+=(-AppleLanguages "(en)" -AppleLocale en_US)
     xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" "${args[@]}" > /dev/null
     sleep 5
     nome="schermate/$aspetto-${s/:/-}.png"

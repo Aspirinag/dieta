@@ -169,6 +169,7 @@ struct CorpoView: View {
                     }
                 }
                 .frame(height: 150)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)   // assi leggibili, senza sovrapporsi al testo grande
                 .padding(.top, 8)
                 .accessibilityLabel("Grafico: \(campo.nome)")
                 .accessibilityValue(punti.map { "\(num($0.valore)) \(campo.unita)" }.joined(separator: ", "))
@@ -184,10 +185,20 @@ struct CorpoView: View {
     }
 
     private var periodi: some View {
-        HStack(spacing: 8) {
+        // Con testo molto grande i tre pulsanti vanno uno sotto l'altro invece di spezzare le parole
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { pulsantiPeriodo }
+            VStack(alignment: .leading, spacing: 8) { pulsantiPeriodo }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var pulsantiPeriodo: some View {
+        Group {
             ForEach(Periodo.allCases) { p in
                 Button { periodo = p } label: {
                     Text(p.etichetta)
+                        .lineLimit(1)
                         .font(.subheadline.weight(p == periodo ? .semibold : .regular))
                         .foregroundStyle(p == periodo ? AnyShapeStyle(Colori.sulAccento) : AnyShapeStyle(.primary))
                         .padding(.horizontal, 14)
@@ -199,7 +210,6 @@ struct CorpoView: View {
                 .accessibilityAddTraits(p == periodo ? .isSelected : [])
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // ---------- Grasso, magra, vita ----------

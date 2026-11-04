@@ -40,8 +40,8 @@ enum Scheda: String {
 @Observable
 final class Navigazione {
     var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
-    // Le Impostazioni sono un foglio; `-tab profilo` resta come sinonimo di `-tab impostazioni`
-    var impostazioniAperte = ["impostazioni", "profilo"].contains(Avvio.valore("-tab") ?? "")
+    // Le Impostazioni sono un foglio, aperto da `-tab impostazioni`
+    var impostazioniAperte = Avvio.valore("-tab") == "impostazioni"
     var allenamentoAperto = Avvio.valore("-tab") == "inCorso"
     var riepilogo: Allenamento?   // riepilogo mostrato appena finito un allenamento
     var compila: UUID?            // sessione del Watch a cui aggiungere esercizi e pesi
