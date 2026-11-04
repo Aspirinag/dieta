@@ -391,7 +391,7 @@ extension Profilo {
             for nome in sett.extra {
                 let k = nome.lowercased()
                 guard !risultato.contains(where: { $0.chiave == k }) else { continue }
-                risultato.append(VoceSpesa(chiave: k, nome: nome, quanto: "", reparto: reparto(di: k), giorni: [], aggiunta: true))
+                risultato.append(VoceSpesa(chiave: k, nome: nome, quanto: "", reparto: repartiSpesa?[k].flatMap(Reparto.init(rawValue:)) ?? .altro, giorni: [], aggiunta: true))
             }
         }
         return risultato

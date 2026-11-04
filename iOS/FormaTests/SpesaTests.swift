@@ -85,6 +85,14 @@ struct SpesaTests {
         #expect(p.vociSpesa(lunedi: "2026-11-02").contains { $0.nome == "Biscotti" } == false)
     }
 
+    @Test func extraVaInAltroSalvoSpostamento() {
+        var p = profilo(cibo: "Riso", quantita: "80 g")
+        p.aggiungiExtra("Caffè", lunedi: "2026-11-02")
+        #expect(p.vociSpesa(lunedi: "2026-11-02").first { $0.nome == "Caffè" }?.reparto == .altro)
+        p.sposta("caffè", in: .dispensa)
+        #expect(p.vociSpesa(lunedi: "2026-11-02").first { $0.nome == "Caffè" }?.reparto == .dispensa)
+    }
+
     @Test func jsonVecchioSenzaCampiNuovi() throws {
         let s = try JSONDecoder().decode(Spesa.self, from: Data(#"{"settimana":"2026-11-02","presi":{}}"#.utf8))
         #expect(s.extra == [])

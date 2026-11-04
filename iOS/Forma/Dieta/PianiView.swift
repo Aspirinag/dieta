@@ -212,7 +212,7 @@ extension View {
             switch pagina {
             case .andamento: AndamentoPagina()
             case .piani: PianiDietaView()
-            case .spesa: SettimanaView()
+            case .spesa: SpesaView()
             case .pasto(let giorno, let indice): DettaglioPastoView(giorno: giorno, indice: indice)
             case .misura(let data): EditorMisura(dataEsistente: data)
             }
