@@ -7,15 +7,20 @@ import Testing
 struct TestiInglesiTests {
     private let italia = Locale(identifier: "it_IT")
     private let usa = Locale(identifier: "en_US")
+    private var italiano: Bundle {
+        Bundle(path: Bundle.main.path(forResource: "it", ofType: "lproj")!)!
+    }
     private var inglese: Bundle {
         Bundle(path: Bundle.main.path(forResource: "en", ofType: "lproj")!)!
     }
 
-    // Un nome scritto dall'utente non si traduce, nemmeno se coincide con una parola italiana
+    // Si traducono i nomi dati dall'app, compresi «Pesi» e «Allenamento» (salvati dalle versioni e dai backup vecchi);
+    // un altro nome scritto dall'utente resta com'è
     @Test func soloINomiDellAppSiTraducono() {
-        #expect(Allenamento.nomiDiSistema == [Allenamento.nomeLibero, Allenamento.nomeWatch])
-        #expect(Allenamento(nome: "Pesi").titolo(in: inglese) == "Pesi")
-        #expect(Allenamento(nome: "Allenamento").titolo(in: inglese) == "Allenamento")
+        #expect(Allenamento.nomiDiSistema == [Allenamento.nomeLibero, Allenamento.nomeWatch, "Pesi", "Allenamento"])
+        #expect(Allenamento(nome: "Pesi").titolo(in: inglese) == "Weights")
+        #expect(Allenamento(nome: "Allenamento").titolo(in: inglese) == "Workout")
+        #expect(Allenamento(nome: "Gambe").titolo(in: inglese) == "Gambe")
         #expect(Allenamento(nome: Allenamento.nomeLibero).titolo(in: inglese) == "Free workout")
         #expect(Allenamento(nome: Allenamento.nomeWatch).titolo(in: inglese) != Allenamento.nomeWatch)
     }
@@ -40,8 +45,8 @@ struct TestiInglesiTests {
     }
 
     @Test func conteggioAllenamentiAlSingolareEAlPlurale() {
-        #expect(AllenamentoView.conteggio(1) == "1 allenamento")
-        #expect(AllenamentoView.conteggio(3) == "3 allenamenti")
+        #expect(AllenamentoView.conteggio(1, bundle: italiano) == "1 allenamento")
+        #expect(AllenamentoView.conteggio(3, bundle: italiano) == "3 allenamenti")
         #expect(AllenamentoView.conteggio(1, bundle: inglese) == "1 workout")
         #expect(AllenamentoView.conteggio(3, bundle: inglese) == "3 workouts")
     }

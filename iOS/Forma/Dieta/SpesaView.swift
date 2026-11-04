@@ -9,6 +9,7 @@ struct SpesaView: View {
     @Environment(\.scenePhase) private var fase
     @State private var ultimoOggi = Giorni.oggi()
     @State private var giaPresente = false
+    @State private var avvisoNascosto: Task<Void, Never>?
     @State private var lunSpesa = Profilo.lunediSpesa(oggi: Giorni.oggi())
     @State private var aperti: Set<String> = []
     @State private var nuovo = ""
@@ -267,8 +268,10 @@ struct SpesaView: View {
     private func avvisaGiaPresente() {
         withAnimation { giaPresente = true }
         AccessibilityNotification.Announcement(String(localized: "È già nella lista")).post()
-        Task {
+        avvisoNascosto?.cancel()
+        avvisoNascosto = Task {
             try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
             withAnimation { giaPresente = false }
         }
     }

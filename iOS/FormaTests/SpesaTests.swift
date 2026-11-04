@@ -171,6 +171,15 @@ struct SpesaTests {
         #expect(p.aggiungiExtra("   ", lunedi: "2026-11-02") == false)
     }
 
+    // Maiuscole e accenti non contano: «caffe» è già «Caffè» del piano
+    @Test func extraGiaNelPianoSenzaAccentiNeMaiuscole() {
+        var p = profilo(cibo: "Caffè", quantita: "1 tazza")
+        #expect(p.aggiungiExtra("caffe", lunedi: "2026-11-02") == false)
+        #expect(p.aggiungiExtra("CAFFÈ", lunedi: "2026-11-02") == false)
+        #expect(p.aggiungiExtra("Tè", lunedi: "2026-11-02") == true)
+        #expect(p.aggiungiExtra("te", lunedi: "2026-11-02") == false)
+    }
+
     // Se l'app resta aperta, al cambio di giorno la lista passa alla settimana giusta
     @Test func settimanaSpesaAlCambioDiGiorno() {
         // Stesso giorno: resta dov'è (anche se si guarda la prossima)
@@ -184,8 +193,9 @@ struct SpesaTests {
     }
 
     @Test func riepilogoSettimanaSottoIlMinuto() {
-        #expect(riepilogoAllenamenti(1, durata: 20) == "1 allenamento · meno di 1 min")
-        #expect(riepilogoAllenamenti(2, durata: 2700) == "2 allenamenti · 45 min")
-        #expect(riepilogoAllenamenti(0, durata: 0) == "Nessun allenamento")
+        let it = Bundle(path: Bundle.main.path(forResource: "it", ofType: "lproj")!)!
+        #expect(riepilogoAllenamenti(1, durata: 20, bundle: it) == "1 allenamento · meno di 1 min")
+        #expect(riepilogoAllenamenti(2, durata: 2700, bundle: it) == "2 allenamenti · 45 min")
+        #expect(riepilogoAllenamenti(0, durata: 0, bundle: it) == "Nessun allenamento")
     }
 }

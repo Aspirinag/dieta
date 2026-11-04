@@ -221,8 +221,9 @@ struct Allenamento: Codable, Hashable, Identifiable {
     // Nomi dati dall'app (salvati in italiano, mostrati nella lingua del telefono)
     static let nomeLibero = "Allenamento libero"
     static let nomeWatch = "Palestra · dal Watch"
-    // Solo questi due nomi li dà l'app; un nome scritto dall'utente (anche «Pesi» o «Allenamento») resta com'è
-    static let nomiDiSistema: Set<String> = [nomeLibero, nomeWatch]
+    // I nomi dati dall'app: i due di oggi più «Pesi» e «Allenamento», che salvavano i backup e le versioni vecchie.
+    // Un altro nome scritto dall'utente resta com'è
+    static let nomiDiSistema: Set<String> = [nomeLibero, nomeWatch, "Pesi", "Allenamento"]
     var titolo: String { titolo(in: .main) }
     func titolo(in bundle: Bundle) -> String {
         Self.nomiDiSistema.contains(nome) ? String(localized: String.LocalizationValue(nome), bundle: bundle) : nome

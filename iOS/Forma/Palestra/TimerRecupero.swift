@@ -7,6 +7,17 @@ final class TimerRecupero {
     private(set) var fine: Date?
     private(set) var durata = 90
     private var compito: Task<Void, Never>?
+    private var compitoNotifica: Task<Void, Never>?   // l'aggiunta della notifica (è asincrona)
+    private let aggiungiNotifica: (Int) async -> Void
+    private let cancellaNotifica: () -> Void
+
+    init(aggiungiNotifica: @escaping (Int) async -> Void = { secondi in
+             await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi)
+         },
+         cancellaNotifica: @escaping () -> Void = { Notifiche.cancella(["recupero"]) }) {
+        self.aggiungiNotifica = aggiungiNotifica
+        self.cancellaNotifica = cancellaNotifica
+    }
     var finiti = 0     // cambia a ogni recupero concluso (per la vibrazione)
 
     var attivo: Bool { fine.map { $0 > Date() } ?? false }
@@ -30,8 +41,16 @@ final class TimerRecupero {
         compito?.cancel()
         fine = f
         let secondi = Int(f.timeIntervalSinceNow.rounded())
-        Notifiche.cancella(["recupero"])
-        Task { await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi) }
+        cancellaNotifica()
+        // Le aggiunte vanno una dopo l'altra; se nel frattempo il recupero è stato fermato, la notifica appena aggiunta si toglie
+        let precedente = compitoNotifica
+        precedente?.cancel()
+        compitoNotifica = Task {
+            await precedente?.value
+            guard !Task.isCancelled else { return }
+            await aggiungiNotifica(secondi)
+            if fine == nil { cancellaNotifica() }
+        }
         compito = Task {
             try? await Task.sleep(for: .seconds(max(secondi, 0)))
             guard !Task.isCancelled else { return }
@@ -50,8 +69,10 @@ final class TimerRecupero {
         avviatoDa = nil
         compito?.cancel()
         compito = nil
+        compitoNotifica?.cancel()
+        compitoNotifica = nil
         fine = nil
-        Notifiche.cancella(["recupero"])
+        cancellaNotifica()
     }
 }
 

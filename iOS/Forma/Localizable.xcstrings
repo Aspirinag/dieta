@@ -1449,6 +1449,22 @@
         }
       }
     },
+    "Altre azioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
+          }
+        }
+      }
+    },
     "Altro": {
       "localizations": {
         "en": {

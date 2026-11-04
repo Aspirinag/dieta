@@ -1,6 +1,12 @@
 import Foundation
 
 // Cosa succede toccando la spunta di una serie non ancora fatta
+// Il campo di una serie che ha il cursore: la serie e se è quello dei kg o delle ripetizioni
+struct PuntoDiFocus: Hashable {
+    let serie: UUID
+    let campo: EsitoSpunta.Campo
+}
+
 enum EsitoSpunta: Equatable {
     case segna(kg: Double, rip: Int)
     case manca(Campo)

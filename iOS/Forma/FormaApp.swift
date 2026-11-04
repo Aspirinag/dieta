@@ -207,10 +207,10 @@ func durataTesto(_ secondi: TimeInterval) -> String {
 }
 
 // «3 allenamenti · 1 h 05 min»; sotto il minuto «meno di 1 min» (non «0 min»)
-func riepilogoAllenamenti(_ n: Int, durata: TimeInterval) -> String {
-    guard n > 0 else { return String(localized: "Nessun allenamento") }
-    let tempo = durata < 60 ? String(localized: "meno di 1 min") : durataTesto(durata)
-    return "\(String(localized: "\(n) allenamenti")) · \(tempo)"
+func riepilogoAllenamenti(_ n: Int, durata: TimeInterval, bundle: Bundle = .main) -> String {
+    guard n > 0 else { return String(localized: "Nessun allenamento", bundle: bundle) }
+    let tempo = durata < 60 ? String(localized: "meno di 1 min", bundle: bundle) : durataTesto(durata)
+    return "\(AllenamentoView.conteggio(n, bundle: bundle)) · \(tempo)"
 }
 
 // 8.565 e 17.130 (in inglese 8,565 e 17,130): le migliaia sempre, anche sotto le 10.000 (l'italiano di sistema le toglie)

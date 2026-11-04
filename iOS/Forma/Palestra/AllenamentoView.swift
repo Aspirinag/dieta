@@ -247,14 +247,14 @@ struct AllenamentoView: View {
     }
 }
 
-// Modifica di una scheda: nome, esercizi con serie, ripetizioni e recupero
 extension AllenamentoView {
-    // «1 allenamento» / «3 allenamenti» (inglese: workout / workouts)
+    // «1 allenamento» / «3 allenamenti» (inglese: workout / workouts); lo usa anche il riepilogo della settimana
     static func conteggio(_ n: Int, bundle: Bundle = .main) -> String {
         String(localized: "\(n) allenamenti", bundle: bundle)
     }
 }
 
+// Modifica di una scheda: nome, esercizi con serie, ripetizioni e recupero
 struct EditorSchedaView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione

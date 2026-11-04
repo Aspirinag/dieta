@@ -315,7 +315,9 @@ extension Profilo {
     @discardableResult
     mutating func aggiungiExtra(_ nome: String, lunedi lun: String) -> Bool {
         let pulito = nome.trimmingCharacters(in: .whitespaces)
-        guard !pulito.isEmpty, !vociSpesa(lunedi: lun).contains(where: { $0.chiave == pulito.lowercased() }) else { return false }
+        // Maiuscole e accenti non contano («caffe» è già «Caffè»), come in Reparto.indovina
+        let piega: (String) -> String = { $0.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil) }
+        guard !pulito.isEmpty, !vociSpesa(lunedi: lun).contains(where: { piega($0.chiave) == piega(pulito) }) else { return false }
         var settimane = settimaneSpesa
         if !settimane.contains(where: { $0.settimana == lun }) { settimane.append(Spesa(settimana: lun)) }
         guard let i = settimane.firstIndex(where: { $0.settimana == lun }) else { return false }

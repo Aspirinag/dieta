@@ -10,7 +10,7 @@ struct AllenamentoInCorsoView: View {
     @State private var aggiungi = false
     @State private var chiediFine = false
     @State private var chiediAnnulla = false
-    @FocusState private var campo: String?
+    @FocusState private var campo: PuntoDiFocus?
 
     var body: some View {
         NavigationStack {
@@ -77,7 +77,7 @@ struct AllenamentoInCorsoView: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
-            .accessibilityLabel("Altro")
+            .accessibilityLabel("Altre azioni")
         }
         ToolbarItem(placement: .confirmationAction) {
             Button("Fine") {
@@ -154,7 +154,7 @@ struct SezioneRiscaldamento: View {
 struct SezioneEsercizioInCorso: View {
     @Environment(Palestra.self) private var palestra
     let idEsercizio: UUID
-    var campo: FocusState<String?>.Binding
+    var campo: FocusState<PuntoDiFocus?>.Binding
     @State private var chiediRimuovi = false
 
     private var indice: Int? { palestra.stato.inCorso?.esercizi.firstIndex { $0.id == idEsercizio } }
@@ -227,7 +227,7 @@ struct RigaSerie: View {
     @Environment(TimerRecupero.self) private var timer
     let idEsercizio: UUID
     let idSerie: UUID
-    var campo: FocusState<String?>.Binding
+    var campo: FocusState<PuntoDiFocus?>.Binding
     @State private var kg = ""
     @State private var rip = ""
     @State private var caricato = false
@@ -263,9 +263,9 @@ struct RigaSerie: View {
                     .frame(maxWidth: .infinity)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? "kg", tastiera: .decimalPad, larghezza: 64)
+                cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? "kg", tastiera: .decimalPad, larghezza: 64, quale: .kg)
                     .onChange(of: kg) { _, v in modifica { $0.kg = leggiNumero(v) } }
-                cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, larghezza: 52)
+                cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, larghezza: 52, quale: .rip)
                     .onChange(of: rip) { _, v in modifica { $0.rip = Int(v) } }
                 Button {
                     segna(s, prec, e.recupero, corpoLibero: palestra.esercizio(e.esercizio).attrezzo == .corpoLibero)
@@ -298,7 +298,7 @@ struct RigaSerie: View {
         }
     }
 
-    private func cella(testo: Binding<String>, segnaposto: String, tastiera: UIKeyboardType, larghezza: CGFloat) -> some View {
+    private func cella(testo: Binding<String>, segnaposto: String, tastiera: UIKeyboardType, larghezza: CGFloat, quale: EsitoSpunta.Campo) -> some View {
         TextField(segnaposto, text: testo)
             .keyboardType(tastiera)
             .multilineTextAlignment(.center)
@@ -306,7 +306,7 @@ struct RigaSerie: View {
             .padding(.vertical, 6)
             .frame(width: larghezza)
             .background(.fill.tertiary, in: .rect(cornerRadius: 8))
-            .focused(campo, equals: "\(idSerie)-\(larghezza)")
+            .focused(campo, equals: PuntoDiFocus(serie: idSerie, campo: quale))
     }
 
     private func modifica(_ cambia: (inout SerieFatta) -> Void) {
@@ -326,7 +326,7 @@ struct RigaSerie: View {
         switch EsitoSpunta.valuta(kg: s.kg, rip: s.rip, precedente: prec, corpoLibero: corpoLibero) {
         case .manca(let quale):
             errore += 1
-            campo.wrappedValue = "\(idSerie)-\(quale == .kg ? 64.0 : 52.0)"
+            campo.wrappedValue = PuntoDiFocus(serie: idSerie, campo: quale)
         case .segna(let k, let r):
             modifica {
                 $0.kg = k
