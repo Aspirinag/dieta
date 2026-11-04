@@ -19,3 +19,13 @@ struct BenvenutoTests {
         #expect(!BenvenutoView.daMostrare(dietaNuova: true, datiPalestra: false, visto: true))
     }
 }
+
+// I dati di prova (schermate nel simulatore) non devono sembrare dati veri
+@MainActor
+struct DemoTests {
+    @Test func datiDiProvaSiRiconoscono() {
+        let s = Stato.demo
+        #expect(s.profili.values.allSatisfy { $0.nome.localizedCaseInsensitiveContains("esempio") })
+        #expect(s.profili.values.flatMap(\.piani).allSatisfy { $0.nome.localizedCaseInsensitiveContains("esempio") })
+    }
+}
