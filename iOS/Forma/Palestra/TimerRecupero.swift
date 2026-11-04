@@ -85,12 +85,26 @@ struct BarraAllenamento: View {
     var body: some View {
         HStack(spacing: 10) {
             if let fine = timer.fine, timer.attivo {
-                Image(systemName: "timer").foregroundStyle(.tint).symbolEffect(.pulse)
-                Text(timerInterval: Date()...fine, countsDown: true)
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.tint)
-                Spacer()
+                // Conto alla rovescia che si aggiorna ogni secondo; toccandolo si riapre l'allenamento
+                Button {
+                    if palestra.stato.inCorso != nil { navigazione.allenamentoAperto = true }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "timer").foregroundStyle(.tint).symbolEffect(.pulse)
+                        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                            Text(verbatim: testoRecupero(fine.timeIntervalSince(ctx.date)))
+                                .font(.title3.weight(.semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(.tint)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("Riapri allenamento")
+                .accessibilityLabel("Recupero")
+                .accessibilityValue(testoRecupero(fine.timeIntervalSinceNow))
                 Button("−15") { timer.cambia(-15) }
                 Button("+15") { timer.cambia(15) }
                 Button("Salta", systemImage: "forward.end.fill") { timer.ferma() }
@@ -119,4 +133,10 @@ struct BarraAllenamento: View {
         .padding(.horizontal, 16)
         .sensoryFeedback(.success, trigger: timer.finiti)
     }
+}
+
+// Conto alla rovescia m:ss (per eccesso, mai sotto zero)
+func testoRecupero(_ secondi: TimeInterval) -> String {
+    let s = max(0, Int(secondi.rounded(.up)))
+    return "\(s / 60):\(String(format: "%02d", s % 60))"
 }
