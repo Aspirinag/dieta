@@ -13,7 +13,7 @@ final class PalestraUITests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
         XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8), "Manca il riquadro Prossima scheda")
-        XCTAssertTrue(app.staticTexts["Questa settimana"].exists, "Manca il riquadro Questa settimana")
+        XCTAssertTrue(app.otherElements["settimana"].exists, "Manca la riga della settimana")
 
         // Il menu + contiene le quattro voci
         app.buttons["Aggiungi"].tap()
@@ -72,5 +72,47 @@ final class PalestraUITests: XCTestCase {
         app.buttons["Nascondi"].tap()
         XCTAssertTrue(app.buttons["Riprendi"].waitForExistence(timeout: 5), "Con un allenamento in corso manca «Riprendi»")
         XCTAssertFalse(app.staticTexts["Prossima scheda"].exists, "«Prossima scheda» non va mostrata con un allenamento in corso")
+    }
+}
+
+// Il recupero resta visibile (e apre l'allenamento) anche con l'allenamento nascosto
+final class RecuperoVisibileUITests: XCTestCase {
+    func testRecuperoNellaBarraConAllenamentoNascosto() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-tab", "inCorso"]
+        app.launch()
+        let serie = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Serie ' AND value == 'da fare'")).firstMatch
+        XCTAssertTrue(serie.waitForExistence(timeout: 8), "Manca una serie da segnare")
+        app.swipeUp()   // la serie in fondo resta sotto il bordo dello schermo
+        // Se mancano kg o ripetizioni il cursore va nel campo vuoto: si scrive un valore e si ritocca la spunta
+        for _ in 0..<3 {
+            serie.tap()
+            if app.keyboards.firstMatch.waitForExistence(timeout: 1) { app.typeText("10") } else { break }
+        }
+        app.buttons["Nascondi"].tap()
+        let barra = app.buttons["Riapri allenamento"]
+        XCTAssertTrue(barra.waitForExistence(timeout: 5), "Con l'allenamento nascosto non si vede il recupero nella barra")
+        XCTAssertNotNil((barra.value as? String)?.range(of: #"^\d+:\d\d$"#, options: .regularExpression), "Formato del recupero inatteso: «\(String(describing: barra.value))»")
+        // Toccando la barra si torna all'allenamento
+        barra.tap()
+        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5), "Toccando la barra non si riapre l'allenamento")
+    }
+}
+
+// Palestra compatta: la settimana è una riga sola e le schede si vedono subito
+final class PalestraCompattaUITests: XCTestCase {
+    func testSettimanaCompattaESchedeInPrimaSchermata() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-tab", "allenamento"]
+        app.launch()
+        let riga = app.otherElements["settimana"]
+        XCTAssertTrue(riga.waitForExistence(timeout: 8), "Manca la riga della settimana")
+        XCTAssertLessThan(riga.frame.height, 70, "La settimana deve essere una riga compatta")
+        XCTAssertNotEqual(riga.label, "", "La riga della settimana deve avere un testo per VoiceOver")
+        let schede = app.staticTexts["Schede"]
+        XCTAssertTrue(schede.exists)
+        XCTAssertLessThan(schede.frame.maxY, app.frame.height * 0.62, "Le schede devono vedersi nella prima schermata")
     }
 }
