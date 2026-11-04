@@ -51,7 +51,11 @@ Dall'alto:
    - Oltre la dose: compare un elemento in più, arancione. Nessun messaggio.
 5. **Peso**: ultimo peso grande, variazione dall'inizio a destra, mini-linea della tendenza. Toccando si va a Progressi.
 
-Tolti: pagamento palestra in alto (diventa notifica e voce nelle Impostazioni), settimana A/B, paragrafo delle regole della dieta, «Apri Palestra».
+0. **Pagamento della palestra** *(deciso dal proprietario il 4 novembre)*: riquadro piccolo in cima, **solo nella settimana del pagamento** (da 7 giorni prima al giorno dopo, come `Palestra.avvisoPagamento`), con il testo dell'avviso e «Segna come pagato». Fuori da quella finestra non c'è.
+- **Olio e acqua oltre la dose** *(deciso dal proprietario)*: raggiunta la dose compare un elemento vuoto in più, arancione chiaro, che permette di segnare oltre; ogni elemento oltre la dose è arancione pieno.
+- **Cucchiaino** *(deciso dal proprietario)*: disegnato visto dall'alto, con la parte tonda larga e ovale; ogni elemento (cucchiaino o goccia) ha un bersaglio di tocco di almeno 44 punti.
+
+Tolti: settimana A/B, paragrafo delle regole della dieta, «Apri Palestra».
 
 ### Dieta
 È la **settimana del piano**, non il giorno (i pasti di oggi si segnano in Oggi).
