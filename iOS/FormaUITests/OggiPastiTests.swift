@@ -35,14 +35,14 @@ final class OggiPastiTests: XCTestCase {
         XCTAssertEqual(olio.value as? String, "3 di 6 cucchiaini")
     }
 
-    func testPesoApreProgressi() {
+    func testPesoApreIlFoglioVeloce() {
         continueAfterFailure = false
         let app = avvia()
 
         let peso = app.buttons["Peso"]
         XCTAssertTrue(peso.waitForExistence(timeout: 8), "Manca il riquadro Peso")
         peso.tap()
-        XCTAssertTrue(app.tabBars.firstMatch.buttons["Progressi"].isSelected, "Il peso porta a Progressi")
+        XCTAssertTrue(app.textFields["campo-peso"].waitForExistence(timeout: 5), "Il peso apre il foglio veloce")
     }
 
     func testRiquadroPagamentoSoloNellaFinestra() {

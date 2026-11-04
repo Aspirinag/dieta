@@ -6,6 +6,8 @@ struct EditorMisura: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dismiss) private var chiudi
     let dataEsistente: String?
+    // Peso già scritto nel foglio veloce di Oggi
+    var pesoIniziale: Double?
 
     @State private var data = Date()
     @State private var valori: [CampoMisura: String] = [:]
@@ -75,6 +77,7 @@ struct EditorMisura: View {
             if let m = esistente {
                 for c in CampoMisura.allCases { valori[c] = m[c].map { num($0) } ?? "" }
             }
+            if let p = pesoIniziale { valori[.peso] = num(p) }
         }
     }
 

@@ -43,6 +43,15 @@ struct DietaView: View {
             .navigationTitle("Dieta")
             .navigationSubtitleSePossibile(sottotitolo)
             .importaPDF($richiesta)
+            .toolbar {
+                // Il carrello c'è solo se la settimana ha una spesa (come la riga in fondo)
+                if !archivio.profilo.vociSpesa(lunedi: Profilo.lunediSpesa(oggi: ultimoOggi)).isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
+                            .labelStyle(.iconOnly)
+                    }
+                }
+            }
             .sheet(isPresented: $aMano) { EditorPianoView(originale: nil) }
             .destinazioniDieta()
         }
@@ -198,6 +207,7 @@ private struct RiquadroPasto: View {
         let cibi = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta].riassunto : ""
         let alternative = pasto.opzioni.indices.filter { $0 != scelta }.map { pasto.opzioni[$0].principale }.filter { !$0.isEmpty }
         let oppure = alternative.isEmpty ? "" : String(localized: "oppure \(alternative.joined(separator: ", "))")
+        ZStack(alignment: .trailing) {
         NavigationLink(value: PaginaDieta.pasto(giorno, indice)) {
             Riquadro {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -214,15 +224,14 @@ private struct RiquadroPasto: View {
                         }
                     }
                     Spacer(minLength: 8)
-                    // Con il testo molto grande il nome ha bisogno di tutta la riga: restano solo i segni piccoli
-                    if s.fatto {
-                        Image(systemName: "checkmark.circle.fill").font(.body).foregroundStyle(Colori.accento)
-                    }
+                    // Con il testo molto grande il nome ha bisogno di tutta la riga: resta solo il cerchio
                     if !dimensione.isAccessibilitySize {
                         Image(systemName: "chevron.right")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(Color(.tertiaryLabel))
                     }
+                    // Posto del cerchio, che sta sopra al riquadro come pulsante a sé
+                    Color.clear.frame(width: 36, height: 1)
                 }
                 .accessibilityHidden(true)
             }
@@ -233,6 +242,30 @@ private struct RiquadroPasto: View {
         .accessibilityLabel(pasto.nome)
         .accessibilityValue(Text(verbatim: [cibi, oppure, s.fatto ? String(localized: "fatto") : ""].filter { !$0.isEmpty }.joined(separator: ". ")))
         .accessibilityAddTraits(.isButton)
+        // Il cerchio segna il pasto del giorno scelto, anche se non è oggi; il resto del riquadro apre il dettaglio
+        Button { archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() } } label: {
+            ZStack {
+                if s.fatto {
+                    Circle().fill(Colori.accento)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Colori.sulAccento)
+                } else {
+                    Circle().strokeBorder(Color(.systemGray3), lineWidth: 2)
+                }
+            }
+            .frame(width: 24, height: 24)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(giorno > Giorni.oggi())   // un pasto futuro non si segna; il riquadro apre comunque il dettaglio
+        .sensoryFeedback(.selection, trigger: s.fatto)
+        .accessibilityLabel("Segna \(pasto.nome)")
+        .accessibilityValue(s.fatto ? Text("fatto") : Text("da fare"))
+        .accessibilityAddTraits(s.fatto ? .isSelected : [])
+        .padding(.trailing, 6)
+        }
     }
 }
 

@@ -395,6 +395,22 @@
         }
       }
     },
+    "%lld giorni fa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days ago"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days ago"
+          }
+        }
+      }
+    },
     "%lld misurazioni": {
       "localizations": {
         "it": {
@@ -639,6 +655,64 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld s"
+          }
+        }
+      }
+    },
+    "%lld serie ✓": {
+      "localizations": {
+        "it": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie ✓"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie ✓"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set ✓"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets ✓"
+                }
+              }
+            }
+          }
+        },
+        "en-GB": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set ✓"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets ✓"
+                }
+              }
+            }
           }
         }
       }
@@ -1461,6 +1535,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "More actions"
+          }
+        }
+      }
+    },
+    "Altri dati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More details"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More details"
           }
         }
       }
@@ -4740,6 +4830,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Records appear after your first sets with weights."
+          }
+        }
+      }
+    },
+    "ieri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday"
           }
         }
       }
@@ -9566,6 +9672,22 @@
         }
       }
     },
+    "Scrivi il peso di oggi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter today's weight"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter today's weight"
+          }
+        }
+      }
+    },
     "Scrivilo a mano": {
       "localizations": {
         "en": {
@@ -10827,6 +10949,22 @@
         }
       }
     },
+    "Tocca per riaprire": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to reopen"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to reopen"
+          }
+        }
+      }
+    },
     "Tocca un esercizio per cambiare serie, ripetizioni e recupero. Tieni premuto e trascina per riordinare.": {
       "localizations": {
         "en": {
@@ -11315,6 +11453,22 @@
         }
       }
     },
+    "Un'altra scheda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another routine"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another routine"
+          }
+        }
+      }
+    },
     "Una settimana prima compare un avviso in Oggi. Il giorno del pagamento arriva una notifica alle %@, se non hai già segnato il mese come pagato.": {
       "localizations": {
         "en": {
@@ -11343,6 +11497,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Upper body"
+          }
+        }
+      }
+    },
+    "Usa i valori dell'ultima volta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use last time's values"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use last time's values"
           }
         }
       }

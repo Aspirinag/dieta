@@ -85,12 +85,30 @@ struct BarraAllenamento: View {
     var body: some View {
         HStack(spacing: 10) {
             if let fine = timer.fine, timer.attivo {
-                Image(systemName: "timer").foregroundStyle(.tint).symbolEffect(.pulse)
-                Text(timerInterval: Date()...fine, countsDown: true)
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.tint)
-                Spacer()
+                // Conto alla rovescia che si aggiorna ogni secondo (anche per VoiceOver); con un allenamento in corso lo si tocca per riaprirlo
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    let resto = testoRecupero(fine.timeIntervalSince(ctx.date))
+                    let conto = HStack(spacing: 10) {
+                        Image(systemName: "timer").foregroundStyle(.tint).symbolEffect(.pulse)
+                        Text(verbatim: resto)
+                            .font(.title3.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.tint)
+                        Spacer(minLength: 0)
+                    }
+                    if palestra.stato.inCorso != nil {
+                        Button { navigazione.allenamentoAperto = true } label: { conto.contentShape(.rect) }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("Riapri allenamento")
+                            .accessibilityLabel("Recupero")
+                            .accessibilityValue(resto)
+                    } else {
+                        conto
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("Recupero")
+                            .accessibilityValue(resto)
+                    }
+                }
                 Button("−15") { timer.cambia(-15) }
                 Button("+15") { timer.cambia(15) }
                 Button("Salta", systemImage: "forward.end.fill") { timer.ferma() }
@@ -119,4 +137,10 @@ struct BarraAllenamento: View {
         .padding(.horizontal, 16)
         .sensoryFeedback(.success, trigger: timer.finiti)
     }
+}
+
+// Conto alla rovescia m:ss (per eccesso, mai sotto zero)
+func testoRecupero(_ secondi: TimeInterval) -> String {
+    let s = max(0, Int(secondi.rounded(.up)))
+    return "\(s / 60):\(String(format: "%02d", s % 60))"
 }

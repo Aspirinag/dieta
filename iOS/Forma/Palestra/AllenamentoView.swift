@@ -155,27 +155,39 @@ struct AllenamentoView: View {
         let durata = palestra.stato.durataSettimana(oggi)
         let n = palestra.stato.allenamentiSettimana(oggi)
         let riepilogo = riepilogoAllenamenti(n, durata: durata)
+        let giorni = HStack(spacing: 6) {
+            ForEach(0..<7, id: \.self) { i in
+                VStack(spacing: 3) {
+                    Circle()
+                        .fill(fatti.contains(i) ? Colori.accento : Color(.systemFill))
+                        .frame(width: 14, height: 14)
+                    Text(Giorni.iniziale(i))
+                        .font(.caption2.weight(i == Giorni.indice(oggi) ? .bold : .regular))
+                        .foregroundStyle(i == Giorni.indice(oggi) ? Color.primary : Color.secondary)
+                }
+                .frame(minWidth: 16)
+            }
+        }
+        let testo = Text(riepilogo)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.trailing)
+        // Una riga sola: i sette giorni e il riepilogo (con caratteri molto grandi uno sotto l'altro)
         return Riquadro {
-            Text("Questa settimana").font(.headline)
-            Text(riepilogo).font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
-            HStack(spacing: 0) {
-                ForEach(0..<7, id: \.self) { i in
-                    VStack(spacing: 6) {
-                        Circle()
-                            .fill(fatti.contains(i) ? Colori.accento : Color(.systemFill))
-                            .frame(width: 18, height: 18)
-                        Text(Giorni.iniziale(i))
-                            .font(.caption2.weight(i == Giorni.indice(oggi) ? .bold : .regular))
-                            .foregroundStyle(i == Giorni.indice(oggi) ? Color.primary : Color.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
+            if dimensione.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) { giorni; testo }
+            } else {
+                HStack(alignment: .center, spacing: 8) {
+                    giorni
+                    Spacer(minLength: 4)
+                    testo.lineLimit(1).minimumScaleFactor(0.7)
                 }
             }
-            .padding(.top, 12)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Giorni allenati")
-            .accessibilityValue(riepilogo)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Questa settimana")
+        .accessibilityValue(riepilogo)
+        .accessibilityIdentifier("settimana")
     }
 
     // ---------- Schede ----------
