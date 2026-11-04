@@ -152,6 +152,11 @@ final class Archivio {
     // ---------- BIA ----------
 
     // Aggiunge o sostituisce la misura della stessa data
+    // Peso di oggi dal foglio veloce di Oggi
+    func salvaPeso(_ kg: Double, il giorno: String = Giorni.oggi()) {
+        profilo.bia = PesoVeloce.registra(kg, il: giorno, in: profilo.bia)
+    }
+
     func salvaMisura(_ m: Misura) {
         profilo.bia = profilo.bia.filter { $0.data != m.data } + [m]
     }

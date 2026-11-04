@@ -8,6 +8,9 @@ struct HomeView: View {
     @Environment(Navigazione.self) private var navigazione
     @State private var richiesta: TipoPDF?
     @State private var nuovaMisura = false
+    @State private var pesoVeloce = false
+    @State private var pesoPerModulo: Double?
+    @State private var apriModulo = false
     @State private var cardioAperto = false
     @Environment(\.dynamicTypeSize) private var dimensione
 
@@ -36,8 +39,26 @@ struct HomeView: View {
             .navigationSubtitleSePossibile(titolo)
             .importaPDF($richiesta)
             .sheet(isPresented: $cardioAperto) { NuovoCardioView() }
+            .sheet(isPresented: $pesoVeloce, onDismiss: {
+                if apriModulo { apriModulo = false; nuovaMisura = true }
+            }) {
+                PesoVeloceView { kg in
+                    pesoPerModulo = kg
+                    apriModulo = true
+                }
+                .presentationDetents([.height(dimensione.isAccessibilitySize ? 420 : 260)])
+                .presentationDragIndicator(.visible)
+            }
             .sheet(isPresented: $nuovaMisura) {
-                NavigationStack { EditorMisura(dataEsistente: nil) }
+                NavigationStack {
+                    EditorMisura(dataEsistente: archivio.profilo.bia.contains { $0.data == Giorni.oggi() } ? Giorni.oggi() : nil,
+                                 pesoIniziale: pesoPerModulo)
+                        .toolbar {
+                            if archivio.profilo.bia.contains(where: { $0.data == Giorni.oggi() }) {
+                                ToolbarItem(placement: .cancellationAction) { AnnullaFoglio() }
+                            }
+                        }
+                }
             }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -113,22 +134,40 @@ struct HomeView: View {
                 ForEach(elenco.indices, id: \.self) { i in
                     if i > 0 { Divider() }
                     let fatto = archivio.slot(oggi, i).fatto
-                    Button { archivio.cambiaSlot(oggi, i) { $0.fatto.toggle() } } label: {
-                        HStack(spacing: 12) {
-                            Text(elenco[i].nome)
-                                .foregroundStyle(fatto ? Color.secondary : Color.primary)
-                            Spacer(minLength: 8)
-                            Spunta(fatta: fatto)
+                    let opzioni = elenco[i].opzioni
+                    let scelta = opzioni.indices.contains(archivio.slot(oggi, i).opt) ? archivio.slot(oggi, i).opt : 0
+                    let alimenti = opzioni.indices.contains(scelta) ? Pasto.riga(opzioni[scelta]) : nil
+                    HStack(spacing: 0) {
+                        NavigationLink(value: PaginaDieta.pasto(oggi, i)) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(elenco[i].nome)
+                                    .foregroundStyle(fatto ? Color.secondary : Color.primary)
+                                if let alimenti {
+                                    Text(alimenti)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.vertical, 10)
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("pasto-\(elenco[i].nome)")
+                        Button { archivio.cambiaSlot(oggi, i) { $0.fatto.toggle() } } label: {
+                            Spunta(fatta: fatto)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .sensoryFeedback(.selection, trigger: fatto)
+                        .accessibilityIdentifier("riga-pasto")
+                        .accessibilityLabel("Segna \(elenco[i].nome)")
+                        .accessibilityValue(fatto ? Text("fatto") : Text("da fare"))
+                        .accessibilityAddTraits(fatto ? .isSelected : [])
                     }
-                    .buttonStyle(.plain)
-                    .sensoryFeedback(.selection, trigger: fatto)
-                    .accessibilityIdentifier("riga-pasto")
-                    .accessibilityLabel("Segna \(elenco[i].nome)")
-                    .accessibilityValue(fatto ? Text("fatto") : Text("da fare"))
-                    .accessibilityAddTraits(fatto ? .isSelected : [])
                 }
             }
         } else {
@@ -215,7 +254,17 @@ struct HomeView: View {
                 .padding(.vertical, 2)
                 .accessibilityElement(children: .combine)
             }
+            if Self.mostraAltraScheda(inCorso: palestra.stato.inCorso != nil, pesiFatti: fatti.count, cardioFatto: cardio.count) {
+                Button("Un'altra scheda") { navigazione.scheda = .allenamento }
+                    .font(.subheadline)
+                    .frame(minHeight: 44, alignment: .leading)
+            }
         }
+    }
+
+    // Il link a Palestra compare a fine allenamento (pesi o cardio fatti), mai con un allenamento in corso
+    static func mostraAltraScheda(inCorso: Bool, pesiFatti: Int, cardioFatto: Int) -> Bool {
+        !inCorso && (pesiFatti > 0 || cardioFatto > 0)
     }
 
     // Durata indicativa: 40 secondi a serie più il recupero, a multipli di 5 minuti
@@ -256,13 +305,14 @@ struct HomeView: View {
 
     @ViewBuilder private var peso: some View {
         let bia = archivio.profilo.bia.filter { $0.peso != nil }.sorted { $0.data < $1.data }
-        if let ultimo = bia.last, let kg = ultimo.peso {
+        if let ultimo = PesoVeloce.ultimo(bia), let kg = ultimo.peso {
+            let quando = PesoVeloce.etichetta(ultimo.data, oggi: Giorni.oggi())
             let variazione = bia.first.flatMap { $0.data != ultimo.data ? $0.peso : nil }.map { kg - $0 }
             let testoVariazione = variazione.map { v in
                 let r = (v * 10).rounded() / 10
                 return "\(r > 0 ? "+" : r < 0 ? "−" : "")\(kgTesto(abs(r)))"
             }
-            Button { navigazione.scheda = .progressi } label: {
+            Button { pesoVeloce = true } label: {
                 Riquadro {
                     HStack(alignment: .firstTextBaseline) {
                         Text("Peso").font(.headline)
@@ -275,9 +325,12 @@ struct HomeView: View {
                         }
                     }
                     disposizione(allineamento: .bottom) {
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text(num(kg)).font(.system(size: 34, weight: .bold)).monospacedDigit()
-                            Text("kg").font(.subheadline).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text(num(kg)).font(.system(size: 34, weight: .bold)).monospacedDigit()
+                                Text("kg").font(.subheadline).foregroundStyle(.secondary)
+                            }
+                            Text(quando).font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 8)
                         if bia.count > 1 {
@@ -290,10 +343,10 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Peso")
-            .accessibilityValue(kgTesto(kg) + (testoVariazione.map { ", " + String(localized: "\($0) dall'inizio") } ?? ""))
-            .accessibilityHint("Apre Progressi")
+            .accessibilityValue(kgTesto(kg) + ", " + quando + (testoVariazione.map { ", " + String(localized: "\($0) dall'inizio") } ?? ""))
+            .accessibilityHint("Scrivi il peso di oggi")
         } else {
-            Button { nuovaMisura = true } label: {
+            Button { pesoVeloce = true } label: {
                 Riquadro {
                     HStack {
                         Text("Peso").font(.headline)
@@ -391,4 +444,10 @@ extension View {
     func navigationSubtitleSePossibile(_ testo: String) -> some View {
         if #available(iOS 26.0, *) { navigationSubtitle(testo) } else { self }
     }
+}
+
+// «Annulla» di un foglio il cui contenuto non ha il proprio
+private struct AnnullaFoglio: View {
+    @Environment(\.dismiss) private var chiudi
+    var body: some View { Button("Annulla", role: .cancel) { chiudi() } }
 }

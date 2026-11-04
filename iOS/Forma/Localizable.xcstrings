@@ -395,6 +395,22 @@
         }
       }
     },
+    "%lld giorni fa": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days ago"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld days ago"
+          }
+        }
+      }
+    },
     "%lld misurazioni": {
       "localizations": {
         "it": {
@@ -1519,6 +1535,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "More actions"
+          }
+        }
+      }
+    },
+    "Altri dati": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More details"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More details"
           }
         }
       }
@@ -4798,6 +4830,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Records appear after your first sets with weights."
+          }
+        }
+      }
+    },
+    "ieri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "yesterday"
           }
         }
       }
@@ -9624,6 +9672,22 @@
         }
       }
     },
+    "Scrivi il peso di oggi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter today's weight"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter today's weight"
+          }
+        }
+      }
+    },
     "Scrivilo a mano": {
       "localizations": {
         "en": {
@@ -11369,6 +11433,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "A Forma backup replaces all your data, diet and gym. A Diet backup replaces the diet. Workouts from a Gym backup are added to the ones you already have."
+          }
+        }
+      }
+    },
+    "Un'altra scheda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another routine"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another routine"
           }
         }
       }
