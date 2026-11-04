@@ -41,6 +41,37 @@ struct PalestraTests {
         #expect(r[z.id] == 0)
     }
 
+    private func allenamento(_ iso: String, ore: Double = 1, kg: Double = 10, rip: Int = 10) -> Allenamento {
+        var a = Allenamento(nome: "Pesi", inizio: Giorni.data(iso).addingTimeInterval(18 * 3600))
+        a.fine = a.inizio.addingTimeInterval(ore * 3600)
+        a.esercizi = [EsercizioFatto(esercizio: "Panca piana", serie: [SerieFatta(kg: kg, rip: rip, fatta: true)])]
+        return a
+    }
+
+    @Test func giorniAllenatiDellaSettimana() {
+        var s = stato([])
+        s.allenamenti = [allenamento("2026-11-02"), allenamento("2026-11-04"), allenamento("2026-11-09")]
+        s.cardio = [SessioneCardio(data: "2026-11-08", tipo: "Corsa", minuti: 30, km: 5)]
+        #expect(s.giorniAllenati(settimanaDi: "2026-11-05") == [0, 2, 6])
+        #expect(s.giorniAllenati(settimanaDi: "2026-11-09") == [0])
+    }
+
+    @Test func volumiDelleUltimeSettimane() {
+        var s = stato([])
+        // settimana scorsa (26 ott): 100; questa (2 nov): 200 + 300
+        s.allenamenti = [allenamento("2026-10-28", kg: 10, rip: 10), allenamento("2026-11-02", kg: 20, rip: 10), allenamento("2026-11-05", kg: 30, rip: 10)]
+        #expect(s.volumiSettimanali(ultime: 3, oggi: "2026-11-06") == [0, 100, 500])
+        #expect(s.volumiSettimanali(ultime: 1, oggi: "2026-11-06") == [500])
+    }
+
+    @Test func durataDellaSettimana() {
+        var s = stato([])
+        s.allenamenti = [allenamento("2026-11-02", ore: 1), allenamento("2026-11-04", ore: 0.5), allenamento("2026-11-09", ore: 2)]
+        s.cardio = [SessioneCardio(data: "2026-11-06", tipo: "Corsa", minuti: 30, km: 5)]
+        #expect(s.durataSettimana("2026-11-03") == 2 * 3600)
+        #expect(s.durataSettimana("2026-11-09") == 2 * 3600)
+    }
+
     // Stesse regole del dettaglio (Palestra.nuoviRecord): l'esercizio conta se c'era già prima,
     // anche senza serie valide, e ogni voce si confronta con i record prima dell'allenamento
     @Test func recordComeNelDettaglio() {
@@ -55,5 +86,50 @@ struct PalestraTests {
         z.esercizi.append(EsercizioFatto(esercizio: "Panca piana", serie: [SerieFatta(kg: 55, rip: 8, fatta: true)]))
         s.allenamenti.append(z)
         #expect(s.conteggioRecord()[z.id] == 2)                // 60 e 55 battono entrambi il 40 di prima
+    }
+
+    // Record per esercizio: la serie con più kg (a parità, più ripetizioni), dal più recente
+    @Test func recordPerEsercizio() {
+        var s = stato([])
+        var a = allenamento("2026-10-01", kg: 60, rip: 8)
+        a.esercizi.append(EsercizioFatto(esercizio: "Leg press", serie: [SerieFatta(kg: 100, rip: 10, fatta: true)]))
+        var b = allenamento("2026-10-10", kg: 70, rip: 5)
+        b.esercizi[0].serie.append(SerieFatta(kg: 70, rip: 6, fatta: true))
+        b.esercizi[0].serie.append(SerieFatta(kg: 90, rip: 5, fatta: true, riscaldamento: true))   // non conta
+        s.allenamenti = [a, b]
+        let r = s.recordPerEsercizio()
+        #expect(r.map(\.esercizio) == ["Panca piana", "Leg press"])
+        #expect(r[0].kg == 70 && r[0].rip == 6 && r[0].giorno == "2026-10-10")
+        #expect(r[1].kg == 100 && r[1].rip == 10)
+        #expect(stato([]).recordPerEsercizio().isEmpty)
+    }
+
+    // Il cardio (anche quello dal Watch) si elimina per identificativo; gli altri restano
+    @Test func eliminaCardio() {
+        var s = stato([])
+        let a = SessioneCardio(data: "2026-11-02", tipo: "Corsa", minuti: 30, km: 5)
+        let b = SessioneCardio(data: "2026-11-03", tipo: "Camminata", minuti: 40, km: 3, watch: DatiWatch(uuid: "x", calorie: 100, battito: 90))
+        s.cardio = [a, b]
+        s.eliminaCardio(b.id)
+        #expect(s.cardio.map(\.id) == [a.id])
+    }
+
+    // Allenamenti e cardio in un'unica lista, dal più recente
+    @Test func attivitaRecenti() {
+        var s = stato([])
+        s.allenamenti = [allenamento("2026-11-02"), allenamento("2026-11-05")]
+        s.cardio = [SessioneCardio(data: "2026-11-04", tipo: "Corsa", minuti: 30, km: 5)]
+        let r = s.attivitaRecenti(2)
+        #expect(r.count == 2)
+        #expect(r.map(\.giorno) == ["2026-11-05", "2026-11-04"])
+    }
+
+    // Un solo formato per i kg: punto delle migliaia anche sotto le 10.000
+    @Test func kgConMigliaia() {
+        let it = Locale(identifier: "it_IT")
+        #expect(volumeTesto(8565, locale: it) == "8.565 kg")
+        #expect(volumeTesto(17130, locale: it) == "17.130 kg")
+        #expect(volumeTesto(950, locale: it) == "950 kg")
+        #expect(volumeTesto(1234567, locale: it) == "1.234.567 kg")
     }
 }

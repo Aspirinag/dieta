@@ -7,21 +7,32 @@ struct CalendarioContenuto: View {
     @State private var scelto = Giorni.oggi()
 
     var body: some View {
-        Section {
-            HStack {
-                Button("Mese precedente", systemImage: "chevron.left") { cambia(-1) }.labelStyle(.iconOnly)
-                Spacer()
-                Text(mese.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized)
-                    .font(.headline)
-                Spacer()
-                Button("Mese successivo", systemImage: "chevron.right") { cambia(1) }.labelStyle(.iconOnly)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Riquadro {
+                    HStack {
+                        Button("Mese precedente", systemImage: "chevron.left") { cambia(-1) }
+                            .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                        Spacer()
+                        Text(mese.formatted(.dateTime.month(.wide).year()).capitalized)
+                            .font(.headline)
+                        Spacer()
+                        Button("Mese successivo", systemImage: "chevron.right") { cambia(1) }
+                            .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.borderless)
+                    GrigliaMese(mese: mese, scelto: $scelto)
+                    Text("Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato.")
+                        .font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
+                }
+                giorno
             }
-            .buttonStyle(.borderless)
-            GrigliaMese(mese: mese, scelto: $scelto)
-        } footer: {
-            Text("Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato.")
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        giorno
+        .sfondoTema()
+        .navigationTitle("Calendario")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func cambia(_ n: Int) {
@@ -31,27 +42,36 @@ struct CalendarioContenuto: View {
     @ViewBuilder private var giorno: some View {
         let t = palestra.programmato(scelto)
         let saltato = palestra.stato.saltati.contains(scelto)
-        Section(Giorni.nomi[Giorni.indice(scelto)] + " " + Giorni.breve(scelto)) {
-            LabeledContent("Programmato") {
-                HStack(spacing: 6) {
-                    Image(systemName: t.simbolo).foregroundStyle(.tint)
-                    Text(t.nome)
+        let pesi = palestra.allenamenti(del: scelto), cardio = palestra.cardio(del: scelto)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(Giorni.nomeGiorno(Giorni.indice(scelto)) + " " + Giorni.breve(scelto)).font(.headline).padding(.horizontal, 4)
+            Riquadro {
+                HStack {
+                    Text("In programma")
+                    Spacer()
+                    Image(systemName: t.simbolo).foregroundStyle(Colori.accento)
+                    Text(t.nome).foregroundStyle(.secondary)
                 }
-            }
-            ForEach(palestra.allenamenti(del: scelto)) { a in
-                NavigationLink(value: a.id) { RigaAllenamento(allenamento: a) }
-            }
-            ForEach(palestra.cardio(del: scelto)) { c in
-                Label("\(c.tipo) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""), systemImage: Libreria.simboloCardio(c.tipo))
-            }
-            if scelto <= Giorni.oggi() && t != .riposo && palestra.allenamenti(del: scelto).isEmpty && palestra.cardio(del: scelto).isEmpty {
-                Toggle("Saltato", isOn: Binding(
-                    get: { saltato },
-                    set: { v in
-                        palestra.stato.saltati.removeAll { $0 == scelto }
-                        if v { palestra.stato.saltati.append(scelto) }
-                    }
-                ))
+                .frame(minHeight: 44)
+                ForEach(pesi) { a in
+                    Divider()
+                    RigaRecente(allenamento: a)
+                }
+                ForEach(cardio) { c in
+                    Divider()
+                    RigaCardio(cardio: c)
+                }
+                if scelto <= Giorni.oggi() && t != .riposo && pesi.isEmpty && cardio.isEmpty {
+                    Divider()
+                    Toggle("Saltato", isOn: Binding(
+                        get: { saltato },
+                        set: { v in
+                            palestra.stato.saltati.removeAll { $0 == scelto }
+                            if v { palestra.stato.saltati.append(scelto) }
+                        }
+                    ))
+                    .frame(minHeight: 44)
+                }
             }
         }
     }
@@ -59,8 +79,6 @@ struct CalendarioContenuto: View {
 
 struct GrigliaMese: View {
     @Environment(Palestra.self) private var palestra
-    @Environment(\.tema) private var tema
-    @Environment(\.colorScheme) private var schema
     let mese: Date
     @Binding var scelto: String
 
@@ -74,7 +92,7 @@ struct GrigliaMese: View {
         let settimane = stride(from: 0, to: celle.count, by: 7).map { Array(celle[$0..<min($0 + 7, celle.count)]) }
         Grid(horizontalSpacing: 4, verticalSpacing: 4) {
             GridRow {
-                ForEach(Array(["L", "M", "M", "G", "V", "S", "D"].enumerated()), id: \.offset) { _, l in
+                ForEach(Array(Giorni.iniziali.enumerated()), id: \.offset) { _, l in
                     Text(l).font(.caption.weight(.semibold)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                 }
             }
@@ -113,13 +131,13 @@ struct GrigliaMese: View {
 
     // Per VoiceOver: data e cosa è successo (o cosa era previsto) quel giorno
     private func etichetta(_ iso: String) -> String {
-        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT")))
+        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide))
         var parti = [data]
-        if !palestra.allenamenti(del: iso).isEmpty { parti.append("pesi fatti") }
-        if !palestra.cardio(del: iso).isEmpty { parti.append("cardio fatto") }
+        if !palestra.allenamenti(del: iso).isEmpty { parti.append(String(localized: "pesi fatti")) }
+        if !palestra.cardio(del: iso).isEmpty { parti.append(String(localized: "cardio fatto")) }
         if parti.count == 1 {
-            if palestra.stato.saltati.contains(iso) { parti.append("saltato") }
-            else if palestra.programmato(iso) != .riposo { parti.append("previsto \(palestra.programmato(iso).nome.lowercased())") }
+            if palestra.stato.saltati.contains(iso) { parti.append(String(localized: "saltato")) }
+            else if palestra.programmato(iso) != .riposo { parti.append(String(localized: "in programma: \(palestra.programmato(iso).nome.lowercased())")) }
         }
         return parti.joined(separator: ", ")
     }
@@ -130,7 +148,7 @@ struct GrigliaMese: View {
         if pesi || cardio {
             HStack(spacing: 2) {
                 if pesi { Circle().fill(.tint).frame(width: 6, height: 6) }
-                if cardio { Circle().fill(tema.secondo(schema)).frame(width: 6, height: 6) }
+                if cardio { Circle().fill(Colori.accento.opacity(0.45)).frame(width: 6, height: 6) }
             }
         } else if palestra.stato.saltati.contains(iso) {
             Image(systemName: "xmark").font(.system(size: 8, weight: .heavy)).foregroundStyle(.red).frame(height: 6)

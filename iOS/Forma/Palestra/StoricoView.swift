@@ -57,9 +57,9 @@ struct DettaglioEsercizioView: View {
                     }
                     ForEach(Array(storico.enumerated()), id: \.offset) { _, voce in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(voce.allenamento.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT"))))
+                            Text(voce.allenamento.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                                 .font(.subheadline.weight(.semibold))
-                            Text(voce.serie.map { "\($0.riscaldamento ? "R " : "")\(num($0.kg ?? 0)) × \($0.rip ?? 0)" }.joined(separator: " · "))
+                            Text(voce.serie.map { "\($0.riscaldamento ? String(localized: "R") + " " : "")\(num($0.kg ?? 0)) × \($0.rip ?? 0)" }.joined(separator: " · "))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -69,89 +69,80 @@ struct DettaglioEsercizioView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle(e.nome)
+        .navigationTitle(e.titolo)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-// Elenco degli allenamenti, dal più recente
+// Progressi → Palestra → Tutti: riepilogo e tutti gli allenamenti (pesi e cardio), un riquadro per mese
 struct StoricoAllenamenti: View {
     @Environment(Palestra.self) private var palestra
 
     var body: some View {
-        let lista = palestra.stato.allenamenti.sorted { $0.inizio > $1.inizio }
-        if lista.isEmpty {
-            ContentUnavailableView("Nessun allenamento", systemImage: "dumbbell",
-                                   description: Text("Gli allenamenti finiti compaiono qui."))
-        } else {
-            Section {
-                let settimana = lista.filter { $0.inizio > Date().addingTimeInterval(-7 * 86400) }
-                HStack {
-                    statistica("Questa settimana", "\(settimana.count)")
-                    statistica("Kg totali", volumeTesto(settimana.reduce(0) { $0 + $1.volume }))
-                    statistica("Totale", "\(lista.count)")
-                }
-            }
-            let record = palestra.stato.conteggioRecord()
-            let mesi = Dictionary(grouping: lista) { String($0.giorno.prefix(7)) }
-            ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
-                Section(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized) {
-                    ForEach(mesi[m] ?? []) { a in
-                        NavigationLink(value: a.id) { RigaAllenamento(allenamento: a, record: record[a.id]) }
+        let tutte = palestra.stato.attivitaRecenti()
+        let lista = palestra.stato.allenamenti
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                if tutte.isEmpty {
+                    Riquadro {
+                        Text("Nessun allenamento").font(.headline)
+                        Text("Gli allenamenti finiti compaiono qui.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+                    }
+                } else {
+                    let settimana = lista.filter { $0.inizio > Date().addingTimeInterval(-7 * 86400) }
+                    Riquadro {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(alignment: .top) { statistiche(settimana, lista) }
+                            VStack(alignment: .leading, spacing: 8) { statistiche(settimana, lista) }
+                        }
+                    }
+                    let mesi = Dictionary(grouping: tutte) { String($0.giorno.prefix(7)) }
+                    ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year()).capitalized)
+                                .font(.headline).padding(.horizontal, 4)
+                            Riquadro {
+                                ForEach(Array((mesi[m] ?? []).enumerated()), id: \.element.id) { i, voce in
+                                    if i > 0 { Divider() }
+                                    RigaAttivita(voce: voce)
+                                }
+                            }
+                        }
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
+        .sfondoTema()
+        .navigationTitle("Allenamenti")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func statistica(_ titolo: String, _ valore: String) -> some View {
+    @ViewBuilder private func statistiche(_ settimana: [Allenamento], _ lista: [Allenamento]) -> some View {
+        statistica("Questa settimana", "\(settimana.count)")
+        statistica("Kg totali", volumeTesto(settimana.reduce(0) { $0 + $1.volume }))
+        statistica("Totale", "\(lista.count)")
+    }
+
+    private func statistica(_ titolo: LocalizedStringKey, _ valore: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(titolo).font(.caption).foregroundStyle(.secondary)
-            Text(valore).font(.headline)
+            Text(valore).font(.headline).monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-struct RigaAllenamento: View {
-    @Environment(Palestra.self) private var palestra
-    let allenamento: Allenamento
-    var record: Int? = nil      // già calcolato dall'elenco; altrimenti si calcola qui
+// Una riga di allenamento: stesso stile ovunque (Progressi, Tutti, Calendario)
+struct RigaAttivita: View {
+    let voce: Attivita
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(allenamento.nome).font(.headline)
-                Spacer()
-                Text(allenamento.inizio.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Locale(identifier: "it_IT"))))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            HStack(spacing: 14) {
-                Label(durataTesto(allenamento.durata), systemImage: "clock")
-                if allenamento.soloWatch {
-                    if let kcal = allenamento.watch?.calorie { Label("\(Int(kcal.rounded())) kcal", systemImage: "flame") }
-                    if let bpm = allenamento.watch?.battito { Label("\(Int(bpm.rounded())) bpm", systemImage: "heart") }
-                } else {
-                    Label(volumeTesto(allenamento.volume), systemImage: "scalemass")
-                }
-                let record = self.record ?? palestra.nuoviRecord(allenamento).count
-                if record > 0 { Label("\(record)", systemImage: "trophy.fill").foregroundStyle(.yellow) }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            if allenamento.soloWatch {
-                Label("Dall'Apple Watch · tocca per aggiungere esercizi e pesi", systemImage: "applewatch")
-                    .font(.caption)
-                    .foregroundStyle(.tint)
-            } else {
-                Text(allenamento.esercizi.map { "\($0.serie.count) × \(palestra.nome($0.esercizio))" }.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
+        switch voce {
+        case .pesi(let a): RigaRecente(allenamento: a)
+        case .cardio(let c): RigaCardio(cardio: c, conData: true)
         }
-        .padding(.vertical, 2)
     }
 }
 
@@ -181,7 +172,7 @@ struct DettaglioAllenamentoView: View {
                 .righeTema()
             }
             .sfondoTema()
-            .navigationTitle(a.nome)
+            .navigationTitle(a.titolo)
             .navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Eliminare l'allenamento?", isPresented: $chiediElimina, titleVisibility: .visible) {
                 Button("Elimina", role: .destructive) {
@@ -201,7 +192,7 @@ struct ContenutoAllenamento: View {
     var body: some View {
         let a = allenamento
         Section {
-            LabeledContent("Data", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute().locale(Locale(identifier: "it_IT"))))
+            LabeledContent("Data", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute()))
             LabeledContent("Durata", value: durataTesto(a.durata))
             if !a.esercizi.isEmpty {
                 LabeledContent("Kg totali", value: volumeTesto(a.volume))
@@ -225,7 +216,7 @@ struct ContenutoAllenamento: View {
         ForEach(a.esercizi) { e in
             Section {
                 ForEach(Array(e.serie.enumerated()), id: \.offset) { n, s in
-                    LabeledContent(s.riscaldamento ? "Riscaldamento" : "Serie \(e.serie[..<n].filter { !$0.riscaldamento }.count + 1)",
+                    LabeledContent(s.riscaldamento ? LocalizedStringKey("Riscaldamento") : LocalizedStringKey("Serie \(e.serie[..<n].filter { !$0.riscaldamento }.count + 1)"),
                                    value: "\(num(s.kg ?? 0)) kg × \(s.rip ?? 0)")
                 }
             } header: {
@@ -253,7 +244,7 @@ struct RiepilogoView: View {
                                 .foregroundStyle(.tint)
                                 .symbolEffect(.bounce, value: allenamento.id)
                             Text("Allenamento finito!").font(.title2.weight(.bold))
-                            Text(allenamento.nome).foregroundStyle(.secondary)
+                            Text(verbatim: allenamento.titolo).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
@@ -271,5 +262,52 @@ struct RiepilogoView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Fine") { chiudi() } }
             }
         }
+    }
+}
+
+// Una sessione di cardio (anche dal Watch). Non ha un dettaglio: si elimina con un tocco prolungato, dopo una conferma
+struct RigaCardio: View {
+    @Environment(Palestra.self) private var palestra
+    let cardio: SessioneCardio
+    var conData = false
+    @State private var chiediElimina = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: Libreria.simboloCardio(cardio.tipo))
+                .foregroundStyle(Colori.accento)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: Libreria.nomeCardio(cardio.tipo)).font(.headline)
+                Text(dettaglio).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            if cardio.km > 0 {
+                Text("\(num(cardio.km)) km").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+            }
+        }
+        .frame(minHeight: 44)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("cardio-\(cardio.id.uuidString)")
+        .accessibilityHint("Tocco prolungato per eliminare")
+        .accessibilityAction(named: "Elimina") { chiediElimina = true }
+        .contextMenu {
+            Button("Elimina", systemImage: "trash", role: .destructive) { chiediElimina = true }
+        }
+        .confirmationDialog("Eliminare questo cardio?", isPresented: $chiediElimina, titleVisibility: .visible) {
+            Button("Elimina", role: .destructive) { palestra.stato.eliminaCardio(cardio.id) }
+        }
+    }
+
+    private var dettaglio: String {
+        var parti: [String] = []
+        if conData { parti.append(Giorni.data(cardio.data).formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))) }
+        parti.append("\(cardio.minuti) min")
+        if let w = cardio.watch {
+            parti.append("Watch")
+            if let kcal = w.calorie { parti.append("\(Int(kcal.rounded())) kcal") }
+        }
+        return parti.joined(separator: " · ")
     }
 }

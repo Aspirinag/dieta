@@ -93,7 +93,7 @@ jobs:
           xcodebuild -project iOS/Forma.xcodeproj -target Forma -configuration Debug -sdk iphonesimulator
           ARCHS=arm64 SYMROOT="$PWD/build" build
       - name: Schermate
-        run: bash scripts/schermate.sh build/Debug-iphonesimulator/Forma.app io.github.aspirinag.forma "oggi dieta dieta:spesa allenamento inCorso profilo"
+        run: bash scripts/schermate.sh build/Debug-iphonesimulator/Forma.app io.github.aspirinag.forma "oggi dieta dieta:spesa allenamento progressi inCorso impostazioni"
       - name: Pubblica le schermate nel branch "schermate-forma"
         run: |
           cd schermate

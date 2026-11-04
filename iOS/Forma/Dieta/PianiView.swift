@@ -28,12 +28,12 @@ struct ImportaPDF: ViewModifier {
             .fileImporter(isPresented: $aperto, allowedContentTypes: [.pdf]) { risultato in
                 switch risultato {
                 case .failure:
-                    errore = "Non riesco ad aprire il file."
+                    errore = String(localized: "Non riesco ad aprire il file. Riprova o scegline un altro.")
                 case .success(let url):
                     let accesso = url.startAccessingSecurityScopedResource()
                     defer { if accesso { url.stopAccessingSecurityScopedResource() } }
                     guard let dati = try? Data(contentsOf: url) else {
-                        errore = "Non riesco ad aprire il file."
+                        errore = String(localized: "Non riesco ad aprire il file. Riprova o scegline un altro.")
                         return
                     }
                     let scelto = tipo
@@ -64,8 +64,8 @@ struct ImportaPDF: ViewModifier {
     }
 
     private func riassuntoBia(_ m: Misura) -> String {
-        var t = "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm"
-        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\nSostituisce la misurazione della stessa data." }
+        var t = String(localized: "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm")
+        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\n" + String(localized: "Sostituisce la misurazione della stessa data.") }
         return t
     }
 
@@ -81,12 +81,12 @@ struct ImportaPDF: ViewModifier {
         case .schema:
             let g = giorni ?? []
             guard g.count == 7, g.allSatisfy({ !$0.pasti.isEmpty }) else {
-                return .errore("Non riesco a leggere lo schema da questo PDF (trovati \(g.count) giorni su 7). Controlla che sia il piano alimentare, oppure crealo a mano da Dieta → Piani e misure.")
+                return .errore(String(localized: "Non riesco a leggere il piano da questo PDF (\(String(localized: "trovati \(g.count) giorni")) su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Impostazioni → Piani alimentari."))
             }
             return .piano(g)
         case .bia:
             guard let m = misura, !m.data.isEmpty, m.peso != nil else {
-                return .errore("Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA, oppure aggiungi la misurazione a mano.")
+                return .errore(String(localized: "Non riesco a leggere i valori da questo PDF. Controlla che sia la BIA, oppure aggiungi la misurazione a mano."))
             }
             return .bia(m)
         }
@@ -102,7 +102,7 @@ struct ImportaPDF: ViewModifier {
             case .bia: esito = Self.valuta(tipo, giorni: nil, misura: try await LettorePDF.condiviso.bia(dati))
             }
         } catch {
-            errore = "Non riesco a leggere questo PDF."
+            errore = String(localized: "Il file non è leggibile. Scegli un altro PDF.")
             return
         }
         switch esito {
@@ -119,7 +119,7 @@ extension View {
     }
 }
 
-// Dieta → Piani e misure: piani alimentari dai PDF e misurazioni BIA
+// Impostazioni → Piani alimentari: piani alimentari dai PDF e misurazioni BIA
 struct PianiDietaView: View {
     @Environment(Archivio.self) private var archivio
     @State private var richiesta: TipoPDF?
@@ -136,7 +136,7 @@ struct PianiDietaView: View {
                         Button { pianoDaModificare = p } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(p.nome).font(.headline).foregroundStyle(.primary)
-                                Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? "in corso" : Giorni.breve(p.al))")
+                                Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? String(localized: "in corso") : Giorni.breve(p.al))")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
@@ -160,13 +160,13 @@ struct PianiDietaView: View {
                 } header: {
                     Text("Misurazioni BIA")
                 } footer: {
-                    Text("Le misurazioni si vedono, modificano ed eliminano in Andamento.")
+                    Text("Le misurazioni si vedono, modificano ed eliminano in Progressi.")
                 }
             }
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle("Piani e misure")
+        .navigationTitle("Piani alimentari")
         .navigationBarTitleDisplayMode(.inline)
         .importaPDF($richiesta)
         .sheet(item: $pianoDaModificare) { EditorPianoView(originale: $0) }
@@ -186,32 +186,22 @@ struct PianiDietaView: View {
     }
 }
 
-// Dieta → Andamento: aderenza, misure BIA e grafico
-struct AndamentoPagina: View {
-    var body: some View {
-        List {
-            Group { AndamentoView() }.righeTema()
-        }
-        .sfondoTema()
-        .navigationTitle("Andamento")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
-    }
-}
-
 // Pagine della dieta aperte dentro una scheda. Le destinazioni stanno sulla radice della scheda:
 // registrate su una pagina aperta con un collegamento diretto, si perdevano al primo collegamento per valore
 enum PaginaDieta: Hashable {
-    case andamento, piani
+    case misure, piani, spesa
     case misura(String)
+    case pasto(String, Int)   // giorno (aaaa-mm-gg) e posizione del pasto
 }
 
 extension View {
     func destinazioniDieta() -> some View {
         navigationDestination(for: PaginaDieta.self) { pagina in
             switch pagina {
-            case .andamento: AndamentoPagina()
+            case .misure: MisurazioniView()
             case .piani: PianiDietaView()
+            case .spesa: SpesaView()
+            case .pasto(let giorno, let indice): DettaglioPastoView(giorno: giorno, indice: indice)
             case .misura(let data): EditorMisura(dataEsistente: data)
             }
         }

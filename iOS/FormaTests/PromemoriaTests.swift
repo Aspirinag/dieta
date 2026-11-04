@@ -85,6 +85,20 @@ struct PromemoriaTests {
         #expect(q?.primo == false)
     }
 
+    // La condizione con cui Oggi mostra il riquadro: dentro la finestra sì, fuori no, spento no
+    @Test func riquadroPagamentoInOggiSoloNellaFinestra() {
+        func testo(_ oggi: String, attivo: Bool = true, pagamenti: [String: String] = [:]) -> String? {
+            Palestra.promemoriaPagamento(oggi: oggi, attivo: attivo, giorno: 15, pagamenti: pagamenti)?.testo
+        }
+        #expect(testo("2026-11-07") == nil)
+        #expect(testo("2026-11-08") == "Tra 7 giorni si paga la palestra.")
+        #expect(testo("2026-11-15") == "Oggi si paga la palestra.")
+        #expect(testo("2026-11-16") == "Ultimo giorno per pagare la palestra.")
+        #expect(testo("2026-11-17") == nil)
+        #expect(testo("2026-11-12", attivo: false) == nil)
+        #expect(testo("2026-11-12", pagamenti: ["2026-11": "2026-11-10"]) == nil)
+    }
+
     @Test func avvisoPagamentoUnaSettimanaPrima() {
         #expect(Palestra.avvisoPagamento(oggi: "2026-11-07", giorno: 15, pagamenti: [:]) == nil)
         #expect(Palestra.avvisoPagamento(oggi: "2026-11-08", giorno: 15, pagamenti: [:])?.mese == "2026-11")

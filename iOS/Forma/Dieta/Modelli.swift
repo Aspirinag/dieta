@@ -206,16 +206,16 @@ enum CampoMisura: String, CaseIterable, Identifiable {
 
     var nome: String {
         switch self {
-        case .peso: "Peso"
-        case .grasso: "Massa grassa"
-        case .magra: "Massa magra"
-        case .acqua: "Acqua"
-        case .bmr: "Metabolismo"
-        case .vat: "Grasso viscerale"
-        case .vita: "Vita"
-        case .addome: "Addome"
-        case .fianchi: "Fianchi"
-        case .torace: "Torace"
+        case .peso: String(localized: "Peso")
+        case .grasso: String(localized: "Massa grassa")
+        case .magra: String(localized: "Massa magra")
+        case .acqua: String(localized: "Acqua")
+        case .bmr: String(localized: "Metabolismo")
+        case .vat: String(localized: "Grasso viscerale")
+        case .vita: String(localized: "Vita")
+        case .addome: String(localized: "Addome")
+        case .fianchi: String(localized: "Fianchi")
+        case .torace: String(localized: "Torace")
         }
     }
 
@@ -233,16 +233,19 @@ enum CampoMisura: String, CaseIterable, Identifiable {
 struct Spesa: Codable, Hashable {
     var settimana: String   // lunedì della settimana a cui valgono le spunte
     var presi: [String: Bool]
+    var extra: [String] = []    // voci aggiunte a mano per questa settimana
 
-    init(settimana: String, presi: [String: Bool] = [:]) {
+    init(settimana: String, presi: [String: Bool] = [:], extra: [String] = []) {
         self.settimana = settimana
         self.presi = presi
+        self.extra = extra
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         settimana = c.valore(.settimana, "")
         presi = c.valore(.presi, [:])
+        extra = c.valore(.extra, [])
     }
 }
 
@@ -256,11 +259,12 @@ struct Profilo: Codable, Hashable {
     var note: String?
     var spesa: Spesa?               // settimana più vecchia: è quella che legge anche la web app
     var spesaProssima: Spesa?       // seconda settimana (solo app), così spuntare la prossima non azzera questa
+    var repartiSpesa: [String: String]?     // nome dell'alimento in minuscolo → Reparto.rawValue scelto a mano
 
     enum CodingKeys: String, CodingKey {
         case nome, piani, bia, dieta, note, spesa
         case spesaProssima = "spesa_prossima"
-        case olioTot = "olio_tot", acquaTot = "acqua_tot"
+        case olioTot = "olio_tot", acquaTot = "acqua_tot", repartiSpesa = "reparti_spesa"
     }
 
     // I profili nuovi partono senza note; quelli salvati senza il campo tengono il testo predefinito
@@ -280,6 +284,7 @@ struct Profilo: Codable, Hashable {
         note = c.valore(.note, nil)
         spesa = c.valore(.spesa, nil)
         spesaProssima = c.valore(.spesaProssima, nil)
+        repartiSpesa = c.valore(.repartiSpesa, nil)
     }
 }
 
@@ -331,10 +336,10 @@ struct Promemoria: Codable, Hashable {
     // Le notifiche giornaliere da programmare con le scelte attuali
     var notifiche: [Notifica] {
         var n: [Notifica] = []
-        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Ecco la dieta di oggi 🥗")) }
-        if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: "Dieta", testo: "Hai segnato i pasti di oggi?")) }
+        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: String(localized: "Dieta"), testo: String(localized: "Ecco la dieta di oggi 🥗"))) }
+        if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: String(localized: "Dieta"), testo: String(localized: "Hai segnato i pasti di oggi?"))) }
         if acqua {
-            n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.") }
+            n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: String(localized: "Acqua 💧"), testo: String(localized: "È il momento di un bicchiere d'acqua.")) }
         }
         return n
     }
@@ -347,7 +352,7 @@ struct Stato: Codable, Hashable {
     var promemoria: Promemoria?
 
     // Prima installazione: un solo profilo, senza note (si rinomina in Impostazioni)
-    static let iniziale = Stato(profili: ["io": Profilo(nome: "Io", note: "")], attivo: "io")
+    static let iniziale = Stato(profili: ["io": Profilo(nome: String(localized: "Io"), note: "")], attivo: "io")
 
     init(profili: [String: Profilo], attivo: String, preferito: String? = nil, promemoria: Promemoria? = nil) {
         self.profili = profili

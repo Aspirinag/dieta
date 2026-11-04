@@ -15,7 +15,7 @@ struct EditorPianoView: View {
 
     init(originale: Piano?) {
         self.originale = originale
-        var p = originale ?? Piano(nome: "Nuovo piano", dal: Giorni.oggi(), al: "",
+        var p = originale ?? Piano(nome: String(localized: "Nuovo piano"), dal: Giorni.oggi(), al: "",
                                    giorni: Giorni.nomi.map { GiornoPiano(nome: $0, palestra: false, pasti: []) })
         // Piani vecchi o della web app con meno di 7 giorni: si completano
         while p.giorni.count < 7 { p.giorni.append(GiornoPiano(nome: Giorni.nomi[p.giorni.count], palestra: false, pasti: [])) }
@@ -44,7 +44,7 @@ struct EditorPianoView: View {
                     }
                     Section {
                         Picker("Giorno", selection: $giorno) {
-                            ForEach(0..<7, id: \.self) { Text(String(Giorni.nomi[$0].prefix(3))).tag($0) }
+                            ForEach(0..<7, id: \.self) { Text(Giorni.sigla($0).capitalized).tag($0) }
                         }
                         .segmentiOMenu()
                         .listRowBackground(Color.clear)
@@ -52,12 +52,12 @@ struct EditorPianoView: View {
                     }
                     Section {
                         Toggle("Giorno di palestra", isOn: $piano.giorni[giorno].palestra)
-                        Button("Copia \(Giorni.nomi[giorno]) su tutti i giorni", systemImage: "doc.on.doc") {
+                        Button("Copia \(Giorni.nomeGiorno(giorno)) su tutti i giorni", systemImage: "doc.on.doc") {
                             chiediCopia = true
                         }
                         .disabled(piano.giorni[giorno].pasti.isEmpty)
                     } header: {
-                        Text(Giorni.nomi[giorno])
+                        Text(Giorni.nomeGiorno(giorno))
                     }
                     ForEach(piano.giorni[giorno].pasti.indices, id: \.self) { i in
                         // Binding protetto: durante un'eliminazione la riga può chiedere un indice che non c'è più
@@ -77,7 +77,7 @@ struct EditorPianoView: View {
                 .righeTema()
             }
             .sfondoTema()
-            .navigationTitle(originale == nil ? "Nuovo piano" : "Modifica piano")
+            .navigationTitle(originale == nil ? LocalizedStringKey("Nuovo piano") : LocalizedStringKey("Modifica piano"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -90,7 +90,7 @@ struct EditorPianoView: View {
                 }
             }
             .interactiveDismissDisabled()
-            .confirmationDialog("Copiare \(Giorni.nomi[giorno]) su tutti i giorni?", isPresented: $chiediCopia, titleVisibility: .visible) {
+            .confirmationDialog("Copiare \(Giorni.nomeGiorno(giorno)) su tutti i giorni?", isPresented: $chiediCopia, titleVisibility: .visible) {
                 Button("Sostituisci gli altri giorni", role: .destructive) {
                     let g = piano.giorni[giorno]
                     for i in piano.giorni.indices where i != giorno {
@@ -99,7 +99,7 @@ struct EditorPianoView: View {
                     }
                 }
             } message: {
-                Text("I pasti degli altri giorni vengono sostituiti da quelli di \(Giorni.nomi[giorno]). Dopo puoi cambiare i singoli giorni.")
+                Text("I pasti degli altri giorni vengono sostituiti da quelli di \(Giorni.nomeGiorno(giorno)). Dopo puoi cambiare i singoli giorni.")
             }
         }
     }
@@ -180,7 +180,7 @@ private struct EditorPasto: View {
         } footer: {
             Text("Scorri a sinistra su un alimento per eliminarlo.")
         }
-        .confirmationDialog("Eliminare \(pasto.nome.isEmpty ? "il pasto" : pasto.nome)?", isPresented: $chiediElimina, titleVisibility: .visible) {
+        .confirmationDialog("Eliminare \(pasto.nome.isEmpty ? String(localized: "il pasto") : pasto.nome)?", isPresented: $chiediElimina, titleVisibility: .visible) {
             Button("Elimina", role: .destructive, action: elimina)
         }
     }

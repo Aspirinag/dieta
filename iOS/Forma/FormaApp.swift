@@ -33,13 +33,15 @@ struct FormaApp: App {
 }
 
 enum Scheda: String {
-    case oggi, dieta, allenamento, profilo
+    case oggi, dieta, allenamento, progressi
 }
 
 // Scheda selezionata e allenamento aperto: anche i pulsanti dentro le schermate possono cambiarli
 @Observable
 final class Navigazione {
     var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
+    // Le Impostazioni sono un foglio, aperto da `-tab impostazioni`
+    var impostazioniAperte = Avvio.valore("-tab") == "impostazioni"
     var allenamentoAperto = Avvio.valore("-tab") == "inCorso"
     var riepilogo: Allenamento?   // riepilogo mostrato appena finito un allenamento
     var compila: UUID?            // sessione del Watch a cui aggiungere esercizi e pesi
@@ -50,20 +52,22 @@ struct Radice: View {
     @Environment(Palestra.self) private var palestra
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
-    @AppStorage(Tema.chiave) private var scelto = Tema.predefinito.rawValue
     @State private var avvisoDati = true
     @Environment(\.scenePhase) private var fase
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
-
-    private var tema: Tema { Tema(rawValue: scelto) ?? .predefinito }
 
     var body: some View {
         @Bindable var navigazione = navigazione
         TabView(selection: $navigazione.scheda) {
             Tab("Oggi", systemImage: "sun.max", value: .oggi) { HomeView() }
-            Tab("Dieta", systemImage: "fork.knife", value: .dieta) { PastiView() }
+            Tab("Dieta", systemImage: "fork.knife", value: .dieta) { DietaView() }
             Tab("Palestra", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
-            Tab("Impostazioni", systemImage: "gearshape", value: .profilo) { ProfiloView() }
+            Tab("Progressi", systemImage: "chart.xyaxis.line", value: .progressi) {
+                ProgressiView()
+            }
+        }
+        .sheet(isPresented: $navigazione.impostazioniAperte) {
+            ImpostazioniView().applicaTema()
         }
         // La barra compare solo con un allenamento in corso o un recupero che scorre
         .accessorioAllenamento(visibile: palestra.stato.inCorso != nil || timer.attivo)
@@ -71,15 +75,15 @@ struct Radice: View {
             get: { navigazione.allenamentoAperto && palestra.stato.inCorso != nil },
             set: { navigazione.allenamentoAperto = $0 }
         )) {
-            AllenamentoInCorsoView().applicaTema(tema)
+            AllenamentoInCorsoView().applicaTema()
         }
         .sheet(item: $navigazione.riepilogo) { a in
-            RiepilogoView(allenamento: a).applicaTema(tema)
+            RiepilogoView(allenamento: a).applicaTema()
         }
         .sheet(isPresented: Binding(get: { navigazione.compila != nil }, set: { if !$0 { navigazione.compila = nil } })) {
-            if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema(tema) }
+            if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema() }
         }
-        .applicaTema(tema)
+        .applicaTema()
         .onChange(of: fase) { _, f in
             if f != .active {
                 archivio.salvaOra()
@@ -104,7 +108,7 @@ struct Radice: View {
         .fullScreenCover(isPresented: Binding(
             get: { benvenuto }, set: { if !$0 { benvenutoVisto = true } }
         )) {
-            BenvenutoView { benvenutoVisto = true }.applicaTema(tema)
+            BenvenutoView { benvenutoVisto = true }.applicaTema()
         }
         .task(id: benvenutoVisto) {
             // Alla prima apertura i permessi si chiedono nel benvenuto, con la spiegazione
@@ -158,7 +162,7 @@ struct MenuProfilo: View {
     @Environment(Archivio.self) private var archivio
 
     var body: some View {
-        if archivio.stato.profili.count > 1 {
+        if archivio.stato.profili.count >= 2 {
             Menu {
                 Picker("Profilo", selection: Binding(
                     get: { archivio.stato.attivo },
@@ -171,24 +175,6 @@ struct MenuProfilo: View {
             } label: {
                 Label(archivio.profilo.nome, systemImage: "person.crop.circle")
                     .labelStyle(.titleAndIcon)
-            }
-        }
-    }
-}
-
-// Avviso di pagamento della palestra (da una settimana prima), finché non è segnato pagato
-struct SezionePagamento: View {
-    @Environment(Palestra.self) private var palestra
-
-    var body: some View {
-        if let p = palestra.promemoriaPagamento() {
-            Section {
-                Label {
-                    Text(p.testo).font(.subheadline)
-                } icon: {
-                    Image(systemName: "creditcard.fill").foregroundStyle(.tint)
-                }
-                Button("Segna come pagato", systemImage: "checkmark.circle") { palestra.segnaPagato(p.mese) }
             }
         }
     }
@@ -211,9 +197,21 @@ func durataTesto(_ secondi: TimeInterval) -> String {
     return m >= 60 ? "\(m / 60) h \(String(format: "%02d", m % 60)) min" : "\(m) min"
 }
 
-// Volume leggibile: 12.450 kg
-func volumeTesto(_ kg: Double) -> String {
-    "\(Int(kg.rounded()).formatted(.number.locale(Locale(identifier: "it_IT")))) kg"
+// 8.565 e 17.130 (in inglese 8,565 e 17,130): le migliaia sempre, anche sotto le 10.000 (l'italiano di sistema le toglie)
+func numeroConMigliaia(_ n: Int, locale: Locale = .current) -> String {
+    let separatore = locale.groupingSeparator ?? ","
+    var cifre = String(abs(n)), gruppi: [String] = []
+    while cifre.count > 3 {
+        gruppi.insert(String(cifre.suffix(3)), at: 0)
+        cifre.removeLast(3)
+    }
+    gruppi.insert(cifre, at: 0)
+    return (n < 0 ? "−" : "") + gruppi.joined(separator: separatore)
+}
+
+// Volume leggibile: 12.450 kg (sempre in chili, anche in inglese americano)
+func volumeTesto(_ kg: Double, locale: Locale = .current) -> String {
+    "\(numeroConMigliaia(Int(kg.rounded()), locale: locale)) kg"
 }
 
 extension Radice {

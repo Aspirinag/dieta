@@ -13,7 +13,7 @@ struct SceltaSchedaView: View {
                 Group {
                     if let a = palestra.stato.allenamenti.first(where: { $0.id == id }) {
                         Section {
-                            LabeledContent("Quando", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute().locale(Locale(identifier: "it_IT"))))
+                            LabeledContent("Quando", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute()))
                             LabeledContent("Durata", value: durataTesto(a.durata))
                             if let kcal = a.watch?.calorie { LabeledContent("Calorie", value: "\(Int(kcal.rounded())) kcal") }
                         } footer: {

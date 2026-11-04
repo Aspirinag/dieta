@@ -9,8 +9,24 @@ enum Muscolo: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var nome: String {
         switch self {
-        case .corpoIntero: "Corpo intero"
-        default: rawValue.capitalized
+        case .petto: String(localized: "Petto")
+        case .schiena: String(localized: "Schiena")
+        case .lombari: String(localized: "Lombari")
+        case .trapezi: String(localized: "Trapezi")
+        case .spalle: String(localized: "Spalle")
+        case .bicipiti: String(localized: "Bicipiti")
+        case .tricipiti: String(localized: "Tricipiti")
+        case .avambracci: String(localized: "Avambracci")
+        case .quadricipiti: String(localized: "Quadricipiti")
+        case .femorali: String(localized: "Femorali")
+        case .glutei: String(localized: "Glutei")
+        case .adduttori: String(localized: "Adduttori")
+        case .abduttori: String(localized: "Abduttori")
+        case .polpacci: String(localized: "Polpacci")
+        case .addominali: String(localized: "Addominali")
+        case .corpoIntero: String(localized: "Corpo intero")
+        case .cardio: String(localized: "Cardio")
+        case .altro: String(localized: "Altro")
         }
     }
     var simbolo: String {
@@ -32,16 +48,16 @@ enum Attrezzo: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var nome: String {
         switch self {
-        case .macchina: "Macchina"
-        case .bilanciere: "Bilanciere"
-        case .manubri: "Manubri"
-        case .cavi: "Cavi"
-        case .corpoLibero: "Corpo libero"
-        case .kettlebell: "Kettlebell"
-        case .smith: "Multipower"
-        case .elastico: "Elastico"
-        case .bilancierePesato: "Zavorra"
-        case .altro: "Altro"
+        case .macchina: String(localized: "Macchina")
+        case .bilanciere: String(localized: "Bilanciere")
+        case .manubri: String(localized: "Manubri")
+        case .cavi: String(localized: "Cavi")
+        case .corpoLibero: String(localized: "Corpo libero")
+        case .kettlebell: String(localized: "Kettlebell")
+        case .smith: String(localized: "Multipower")
+        case .elastico: String(localized: "Elastico")
+        case .bilancierePesato: String(localized: "Zavorra")
+        case .altro: String(localized: "Altro")
         }
     }
 }
@@ -65,6 +81,12 @@ struct Esercizio: Codable, Hashable, Identifiable {
         id = c.valore(.id, nome)
         muscolo = c.valore(.muscolo, .altro)
         attrezzo = c.valore(.attrezzo, .altro)
+    }
+
+    // Nome da mostrare. Gli esercizi della libreria restano salvati con il nome italiano (è la loro chiave,
+    // usata da schede e storico) e si leggono nella lingua del telefono; quelli scritti dall'utente restano com'è
+    var titolo: String {
+        Libreria.nomiPredefiniti.contains(id) && nome == id ? String(localized: String.LocalizationValue(id)) : nome
     }
 }
 
@@ -196,6 +218,12 @@ struct Allenamento: Codable, Hashable, Identifiable {
         watch = c.valore(.watch, nil)
     }
 
+    // Nomi dati dall'app (salvati in italiano, mostrati nella lingua del telefono)
+    static let nomeLibero = "Allenamento libero"
+    static let nomeWatch = "Palestra · dal Watch"
+    static let nomiDiSistema: Set<String> = [nomeLibero, nomeWatch, "Pesi", "Allenamento"]
+    var titolo: String { Self.nomiDiSistema.contains(nome) ? String(localized: String.LocalizationValue(nome)) : nome }
+
     var giorno: String { Giorni.iso(inizio) }
     var soloWatch: Bool { esercizi.isEmpty && watch != nil }
     var volume: Double { esercizi.flatMap(\.serie).reduce(0) { $0 + $1.volume } }
@@ -242,9 +270,9 @@ enum TipoGiorno: String, CaseIterable, Identifiable, Codable {
     var id: String { rawValue }
     var nome: String {
         switch self {
-        case .riposo: "Riposo"
-        case .pesi: "Pesi"
-        case .cardio: "Cardio"
+        case .riposo: String(localized: "Riposo")
+        case .pesi: String(localized: "Pesi")
+        case .cardio: String(localized: "Cardio")
         }
     }
     var simbolo: String {

@@ -3,66 +3,52 @@ import SwiftUI
 // Apre l'editor di una scheda (tipo a parte: gli UUID semplici aprono il dettaglio di un allenamento)
 struct ApriScheda: Hashable { let id: UUID }
 
-// Scheda Palestra: inizia un allenamento, le mie schede, cardio, storico e calendario, impostazioni
+// Palestra serve a iniziare: prossima scheda, settimana, schede con ▶. Storico e calendario stanno in Progressi
 struct AllenamentoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
+    @Environment(\.dynamicTypeSize) private var dimensione
     @State private var percorso = NavigationPath()
     @State private var daAvviare: Routine??
     @State private var cardio = false
     @State private var schedaDaEliminare: Routine?
-    @State private var cardioDaEliminare: SessioneCardio?
 
     var body: some View {
         NavigationStack(path: $percorso) {
-            List {
-                Group {
-                    avvio
+            ScrollView {
+                VStack(spacing: 12) {
+                    prossima
+                    settimana
                     schede
-                    sezioneCardio
-                    Section {
-                        NavigationLink(value: PaginaPalestraDest.libreria) {
-                            Label("Libreria esercizi", systemImage: "books.vertical")
-                        }
-                        NavigationLink(value: PaginaPalestraDest.modelli) {
-                            Label("Schede pronte", systemImage: "square.stack.3d.up")
-                        }
-                    }
-                    Section {
-                        NavigationLink(value: PaginaPalestraDest.storico) {
-                            LabeledContent {
-                                Text("\(palestra.stato.allenamenti.count)")
-                            } label: {
-                                Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
-                            }
-                        }
-                        NavigationLink(value: PaginaPalestraDest.calendario) {
-                            Label("Calendario", systemImage: "calendar")
-                        }
-                        NavigationLink(value: PaginaPalestraDest.impostazioni) {
-                            Label("Impostazioni palestra", systemImage: "gearshape")
-                        }
-                    } header: {
-                        Text("Progressi e impostazioni")
-                    }
                 }
-                .righeTema()
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
             .sfondoTema()
             .navigationTitle("Palestra")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Nuova scheda", systemImage: "square.and.pencil") { nuovaScheda() }
+                        Button("Schede pronte", systemImage: "square.stack.3d.up") { percorso.append(PaginaPalestraDest.modelli) }
+                        Button("Libreria esercizi", systemImage: "books.vertical") { percorso.append(PaginaPalestraDest.libreria) }
+                        Button("Programma della settimana", systemImage: "calendar") { percorso.append(PaginaPalestraDest.pianoSettimanale) }
+                        Button("Registra cardio", systemImage: "figure.run") { cardio = true }
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Aggiungi")
+                }
+            }
+            .destinazioniArchivioPalestra()
             .navigationDestination(for: PaginaPalestraDest.self) { pagina in
                 switch pagina {
                 case .libreria: LibreriaView(modo: .sfoglia)
                 case .modelli: ModelliView(percorso: $percorso)
-                case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
-                case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
-                case .impostazioni: PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() }
                 case .pianoSettimanale: PianoSettimanaleView()
                 }
             }
             .navigationDestination(for: ApriScheda.self) { EditorSchedaView(idScheda: $0.id) }
-            .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
-            .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
             .sheet(isPresented: $cardio) { NuovoCardioView() }
             .confirmationDialog("Eliminare la scheda?", isPresented: Binding(
                 get: { schedaDaEliminare != nil }, set: { if !$0 { schedaDaEliminare = nil } }
@@ -70,11 +56,6 @@ struct AllenamentoView: View {
                 Button("Elimina \(r.nome)", role: .destructive) { palestra.stato.routine.removeAll { $0.id == r.id } }
             } message: { _ in
                 Text("Gli allenamenti già fatti con questa scheda restano nello storico.")
-            }
-            .confirmationDialog("Eliminare questo cardio?", isPresented: Binding(
-                get: { cardioDaEliminare != nil }, set: { if !$0 { cardioDaEliminare = nil } }
-            ), titleVisibility: .visible, presenting: cardioDaEliminare) { c in
-                Button("Elimina", role: .destructive) { palestra.stato.cardio.removeAll { $0.id == c.id } }
             }
             .confirmationDialog("C'è già un allenamento in corso", isPresented: Binding(
                 get: { daAvviare != nil }, set: { if !$0 { daAvviare = nil } }
@@ -96,95 +77,171 @@ struct AllenamentoView: View {
         navigazione.allenamentoAperto = true
     }
 
-    private var avvio: some View {
-        let oggi = Giorni.oggi()
-        let t = palestra.programmato(oggi)
-        return Section {
-            if let a = palestra.stato.inCorso {
+    private func nuovaScheda() {
+        let r = Routine(nome: String(localized: "Nuova scheda"))
+        palestra.stato.routine.append(r)
+        percorso.append(ApriScheda(id: r.id))
+    }
+
+    // Esercizi in una frase: nomi interi fino a un limite di lettere, poi «…»
+    private func frase(_ r: Routine, massimo: Int) -> String {
+        let nomi = r.voci.map { palestra.nome($0.esercizio) }
+        var scelti: [String] = [], lunghezza = 0
+        for n in nomi {
+            if !scelti.isEmpty && lunghezza + n.count + 2 > massimo { break }
+            scelti.append(n)
+            lunghezza += n.count + 2
+        }
+        return scelti.joined(separator: ", ") + (scelti.count < nomi.count ? "…" : "")
+    }
+
+    // ---------- Prossima scheda ----------
+
+    @ViewBuilder private var prossima: some View {
+        if let a = palestra.stato.inCorso {
+            Riquadro {
+                Text("In corso").font(.footnote).foregroundStyle(.secondary)
+                Text(verbatim: a.titolo).font(.title2.bold()).padding(.top, 2)
                 Button { navigazione.allenamentoAperto = true } label: {
-                    Label("Riprendi \(a.nome)", systemImage: "play.fill").frame(maxWidth: .infinity)
+                    Text("Riprendi").frame(maxWidth: .infinity, minHeight: 28)
                 }
-                .pulsanteVetro(evidente: true)
-                .controlSize(.large)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-            } else {
-                Button { avvia(nil) } label: {
-                    Label("Allenamento libero", systemImage: "plus").frame(maxWidth: .infinity)
-                }
-                .pulsanteVetro(evidente: true)
-                .controlSize(.large)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
+                .buttonStyle(PulsanteAccento())
+                .padding(.top, 12)
             }
-        } footer: {
-            Text("Oggi: \(t.nome.lowercased())" + (palestra.stato.usaAB ? " · settimana \(palestra.settimana(oggi))" : ""))
+        } else if let r = palestra.stato.prossimaRoutine() {
+            Riquadro {
+                Text("Prossima scheda").font(.footnote).foregroundStyle(.secondary)
+                Text(r.nome).font(.title2.bold()).padding(.top, 2)
+                if !r.voci.isEmpty {
+                    Text(frase(r, massimo: 80))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
+                Button { avvia(r) } label: {
+                    Text("Inizia").frame(maxWidth: .infinity, minHeight: 28)
+                }
+                .buttonStyle(PulsanteAccento())
+                .padding(.top, 12)
+            }
+        } else {
+            Riquadro {
+                Text("Nessuna scheda").font(.title2.bold())
+                Text("Crea la tua o parti da una scheda pronta.")
+                    .font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+                Button { nuovaScheda() } label: {
+                    Text("Crea la prima scheda").frame(maxWidth: .infinity, minHeight: 28)
+                }
+                .buttonStyle(PulsanteAccento())
+                .padding(.top, 12)
+                Button { percorso.append(PaginaPalestraDest.modelli) } label: {
+                    Text("Scegli tra le schede pronte")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Colori.accento)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
+
+    // ---------- Questa settimana ----------
+
+    private var settimana: some View {
+        let oggi = Giorni.oggi()
+        let fatti = palestra.stato.giorniAllenati(settimanaDi: oggi)
+        let durata = palestra.stato.durataSettimana(oggi)
+        let n = palestra.stato.allenamentiSettimana(oggi)
+        let riepilogo = n == 0 ? String(localized: "Nessun allenamento") : "\(String(localized: "\(n) allenamenti")) · \(durataTesto(durata))"
+        return Riquadro {
+            Text("Questa settimana").font(.headline)
+            Text(riepilogo).font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+            HStack(spacing: 0) {
+                ForEach(0..<7, id: \.self) { i in
+                    VStack(spacing: 6) {
+                        Circle()
+                            .fill(fatti.contains(i) ? Colori.accento : Color(.systemFill))
+                            .frame(width: 18, height: 18)
+                        Text(Giorni.iniziale(i))
+                            .font(.caption2.weight(i == Giorni.indice(oggi) ? .bold : .regular))
+                            .foregroundStyle(i == Giorni.indice(oggi) ? Color.primary : Color.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.top, 12)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Giorni allenati")
+            .accessibilityValue(riepilogo)
+        }
+    }
+
+    // ---------- Schede ----------
 
     private var schede: some View {
-        Section {
-            ForEach(palestra.stato.routine) { r in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        NavigationLink(value: ApriScheda(id: r.id)) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(r.nome).font(.headline)
-                                Text(r.voci.map { palestra.nome($0.esercizio) }.joined(separator: ", "))
-                                    .font(.caption)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Schede").font(.headline).padding(.leading, 4).padding(.top, 8)
+            Riquadro {
+                ForEach(palestra.stato.routine) { r in
+                    let testo = NavigationLink(value: ApriScheda(id: r.id)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(r.nome).font(.headline).foregroundStyle(.primary)
+                                .multilineTextAlignment(.leading)
+                            if !r.voci.isEmpty {
+                                Text(frase(r, massimo: 44))
+                                    .font(.footnote)
                                     .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.leading)
                                     .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                     }
-                    Button { avvia(r) } label: {
-                        Label("Inizia", systemImage: "play.fill").frame(maxWidth: .infinity)
+                    .buttonStyle(.plain)
+                    let play = Button { avvia(r) } label: {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Colori.accento)
+                            .frame(width: 36, height: 36)
+                            .background(Colori.accento.opacity(0.12), in: .circle)
+                            .frame(width: 44, height: 44)
+                            .contentShape(.circle)
                     }
-                    .pulsanteVetro()
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Inizia \(r.nome)")
+                    let layout = dimensione.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                        : AnyLayout(HStackLayout(spacing: 8))
+                    layout {
+                        testo
+                        play
+                    }
+                    .padding(.vertical, 4)
+                    .contextMenu {
+                        Button("Duplica", systemImage: "plus.square.on.square") {
+                            var copia = r
+                            copia.id = UUID()
+                            copia.nome = String(localized: "\(r.nome) (copia)")
+                            palestra.stato.routine.append(copia)
+                        }
+                        Button("Elimina", systemImage: "trash", role: .destructive) { schedaDaEliminare = r }
+                    }
+                    Divider()
                 }
-                .padding(.vertical, 4)
-                .swipeActions {
-                    Button("Elimina", systemImage: "trash") { schedaDaEliminare = r }
-                        .tint(.red)
-                    Button("Duplica", systemImage: "plus.square.on.square") {
-                        var copia = r
-                        copia.id = UUID()
-                        copia.nome += " (copia)"
-                        palestra.stato.routine.append(copia)
-                    }
-                    .tint(.blue)
+                Button { avvia(nil) } label: {
+                    Text("Allenamento libero")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Colori.accento)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
-            .onMove { palestra.stato.routine.move(fromOffsets: $0, toOffset: $1) }
-            Button("Nuova scheda", systemImage: "square.and.pencil") {
-                let r = Routine(nome: "Nuova scheda")
-                palestra.stato.routine.append(r)
-                percorso.append(ApriScheda(id: r.id))
-            }
-        } header: {
-            Text("Le mie schede")
-        }
-    }
-
-    private var sezioneCardio: some View {
-        Section {
-            ForEach(palestra.stato.cardio.sorted { $0.data > $1.data }.prefix(3)) { c in
-                Label {
-                    VStack(alignment: .leading) {
-                        Text("\(c.tipo) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""))
-                        Text(Giorni.breve(c.data)).font(.caption).foregroundStyle(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: Libreria.simboloCardio(c.tipo)).foregroundStyle(.tint)
-                }
-                .swipeActions {
-                    Button("Elimina", systemImage: "trash") { cardioDaEliminare = c }
-                        .tint(.red)
-                }
-            }
-            Button("Registra cardio", systemImage: "figure.run") { cardio = true }
-        } header: {
-            Text("Cardio")
         }
     }
 }
@@ -345,7 +402,7 @@ struct NuovoCardioView: View {
             Form {
                 Group {
                     Picker("Tipo", selection: $tipo) {
-                        ForEach(Libreria.tipiCardio, id: \.self) { Label($0, systemImage: Libreria.simboloCardio($0)).tag($0) }
+                        ForEach(Libreria.tipiCardio, id: \.self) { Label(Libreria.nomeCardio($0), systemImage: Libreria.simboloCardio($0)).tag($0) }
                     }
                     DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
                     LabeledContent("Minuti") {
@@ -382,11 +439,11 @@ struct NuovoCardioView: View {
 // Pagine della Palestra aperte per valore: le destinazioni stanno sulla radice della scheda.
 // Con collegamenti diretti, il primo collegamento per valore (allenamento, esercizio) le chiudeva
 enum PaginaPalestraDest: Hashable {
-    case libreria, modelli, storico, calendario, impostazioni, pianoSettimanale
+    case libreria, modelli, pianoSettimanale
 }
 
 struct PaginaPalestra<Contenuto: View>: View {
-    let titolo: String
+    let titolo: LocalizedStringKey
     @ViewBuilder let contenuto: Contenuto
 
     var body: some View {
@@ -396,5 +453,13 @@ struct PaginaPalestra<Contenuto: View>: View {
         .sfondoTema()
         .navigationTitle(titolo)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+extension View {
+    // Pagine raggiungibili da più schede (storico, calendario, dettagli): le destinazioni stanno sulla radice
+    func destinazioniArchivioPalestra() -> some View {
+        navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
+            .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
     }
 }

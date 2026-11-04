@@ -96,8 +96,8 @@ final class Salute {
             }
             if case .nuovo(let salvato) = palestra.registraDalWatch(a), a.fine > Date().addingTimeInterval(-3 * 3600) {
                 let kcal = a.calorie.map { " · \(Int($0.rounded())) kcal" } ?? ""
-                await Notifiche.sessioneWatch(id: salvato.id, titolo: "Sessione palestra registrata ✓",
-                                              testo: "Dal Watch: \(a.minuti) min\(kcal). Aggiungi esercizi e pesi?")
+                await Notifiche.sessioneWatch(id: salvato.id, titolo: String(localized: "Sessione palestra registrata ✓"),
+                                              testo: String(localized: "Dal Watch: \(a.minuti) min\(kcal). Aggiungi esercizi e pesi?"))
             }
         }
     }

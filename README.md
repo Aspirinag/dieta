@@ -2,8 +2,11 @@
 
 Dieta e palestra in un'unica app per iPhone, in SwiftUI. I dati restano sul telefono: niente account, niente server.
 
-- **Dieta:** piani alimentari letti dal PDF del nutrizionista o scritti a mano, pasti del giorno da spuntare, lista della spesa, andamento della BIA.
-- **Palestra:** schede A/B, allenamento in corso con recupero, storico e record, avviso del pagamento, allenamenti dall'Apple Watch tramite Salute.
+- **Oggi:** la dieta del giorno da spuntare e l'allenamento da iniziare.
+- **Dieta:** piani alimentari letti dal PDF del nutrizionista o scritti a mano, pasti del giorno da spuntare, con la **Spesa** (lista per reparto).
+- **Palestra:** schede A/B, allenamento in corso con recupero, avviso del pagamento, allenamenti dall'Apple Watch tramite Salute.
+- **Progressi:** **Corpo** (peso, misure, BIA) e **Palestra** (volume, record, tutti gli allenamenti, calendario).
+- **Impostazioni:** un foglio aperto dall'icona in alto (profili, promemoria, backup).
 - **Promemoria:** mattino, pasti, acqua e pagamento, agli orari che scegli.
 
 Serve iOS 18 o successivo (su iOS 26 con l'aspetto Liquid Glass). La web app (`index.html`, su GitHub Pages) è la versione per browser della parte dieta. I dati passano da una all'altra con **Esporta backup** / **Importa backup**: il file è lo stesso.
@@ -55,4 +58,4 @@ xcodebuild test -project Forma.xcodeproj -scheme Forma \
   -destination 'platform=iOS Simulator,name=iPhone 17' -quiet
 ```
 
-Per vedere l'app con i dati di prova, avvia con l'argomento `-demo` (eventualmente `-tab oggi|dieta|allenamento|profilo|inCorso`).
+Per vedere l'app con i dati di prova, avvia con l'argomento `-demo` (eventualmente `-tab oggi|dieta|allenamento|progressi|inCorso|impostazioni`; `-vista spesa` apre la Spesa dentro Dieta). Per provare l'inglese: `-AppleLanguages "(en)" -AppleLocale en_US`.

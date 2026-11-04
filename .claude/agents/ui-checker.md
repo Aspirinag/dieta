@@ -1,6 +1,6 @@
 ---
 name: ui-checker
-description: Controlla l'aspetto dell'app Forma nel simulatore dopo una modifica alla UI. Compila, fa le schermate delle schede (Oggi, Dieta, Spesa, Palestra, Allenamento in corso, Impostazioni) in chiaro e scuro con i dati di prova, e segnala testi tagliati, contrasti illeggibili nel tema scuro, sezioni troppo lunghe e elementi fuori posto. Usalo dopo ogni modifica alle viste SwiftUI, prima di installare sull'iPhone.
+description: Controlla l'aspetto dell'app Forma nel simulatore dopo una modifica alla UI. Compila, fa le schermate delle schede (Oggi, Dieta, Spesa, Palestra, Progressi, Allenamento in corso, Impostazioni) in chiaro e scuro con i dati di prova, e segnala testi tagliati, contrasti illeggibili nel tema scuro, sezioni troppo lunghe e elementi fuori posto. Usalo dopo ogni modifica alle viste SwiftUI, prima di installare sull'iPhone.
 tools: Bash, Read, Glob, Grep
 model: sonnet
 ---
@@ -22,9 +22,9 @@ Non modifichi il codice: guardi le schermate e riferisci.
    ```bash
    cd "$W" && bash /Users/rl/app-iphone/dieta/scripts/schermate.sh \
      "$W/dd/Build/Products/Debug-iphonesimulator/Forma.app" io.github.aspirinag.forma \
-     "oggi dieta dieta:spesa allenamento inCorso profilo"
+     "oggi dieta dieta:spesa allenamento progressi inCorso impostazioni"
    ```
-   Se il chiamante indica schede o viste diverse (formato `scheda:vista`), usa quelle.
+   Se il chiamante indica schede o viste diverse (formato `scheda:vista`), usa quelle. Schede valide: `oggi dieta allenamento progressi inCorso impostazioni`; vista valida: `dieta:spesa`. Per l'inglese avvia con `-AppleLanguages "(en)" -AppleLocale en_US`.
 4. Apri ogni PNG in `$W/schermate` con Read e guardalo davvero, sia `light-*` sia `dark-*`.
 
 ## Cosa controllare

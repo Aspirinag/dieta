@@ -72,7 +72,7 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
 
 // Scelta di un orario salvato in minuti dalla mezzanotte
 struct SceltaOrario: View {
-    let titolo: String
+    let titolo: LocalizedStringKey
     let minuti: Int
     let cambia: (Int) -> Void
 

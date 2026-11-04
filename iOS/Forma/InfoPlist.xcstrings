@@ -1,0 +1,52 @@
+{
+  "sourceLanguage": "it",
+  "strings": {
+    "CFBundleDisplayName": {
+      "comment": "Nome dell'app sulla schermata Home",
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma"
+          }
+        }
+      }
+    },
+    "NSHealthShareUsageDescription": {
+      "comment": "Spiegazione mostrata quando Forma chiede il permesso di leggere gli allenamenti da Salute",
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma legge gli allenamenti dell'Apple Watch (palestra, camminate, corsa, bici, nuoto) per registrarli da sola."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma reads your Apple Watch workouts (gym, walking, running, cycling, swimming) to log them for you."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma reads your Apple Watch workouts (gym, walking, running, cycling, swimming) to log them for you."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

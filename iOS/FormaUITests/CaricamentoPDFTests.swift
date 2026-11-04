@@ -7,7 +7,7 @@ final class CaricamentoPDFTests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["-demo", "-tab", "dieta"]
+        app.launchArguments = ["-demo", "-tab", "oggi"]
         app.launch()
     }
 
@@ -18,8 +18,9 @@ final class CaricamentoPDFTests: XCTestCase {
     }
 
     private func apriPianiEReferti() {
-        let link = app.buttons["Piani e misure"]
-        for _ in 0..<6 where !link.isHittable { app.swipeUp() }
+        app.buttons["Impostazioni"].tap()
+        let link = app.buttons["Piani alimentari"]
+        XCTAssertTrue(link.waitForExistence(timeout: 8))
         link.tap()
     }
 

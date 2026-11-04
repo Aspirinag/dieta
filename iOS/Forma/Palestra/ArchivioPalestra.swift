@@ -79,7 +79,7 @@ final class Palestra {
         stato.esercizi.first { $0.id == id } ?? Esercizio(id: id, nome: id, muscolo: .altro, attrezzo: .altro)
     }
 
-    func nome(_ id: String) -> String { esercizio(id).nome }
+    func nome(_ id: String) -> String { esercizio(id).titolo }
 
     @discardableResult
     func nuovoEsercizio(nome: String, muscolo: Muscolo, attrezzo: Attrezzo) -> Esercizio {
@@ -111,7 +111,7 @@ final class Palestra {
     // ---------- Allenamento in corso ----------
 
     func inizia(_ routine: Routine?) {
-        var a = Allenamento(nome: routine?.nome ?? "Allenamento libero", routine: routine?.id)
+        var a = Allenamento(nome: routine?.nome ?? Allenamento.nomeLibero, routine: routine?.id)
         for v in routine?.voci ?? [] {
             a.esercizi.append(EsercizioFatto(esercizio: v.esercizio, recupero: v.recupero, serie: (0..<v.serie).map { _ in SerieFatta() }))
         }
@@ -177,13 +177,13 @@ final class Palestra {
                 })
             }
         } else if a.nome == Self.nomeWatch {
-            a.nome = "Allenamento libero"
+            a.nome = Allenamento.nomeLibero
         }
         stato.inCorso = a
         return true
     }
 
-    static let nomeWatch = "Palestra · dal Watch"
+    static let nomeWatch = Allenamento.nomeWatch
 
     enum EsitoWatch { case nuovo(Allenamento), agganciato, cardio, ignorato }
 
@@ -266,8 +266,8 @@ final class Palestra {
             guard !valide.isEmpty, prima.pesoMax > 0 || stato.allenamenti.contains(where: { $0.inizio < a.inizio && $0.esercizi.contains { $0.esercizio == e.esercizio } }) else { continue }
             let peso = valide.compactMap(\.kg).max() ?? 0
             let massimale = valide.map(\.massimale).max() ?? 0
-            if peso > prima.pesoMax { testi.append("\(nome(e.esercizio)): peso massimo \(num(peso)) kg") }
-            else if massimale > prima.massimale + 0.01 { testi.append("\(nome(e.esercizio)): massimale stimato \(num((massimale * 10).rounded() / 10)) kg") }
+            if peso > prima.pesoMax { testi.append(String(localized: "\(nome(e.esercizio)): peso massimo \(num(peso)) kg")) }
+            else if massimale > prima.massimale + 0.01 { testi.append(String(localized: "\(nome(e.esercizio)): massimale stimato \(num((massimale * 10).rounded() / 10)) kg")) }
         }
         return testi
     }
@@ -302,8 +302,13 @@ final class Palestra {
 
     // Mese da pagare e testo dell'avviso in Oggi, finché non è segnato pagato
     func promemoriaPagamento() -> (mese: String, testo: String)? {
-        guard stato.pagamentoAttivo else { return nil }
-        return Self.avvisoPagamento(oggi: Giorni.oggi(), giorno: stato.giornoPagamento, pagamenti: stato.pagamenti)
+        Self.promemoriaPagamento(oggi: Giorni.oggi(), attivo: stato.pagamentoAttivo, giorno: stato.giornoPagamento, pagamenti: stato.pagamenti)
+    }
+
+    // La condizione con cui Oggi mostra il riquadro del pagamento
+    static func promemoriaPagamento(oggi: String, attivo: Bool, giorno: Int, pagamenti: [String: String]) -> (mese: String, testo: String)? {
+        guard attivo else { return nil }
+        return avvisoPagamento(oggi: oggi, giorno: giorno, pagamenti: pagamenti)
     }
 
     // Giorno di pagamento di un mese (yyyy-MM-01), senza superare la fine del mese
@@ -324,10 +329,10 @@ final class Palestra {
             guard pagamenti[mese] == nil else { continue }
             let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: Giorni.data(paga)).day ?? 0
             let testo = switch mancano {
-            case ..<0: "Ultimo giorno per pagare la palestra."
-            case 0: "Oggi si paga la palestra."
-            case 1: "Domani si paga la palestra."
-            default: "Tra \(mancano) giorni si paga la palestra."
+            case ..<0: String(localized: "Ultimo giorno per pagare la palestra.")
+            case 0: String(localized: "Oggi si paga la palestra.")
+            case 1: String(localized: "Domani si paga la palestra.")
+            default: String(localized: "Tra \(mancano) giorni si paga la palestra.")
             }
             return (mese, testo)
         }
@@ -351,8 +356,8 @@ final class Palestra {
         guard stato.pagamentoAttivo,
               let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)
         else { return }
-        await Notifiche.una(id: "pagamento", titolo: "Palestra",
-                            testo: p.primo ? "Oggi si paga la palestra." : "Ultimo giorno per pagare la palestra.",
+        await Notifiche.una(id: "pagamento", titolo: String(localized: "Palestra"),
+                            testo: p.primo ? String(localized: "Oggi si paga la palestra.") : String(localized: "Ultimo giorno per pagare la palestra."),
                             quando: p.quando)
     }
 
@@ -460,5 +465,100 @@ extension StatoPalestra {
     func settimana(_ iso: String) -> String {
         guard usaAB else { return "A" }
         return (Palestra.numeroSettimana(iso) + (scambia ? 1 : 0)) % 2 == 0 ? "A" : "B"
+    }
+}
+
+extension StatoPalestra {
+    // Giorni (lun = 0 … dom = 6) della settimana di una data con almeno un allenamento o una sessione di cardio
+    func giorniAllenati(settimanaDi iso: String) -> Set<Int> {
+        let lun = Giorni.lunedi(iso)
+        let giorni = Set(allenamenti.map(\.giorno) + cardio.map(\.data))
+        return Set((0..<7).filter { giorni.contains(Giorni.aggiungi(lun, $0)) })
+    }
+
+    // Quanti allenamenti (pesi più cardio) nella settimana di una data
+    func allenamentiSettimana(_ iso: String) -> Int {
+        let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
+        return allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }.count
+            + cardio.filter { $0.data >= lun && $0.data <= dom }.count
+    }
+
+    // Tempo totale di pesi e cardio nella settimana di una data
+    func durataSettimana(_ iso: String) -> TimeInterval {
+        let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
+        let pesi = allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }.reduce(0) { $0 + $1.durata }
+        let corsa = cardio.filter { $0.data >= lun && $0.data <= dom }.reduce(0) { $0 + Double($1.minuti) * 60 }
+        return pesi + corsa
+    }
+
+    // Volume (kg × ripetizioni) delle ultime n settimane, dalla più vecchia a quella di oggi
+    func volumiSettimanali(ultime n: Int, oggi: String) -> [Double] {
+        let lun = Giorni.lunedi(oggi)
+        return (0..<n).reversed().map { k in
+            let da = Giorni.aggiungi(lun, -7 * k), a = Giorni.aggiungi(da, 6)
+            return allenamenti.filter { $0.giorno >= da && $0.giorno <= a }.reduce(0) { $0 + $1.volume }
+        }
+    }
+}
+
+// Progressi → Palestra: record per esercizio e attività recenti
+struct RecordEsercizio: Identifiable, Hashable {
+    let esercizio: String
+    let kg: Double
+    let rip: Int
+    let giorno: String
+    var id: String { esercizio }
+}
+
+// Un allenamento con i pesi o una sessione di cardio (anche dal Watch)
+enum Attivita: Identifiable {
+    case pesi(Allenamento)
+    case cardio(SessioneCardio)
+
+    var id: UUID {
+        switch self {
+        case .pesi(let a): a.id
+        case .cardio(let c): c.id
+        }
+    }
+    var giorno: String {
+        switch self {
+        case .pesi(let a): a.giorno
+        case .cardio(let c): c.data
+        }
+    }
+    // Per l'ordine: l'ora d'inizio dei pesi; a mezzogiorno per il cardio, che ha solo il giorno
+    var quando: Date {
+        switch self {
+        case .pesi(let a): a.inizio
+        case .cardio(let c): Giorni.data(c.data).addingTimeInterval(12 * 3600)
+        }
+    }
+}
+
+extension StatoPalestra {
+    // Per ogni esercizio la serie migliore (più kg, a parità più ripetizioni), dai più recenti
+    func recordPerEsercizio() -> [RecordEsercizio] {
+        var migliori: [String: RecordEsercizio] = [:]
+        for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
+            for e in a.esercizi {
+                for s in e.serie where s.valida {
+                    let kg = s.kg ?? 0, rip = s.rip ?? 0
+                    if let m = migliori[e.esercizio], (kg, rip) <= (m.kg, m.rip) { continue }
+                    migliori[e.esercizio] = RecordEsercizio(esercizio: e.esercizio, kg: kg, rip: rip, giorno: a.giorno)
+                }
+            }
+        }
+        return migliori.values.sorted { ($1.giorno, $0.esercizio) < ($0.giorno, $1.esercizio) }
+    }
+
+    // Allenamenti e cardio insieme, dal più recente
+    func attivitaRecenti(_ n: Int? = nil) -> [Attivita] {
+        let tutte = (allenamenti.map(Attivita.pesi) + cardio.map(Attivita.cardio)).sorted { $0.quando > $1.quando }
+        return n.map { Array(tutte.prefix($0)) } ?? tutte
+    }
+
+    mutating func eliminaCardio(_ id: UUID) {
+        cardio.removeAll { $0.id == id }
     }
 }

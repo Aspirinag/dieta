@@ -4,8 +4,10 @@ import Foundation
 extension Stato {
     static var demo: Stato {
         let oggi = Giorni.oggi()
+        // `-senza-pasti`: il giorno di oggi ha un piano ma nessun pasto
+        let senzaPasti = Avvio.argomenti.contains("-senza-pasti")
         let giorni = Giorni.nomi.enumerated().map { i, nome in
-            GiornoPiano(nome: nome, palestra: i == 0 || i == 3, pasti: [
+            GiornoPiano(nome: nome, palestra: i == 0 || i == 3, pasti: senzaPasti && i == Giorni.indice(oggi) ? [] : [
                 Pasto(nome: "Colazione", opzioni: [Opzione(alimenti: [
                     Alimento(nome: "Yogurt greco", quantita: "150 g"),
                     Alimento(nome: "Fiocchi d'avena", quantita: "30 g"),

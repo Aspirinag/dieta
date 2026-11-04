@@ -12,7 +12,7 @@ App iOS in SwiftUI (dieta + palestra). Il README descrive app, struttura e passi
 
 ## Comandi
 - Test: `cd iOS && xcodebuild test -project Forma.xcodeproj -scheme Forma -destination 'platform=iOS Simulator,name=iPhone 17' -quiet` (output lungo in un file, leggere la coda).
-- Dati di prova: argomenti di avvio `-demo -tab oggi|dieta|allenamento|profilo|inCorso`, `-vista spesa`.
+- Dati di prova: argomenti di avvio `-demo -tab oggi|dieta|allenamento|progressi|inCorso|impostazioni`, `-vista spesa` (con `-tab dieta`). Inglese: `-AppleLanguages "(en)" -AppleLocale en_US`.
 - Schermate: subagent `ui-checker` dopo ogni modifica alle viste.
 - iPhone: `bash scripts/installa-iphone.sh` (iPhone collegato e **sbloccato**; con l'Apple ID gratuito l'app dura 7 giorni).
 

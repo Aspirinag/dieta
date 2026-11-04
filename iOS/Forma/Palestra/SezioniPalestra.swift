@@ -1,14 +1,25 @@
 import SwiftUI
 
-// Impostazioni della palestra (dalla scheda Palestra): piano settimanale A/B, pagamento, libreria
+// Impostazioni della palestra: pagamento e Apple Watch
 struct SezioniPalestra: View {
+    // Nelle Impostazioni pagamento e Watch stanno in due pagine
+    enum Parte { case pagamento, watch }
+    let parte: Parte
     @Environment(Palestra.self) private var palestra
     @AppStorage(Salute.chiave) private var watch = true
     @State private var senzaPermesso = false
 
     var body: some View {
-        sezionePalestra
-            .task { await controllaPermesso() }
+        if parte != .watch {
+            sezionePalestra
+                .task { await controllaPermesso() }
+        }
+        if parte != .pagamento {
+            sezioneWatch
+        }
+    }
+
+    @ViewBuilder private var sezioneWatch: some View {
         Section {
             Toggle(isOn: Binding(get: { watch }, set: { v in cambiaWatch(v) })) {
                 Label("Allenamenti dall'Apple Watch", systemImage: "applewatch")
@@ -39,20 +50,6 @@ struct SezioniPalestra: View {
         let mese = Palestra.mese(Giorni.oggi())
         let pagato = palestra.stato.pagamenti[mese]
         Section {
-            NavigationLink(value: PaginaPalestraDest.pianoSettimanale) {
-                LabeledContent {
-                    Text(palestra.stato.usaAB ? "questa settimana: \(palestra.settimana(Giorni.oggi()))" : "uguale ogni settimana")
-                } label: {
-                    Label("Piano settimanale", systemImage: "calendar.badge.clock")
-                }
-            }
-            NavigationLink(value: PaginaPalestraDest.libreria) {
-                LabeledContent {
-                    Text("\(palestra.stato.esercizi.count)")
-                } label: {
-                    Label("Libreria esercizi", systemImage: "books.vertical")
-                }
-            }
             Toggle(isOn: Binding(get: { palestra.stato.pagamentoAttivo }, set: { v in
                 palestra.stato.pagamentoAttivo = v
                 Task {
@@ -93,7 +90,7 @@ struct SezioniPalestra: View {
             Text("Palestra")
         } footer: {
             if palestra.stato.pagamentoAttivo {
-                Text("Una settimana prima compare un avviso in Oggi. Il giorno del pagamento arriva una notifica alle \(ProfiloView.orario(palestra.stato.oraPagamento)), se non hai già segnato il mese come pagato.")
+                Text("Una settimana prima compare un avviso in Oggi. Il giorno del pagamento arriva una notifica alle \(PromemoriaImpostazioni.orario(palestra.stato.oraPagamento)), se non hai già segnato il mese come pagato.")
                 if senzaPermesso {
                     Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
                         .foregroundStyle(.orange)
@@ -117,13 +114,13 @@ struct PianoSettimanaleView: View {
                     }
                 } footer: {
                     Text(palestra.stato.usaAB
-                         ? "Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo."
-                         : "Ogni settimana vale lo stesso piano. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
+                         ? LocalizedStringKey("Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
+                         : LocalizedStringKey("Ogni settimana vale lo stesso piano. Il piano dice in Oggi se è giorno di pesi, cardio o riposo."))
                 }
                 ForEach(palestra.stato.usaAB ? ["A", "B"] : ["A"], id: \.self) { w in
-                    Section(palestra.stato.usaAB ? "Settimana \(w)" : "Ogni settimana") {
+                    Section(palestra.stato.usaAB ? LocalizedStringKey("Settimana \(w)") : LocalizedStringKey("Ogni settimana")) {
                         ForEach(0..<7, id: \.self) { i in
-                            Picker(Giorni.nomi[i], selection: Binding(
+                            Picker(Giorni.nomeGiorno(i), selection: Binding(
                                 get: { palestra.stato.piani[w]?[i] ?? .riposo },
                                 set: { palestra.stato.piani[w]?[i] = $0 }
                             )) {
@@ -136,7 +133,7 @@ struct PianoSettimanaleView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle("Piano settimanale")
+        .navigationTitle("Programma della settimana")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

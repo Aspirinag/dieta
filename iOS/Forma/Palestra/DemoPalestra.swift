@@ -23,6 +23,11 @@ extension StatoPalestra {
             s.cardio.append(SessioneCardio(data: Giorni.aggiungi(Giorni.oggi(), k), tipo: k == -12 ? "Bici" : "Corsa",
                                            minuti: 30, km: k == -12 ? 12 : 4.5))
         }
+        // `-pagamento-tra N`: il pagamento cade tra N giorni (per vedere il riquadro in Oggi)
+        if let n = Avvio.valore("-pagamento-tra").flatMap(Int.init) {
+            let giorno = Giorni.aggiungi(Giorni.oggi(), n)
+            s.giornoPagamento = min(Int(giorno.suffix(2)) ?? 1, 28)
+        }
         s.saltati = [Giorni.aggiungi(Giorni.oggi(), -8)]
         // Dal Watch: una camminata e una sessione di palestra ancora senza esercizi
         s.cardio.append(SessioneCardio(data: Giorni.aggiungi(Giorni.oggi(), -4), tipo: "Camminata", minuti: 52, km: 4.6,
@@ -31,6 +36,15 @@ extension StatoPalestra {
         w.fine = w.inizio.addingTimeInterval(55 * 60)
         w.watch = DatiWatch(uuid: "demo-palestra", calorie: 318, battito: 118)
         s.allenamenti.append(w)
+        // `-allenato-oggi`: oggi un allenamento libero e uno registrato dal Watch (per i nomi di sistema)
+        if Avvio.argomenti.contains("-allenato-oggi") {
+            for (nome, watch) in [(Allenamento.nomeLibero, nil), (Allenamento.nomeWatch, DatiWatch(uuid: "demo-oggi", calorie: 200, battito: 110))] {
+                var a = Allenamento(nome: nome, inizio: Giorni.data(Giorni.oggi()).addingTimeInterval(3600))
+                a.fine = a.inizio.addingTimeInterval(40 * 60)
+                a.watch = watch
+                s.allenamenti.append(a)
+            }
+        }
         if Avvio.valore("-tab") == "inCorso" {
             var a = Allenamento(nome: scheda.nome, inizio: Date().addingTimeInterval(-1460), routine: scheda.id)
             a.esercizi = scheda.voci.prefix(3).enumerated().map { i, v in
