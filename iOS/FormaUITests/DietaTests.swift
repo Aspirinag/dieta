@@ -85,4 +85,35 @@ final class DietaTests: XCTestCase {
         XCTAssertEqual(giorni(app).count, 7, "La striscia resta")
         XCTAssertFalse(app.buttons["Spesa della settimana"].exists, "Senza piano la spesa non compare")
     }
+
+    func testCerchioSegnaPastoDiUnAltroGiorno() {
+        continueAfterFailure = false
+        let app = avvia()
+
+        XCTAssertTrue(giorni(app).firstMatch.waitForExistence(timeout: 8), "Manca la striscia dei giorni")
+        let altro = giorni(app).allElementsBoundByIndex.first { !(($0.value as? String) ?? "").contains("oggi") }
+        altro?.tap()
+        let cerchio = app.buttons["Segna Colazione"]
+        XCTAssertTrue(cerchio.waitForExistence(timeout: 3), "Manca il cerchio «Segna Colazione» sul riquadro")
+        XCTAssertGreaterThanOrEqual(cerchio.frame.width, 43.9, "Il cerchio è più stretto di 44 pt")
+        XCTAssertGreaterThanOrEqual(cerchio.frame.height, 43.9, "Il cerchio è più basso di 44 pt")
+        let prima = cerchio.value as? String
+        XCTAssertTrue(prima == "fatto" || prima == "da fare", "Il cerchio non dice se il pasto è fatto")
+        cerchio.tap()
+        XCTAssertEqual(app.buttons["Segna Colazione"].value as? String, prima == "fatto" ? "da fare" : "fatto", "Il tocco sul cerchio non segna il pasto")
+        XCTAssertTrue(app.buttons["Colazione"].exists, "Il tocco sul cerchio non deve aprire il dettaglio")
+        XCTAssertEqual(giorni(app).count, 7, "Dopo il tocco si resta in Dieta")
+        app.buttons["Colazione"].tap()
+        XCTAssertTrue(app.staticTexts["Yogurt greco"].waitForExistence(timeout: 5), "Il resto del riquadro apre il dettaglio")
+    }
+
+    func testPulsanteSpesaInBarra() {
+        continueAfterFailure = false
+        let app = avvia()
+
+        let carrello = app.navigationBars.buttons["Spesa"]
+        XCTAssertTrue(carrello.waitForExistence(timeout: 8), "Manca il carrello «Spesa» nella barra in alto")
+        carrello.tap()
+        XCTAssertTrue(app.staticTexts["Frutta e verdura"].waitForExistence(timeout: 5), "Il carrello non apre la Spesa")
+    }
 }
