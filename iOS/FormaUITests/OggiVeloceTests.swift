@@ -18,8 +18,11 @@ final class OggiVeloceTests: XCTestCase {
         let campo = app.textFields["campo-peso"]
         XCTAssertTrue(campo.waitForExistence(timeout: 5), "Il peso non apre il foglio veloce")
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3), "La tastiera non è aperta")
-        XCTAssertFalse((campo.value as? String ?? "").isEmpty, "Il campo non ha l'ultimo peso")
+        // L'ultimo peso è solo un suggerimento: il campo è vuoto e «Salva» non si tocca finché non si scrive
+        XCTAssertFalse((campo.placeholderValue ?? "").isEmpty && (campo.placeholderValue ?? "") != "–", "Manca l'ultimo peso come suggerimento")
+        XCTAssertFalse(app.buttons["salva-peso"].isEnabled, "«Salva» è attivo senza aver scritto un peso")
         campo.typeText("79,5")
+        XCTAssertTrue(app.buttons["salva-peso"].isEnabled, "«Salva» resta spento dopo aver scritto un peso")
         app.buttons["salva-peso"].tap()
         let chiuso = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: campo)
         XCTAssertEqual(XCTWaiter().wait(for: [chiuso], timeout: 5), .completed, "Il foglio non si chiude")

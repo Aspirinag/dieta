@@ -11,6 +11,8 @@ struct HomeView: View {
     @State private var pesoVeloce = false
     @State private var pesoPerModulo: Double?
     @State private var apriModulo = false
+    // La misura di oggi, letta quando l'editor si apre: salvando non deve passare da «Nuova» a «Modifica» mentre il foglio si chiude
+    @State private var misuraDiOggi: String?
     @State private var cardioAperto = false
     @Environment(\.dynamicTypeSize) private var dimensione
 
@@ -40,7 +42,11 @@ struct HomeView: View {
             .importaPDF($richiesta)
             .sheet(isPresented: $cardioAperto) { NuovoCardioView() }
             .sheet(isPresented: $pesoVeloce, onDismiss: {
-                if apriModulo { apriModulo = false; nuovaMisura = true }
+                if apriModulo {
+                    apriModulo = false
+                    misuraDiOggi = archivio.profilo.bia.contains { $0.data == Giorni.oggi() } ? Giorni.oggi() : nil
+                    nuovaMisura = true
+                }
             }) {
                 PesoVeloceView { kg in
                     pesoPerModulo = kg
@@ -51,10 +57,10 @@ struct HomeView: View {
             }
             .sheet(isPresented: $nuovaMisura) {
                 NavigationStack {
-                    EditorMisura(dataEsistente: archivio.profilo.bia.contains { $0.data == Giorni.oggi() } ? Giorni.oggi() : nil,
+                    EditorMisura(dataEsistente: misuraDiOggi,
                                  pesoIniziale: pesoPerModulo)
                         .toolbar {
-                            if archivio.profilo.bia.contains(where: { $0.data == Giorni.oggi() }) {
+                            if misuraDiOggi != nil {
                                 ToolbarItem(placement: .cancellationAction) { AnnullaFoglio() }
                             }
                         }

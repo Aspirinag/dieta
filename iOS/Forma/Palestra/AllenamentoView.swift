@@ -155,7 +155,7 @@ struct AllenamentoView: View {
         let durata = palestra.stato.durataSettimana(oggi)
         let n = palestra.stato.allenamentiSettimana(oggi)
         let riepilogo = riepilogoAllenamenti(n, durata: durata)
-        let giorni = HStack(spacing: dimensione.isAccessibilitySize ? 6 : 6) {
+        let giorni = HStack(spacing: 6) {
             ForEach(0..<7, id: \.self) { i in
                 VStack(spacing: 3) {
                     Circle()

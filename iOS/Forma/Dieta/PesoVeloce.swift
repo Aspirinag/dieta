@@ -47,8 +47,10 @@ struct PesoVeloceView: View {
     let altriDati: (Double?) -> Void
 
     @State private var testo = ""
-    @State private var selezione: TextSelection?
     @FocusState private var scrivendo: Bool
+
+    // L'ultimo peso è solo un suggerimento in grigio: non si salva mai senza averlo scritto
+    private var suggerimento: String { PesoVeloce.ultimo(archivio.profilo.bia)?.peso.map { num($0) } ?? "–" }
 
     private var kg: Double? { leggiNumero(testo).flatMap { $0 > 0 && $0 < 500 ? $0 : nil } }
 
@@ -56,7 +58,7 @@ struct PesoVeloceView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Peso").font(.headline)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                TextField("–", text: $testo, selection: $selezione)
+                TextField(suggerimento, text: $testo)
                     .font(.system(size: 44, weight: .bold))
                     .monospacedDigit()
                     .keyboardType(.decimalPad)
@@ -86,14 +88,6 @@ struct PesoVeloceView: View {
         .padding(20)
         .frame(maxHeight: .infinity, alignment: .top)
         .sfondoTema()
-        .onAppear {
-            if let ultimo = PesoVeloce.ultimo(archivio.profilo.bia)?.peso { testo = num(ultimo) }
-            scrivendo = true
-        }
-        // Con la tastiera già aperta, il valore è tutto selezionato: si scrive sopra
-        .task {
-            try? await Task.sleep(for: .milliseconds(300))
-            selezione = TextSelection(range: testo.startIndex..<testo.endIndex)
-        }
+        .onAppear { scrivendo = true }
     }
 }

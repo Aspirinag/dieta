@@ -3,6 +3,7 @@ import Testing
 @testable import Forma
 
 // Allenamento in corso più scorrevole: «ultima volta» che si tocca, esercizi finiti che si chiudono
+@MainActor
 struct AllenamentoScorrevoleTests {
     private func esercizio(_ fatte: [Bool]) -> EsercizioFatto {
         EsercizioFatto(esercizio: "x", serie: fatte.map { SerieFatta(kg: 10, rip: 5, fatta: $0) })
@@ -39,5 +40,29 @@ struct AllenamentoScorrevoleTests {
         #expect(PercorsoAllenamento.prossimoAperto(dopo: d.id, in: [a, b, c, d]) == c.id)
         #expect(PercorsoAllenamento.prossimoAperto(dopo: b.id, in: [a, b]) == nil)
         #expect(PercorsoAllenamento.prossimoAperto(dopo: d.id, in: [c, a, d]) == c.id)
+    }
+
+    // Chiusura ritardata: un esercizio appena finito resta aperto, poi si chiude se è ancora finito
+    @Test func appenaFinitoSoloSeOraEComplettoEPrimaNo() {
+        let a = UUID(), b = UUID()
+        #expect(PercorsoAllenamento.appenaFinito(prima: [a], ora: [a, b]) == b)
+        #expect(PercorsoAllenamento.appenaFinito(prima: [a, b], ora: [a, b]) == nil)
+        #expect(PercorsoAllenamento.appenaFinito(prima: [a, b], ora: [a]) == nil)
+    }
+
+    @Test func chiusuraRitardataSaltaSeLaSerieEStataTolta() {
+        var e = esercizio([true, true])
+        #expect(PercorsoAllenamento.siChiudeDopoIlRitardo(e.id, in: [e]))
+        e.serie[1].fatta = false
+        #expect(!PercorsoAllenamento.siChiudeDopoIlRitardo(e.id, in: [e]))
+        #expect(!PercorsoAllenamento.siChiudeDopoIlRitardo(UUID(), in: [e]))
+    }
+
+    // «N serie ✓» sulla riga chiusa non conta il riscaldamento
+    @Test func serieDiLavoroEscludeIlRiscaldamento() {
+        var e = esercizio([true, true, true, true])
+        e.serie[0].riscaldamento = true
+        #expect(PercorsoAllenamento.serieDiLavoro(e) == 3)
+        #expect(PercorsoAllenamento.serieDiLavoro(esercizio([true, true])) == 2)
     }
 }

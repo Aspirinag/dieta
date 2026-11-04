@@ -10949,6 +10949,22 @@
         }
       }
     },
+    "Tocca per riaprire": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to reopen"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to reopen"
+          }
+        }
+      }
+    },
     "Tocca un esercizio per cambiare serie, ripetizioni e recupero. Tieni premuto e trascina per riordinare.": {
       "localizations": {
         "en": {

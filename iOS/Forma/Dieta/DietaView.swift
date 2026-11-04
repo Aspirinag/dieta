@@ -44,9 +44,12 @@ struct DietaView: View {
             .navigationSubtitleSePossibile(sottotitolo)
             .importaPDF($richiesta)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
-                        .labelStyle(.iconOnly)
+                // Il carrello c'è solo se la settimana ha una spesa (come la riga in fondo)
+                if !archivio.profilo.vociSpesa(lunedi: Profilo.lunediSpesa(oggi: ultimoOggi)).isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
+                            .labelStyle(.iconOnly)
+                    }
                 }
             }
             .sheet(isPresented: $aMano) { EditorPianoView(originale: nil) }
@@ -256,6 +259,7 @@ private struct RiquadroPasto: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(giorno > Giorni.oggi())   // un pasto futuro non si segna; il riquadro apre comunque il dettaglio
         .sensoryFeedback(.selection, trigger: s.fatto)
         .accessibilityLabel("Segna \(pasto.nome)")
         .accessibilityValue(s.fatto ? Text("fatto") : Text("da fare"))

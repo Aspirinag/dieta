@@ -85,26 +85,30 @@ struct BarraAllenamento: View {
     var body: some View {
         HStack(spacing: 10) {
             if let fine = timer.fine, timer.attivo {
-                // Conto alla rovescia che si aggiorna ogni secondo; toccandolo si riapre l'allenamento
-                Button {
-                    if palestra.stato.inCorso != nil { navigazione.allenamentoAperto = true }
-                } label: {
-                    HStack(spacing: 10) {
+                // Conto alla rovescia che si aggiorna ogni secondo (anche per VoiceOver); con un allenamento in corso lo si tocca per riaprirlo
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    let resto = testoRecupero(fine.timeIntervalSince(ctx.date))
+                    let conto = HStack(spacing: 10) {
                         Image(systemName: "timer").foregroundStyle(.tint).symbolEffect(.pulse)
-                        TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                            Text(verbatim: testoRecupero(fine.timeIntervalSince(ctx.date)))
-                                .font(.title3.weight(.semibold))
-                                .monospacedDigit()
-                                .foregroundStyle(.tint)
-                        }
+                        Text(verbatim: resto)
+                            .font(.title3.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.tint)
                         Spacer(minLength: 0)
                     }
-                    .contentShape(.rect)
+                    if palestra.stato.inCorso != nil {
+                        Button { navigazione.allenamentoAperto = true } label: { conto.contentShape(.rect) }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("Riapri allenamento")
+                            .accessibilityLabel("Recupero")
+                            .accessibilityValue(resto)
+                    } else {
+                        conto
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("Recupero")
+                            .accessibilityValue(resto)
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("Riapri allenamento")
-                .accessibilityLabel("Recupero")
-                .accessibilityValue(testoRecupero(fine.timeIntervalSinceNow))
                 Button("−15") { timer.cambia(-15) }
                 Button("+15") { timer.cambia(15) }
                 Button("Salta", systemImage: "forward.end.fill") { timer.ferma() }

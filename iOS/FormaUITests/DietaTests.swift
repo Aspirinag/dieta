@@ -84,6 +84,7 @@ final class DietaTests: XCTestCase {
         XCTAssertTrue(app.buttons["Scrivilo a mano"].exists)
         XCTAssertEqual(giorni(app).count, 7, "La striscia resta")
         XCTAssertFalse(app.buttons["Spesa della settimana"].exists, "Senza piano la spesa non compare")
+        XCTAssertFalse(app.navigationBars.buttons["Spesa"].exists, "Senza piano il carrello non compare")
     }
 
     func testCerchioSegnaPastoDiUnAltroGiorno() {
@@ -105,6 +106,21 @@ final class DietaTests: XCTestCase {
         XCTAssertEqual(giorni(app).count, 7, "Dopo il tocco si resta in Dieta")
         app.buttons["Colazione"].tap()
         XCTAssertTrue(app.staticTexts["Yogurt greco"].waitForExistence(timeout: 5), "Il resto del riquadro apre il dettaglio")
+    }
+
+    func testCerchioSpentoPerIGiorniFuturi() throws {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(giorni(app).firstMatch.waitForExistence(timeout: 8), "Manca la striscia dei giorni")
+        let tutti = giorni(app).allElementsBoundByIndex
+        let oggi = try XCTUnwrap(tutti.firstIndex { (($0.value as? String) ?? "").contains("oggi") }, "Non trovo oggi nella striscia")
+        try XCTSkipIf(oggi == tutti.count - 1, "Oggi è l'ultimo giorno della settimana: nessun giorno futuro")
+        tutti[oggi + 1].tap()
+        let cerchio = app.buttons["Segna Colazione"]
+        XCTAssertTrue(cerchio.waitForExistence(timeout: 3), "Manca il cerchio «Segna Colazione»")
+        XCTAssertFalse(cerchio.isEnabled, "Il cerchio di un giorno futuro è attivo")
+        app.buttons["Colazione"].tap()
+        XCTAssertTrue(app.staticTexts["Yogurt greco"].waitForExistence(timeout: 5), "Il riquadro di un giorno futuro deve aprire il dettaglio")
     }
 
     func testPulsanteSpesaInBarra() {

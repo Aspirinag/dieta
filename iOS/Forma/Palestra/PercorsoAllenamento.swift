@@ -30,4 +30,22 @@ enum PercorsoAllenamento {
         let aperto = { (e: EsercizioFatto) in !completo(e) }
         return esercizi[(i + 1)...].first(where: aperto)?.id ?? esercizi[..<i].first(where: aperto)?.id
     }
+
+    // Quanti secondi restano aperti un esercizio appena finito, prima che si chiuda e si scorra al prossimo
+    static let ritardoChiusura: Duration = .milliseconds(1200)
+
+    // L'esercizio che è diventato completo tra due momenti, se c'è
+    static func appenaFinito(prima: [UUID], ora: [UUID]) -> UUID? {
+        ora.last { !prima.contains($0) }
+    }
+
+    // Scaduto il ritardo: si chiude solo se l'esercizio è ancora finito (la spunta può essere stata tolta)
+    static func siChiudeDopoIlRitardo(_ id: UUID, in esercizi: [EsercizioFatto]) -> Bool {
+        esercizi.first { $0.id == id }.map(completo) ?? false
+    }
+
+    // Le serie che contano nella riga chiusa «N serie ✓»: il riscaldamento no
+    static func serieDiLavoro(_ e: EsercizioFatto) -> Int {
+        e.serie.filter { !$0.riscaldamento }.count
+    }
 }

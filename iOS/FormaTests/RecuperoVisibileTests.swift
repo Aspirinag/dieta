@@ -3,6 +3,7 @@ import Testing
 @testable import Forma
 
 // Il recupero nella barra sopra la tab bar si legge come un conto alla rovescia m:ss
+@MainActor
 struct RecuperoVisibileTests {
     @Test func formatoMinutiESecondi() {
         #expect(testoRecupero(90) == "1:30")

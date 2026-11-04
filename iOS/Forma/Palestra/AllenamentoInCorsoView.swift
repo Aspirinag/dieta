@@ -10,7 +10,8 @@ struct AllenamentoInCorsoView: View {
     @State private var aggiungi = false
     @State private var chiediFine = false
     @State private var chiediAnnulla = false
-    @State private var riaperti: Set<UUID> = []   // esercizi finiti che l'utente ha riaperto a mano
+    @State private var riaperti: Set<UUID> = []   // esercizi finiti che restano aperti: riaperti a mano o appena finiti
+    @State private var chiusure: [UUID: Task<Void, Never>] = [:]   // chiusura in attesa, per esercizio
     @FocusState private var campo: PuntoDiFocus?
 
     var body: some View {
@@ -43,13 +44,27 @@ struct AllenamentoInCorsoView: View {
                 }
                 .sfondoTema()
                 .onChange(of: a.esercizi.filter(PercorsoAllenamento.completo).map(\.id)) { prima, ora in
-                    // Un esercizio tornato incompleto si riapre da solo; uno appena finito porta al prossimo da fare
+                    // Un esercizio tornato incompleto si riapre da solo e la sua chiusura in attesa salta
                     riaperti.formIntersection(ora)
-                    guard let finito = ora.last(where: { !prima.contains($0) }),
-                          let prossimo = PercorsoAllenamento.prossimoAperto(dopo: finito, in: a.esercizi) else { return }
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(250))
-                        withAnimation(.smooth) { scorri.scrollTo(prossimo, anchor: .top) }
+                    for (id, compito) in chiusure where !ora.contains(id) {
+                        compito.cancel()
+                        chiusure[id] = nil
+                    }
+                    // Uno appena finito resta aperto un attimo (per annullare una spunta sbagliata), poi si chiude e porta al prossimo da fare
+                    guard let finito = PercorsoAllenamento.appenaFinito(prima: prima, ora: ora) else { return }
+                    riaperti.insert(finito)
+                    chiusure[finito]?.cancel()
+                    chiusure[finito] = Task {
+                        try? await Task.sleep(for: PercorsoAllenamento.ritardoChiusura)
+                        guard !Task.isCancelled,
+                              let esercizi = palestra.stato.inCorso?.esercizi,
+                              PercorsoAllenamento.siChiudeDopoIlRitardo(finito, in: esercizi) else { return }
+                        chiusure[finito] = nil
+                        let prossimo = PercorsoAllenamento.prossimoAperto(dopo: finito, in: esercizi)
+                        withAnimation(.smooth) {
+                            riaperti.remove(finito)
+                            if let prossimo { scorri.scrollTo(prossimo, anchor: .top) }
+                        }
                     }
                 }
                 .navigationTitle(a.titolo)
@@ -184,7 +199,7 @@ struct SezioneEsercizioInCorso: View {
                     } label: {
                         HStack(spacing: 12) {
                             IconaEsercizio(esercizio: ex, lato: 32)
-                            Text(verbatim: "\(ex.titolo) · " + String(localized: "\(e.serie.count) serie ✓"))
+                            Text(verbatim: "\(ex.titolo) · " + String(localized: "\(PercorsoAllenamento.serieDiLavoro(e)) serie ✓"))
                                 .font(.headline)
                             Spacer()
                             Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
@@ -192,6 +207,7 @@ struct SezioneEsercizioInCorso: View {
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityHint(Text("Tocca per riaprire"))
                     .listRowBackground(Color.green.opacity(0.14))
                     .id(idEsercizio)
                 }
@@ -211,7 +227,7 @@ struct SezioneEsercizioInCorso: View {
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 ForEach(e.serie) { s in
-                    RigaSerie(idEsercizio: idEsercizio, idSerie: s.id, campo: campo)
+                    RigaSerie(idEsercizio: idEsercizio, idSerie: s.id, campo: campo, riaperti: $riaperti)
                 }
                 Button("Aggiungi serie", systemImage: "plus") {
                     let ultima = e.serie.last
@@ -264,6 +280,7 @@ struct RigaSerie: View {
     let idEsercizio: UUID
     let idSerie: UUID
     var campo: FocusState<PuntoDiFocus?>.Binding
+    @Binding var riaperti: Set<UUID>
     @State private var kg = ""
     @State private var rip = ""
     @State private var caricato = false
@@ -390,6 +407,10 @@ struct RigaSerie: View {
             kg = num(k)
             rip = String(r)
             campo.wrappedValue = nil
+            // L'ultima serie spuntata non chiude subito l'esercizio: resta aperto finché la chiusura ritardata lo chiude
+            if palestra.stato.inCorso?.esercizi.first(where: { $0.id == idEsercizio }).map(PercorsoAllenamento.completo) == true {
+                riaperti.insert(idEsercizio)
+            }
             timer.avvia(recupero, serie: s.id)
         }
     }
