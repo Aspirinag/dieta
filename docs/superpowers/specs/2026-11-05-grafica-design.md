@@ -1,8 +1,10 @@
-# Forma — nuova grafica
+# Forma — nuova grafica (BOZZA)
+
+> **BOZZA, da approvare.** Il proprietario non ha ancora scelto la direzione grafica: niente di questo documento va realizzato prima della sua approvazione.
 
 Data: 5 novembre 2026. Branch `grafica`.
 
-Fonti vincolanti: il report `docs/ricerca/interfaccia-e-usabilita.md` (sezioni «Un solo sistema visivo per tutte le schermate» e «Le proposte, schermata per schermata») e i mockup approvati *Sistema visivo*, *Oggi*, *Dieta*, *Spesa* (HTML statici del 5 novembre). Le scelte non scritte in queste fonti sono segnate **[Scelta]**.
+Fonti vincolanti: il report `docs/ricerca/interfaccia-e-usabilita.md` (sezioni «Un solo sistema visivo per tutte le schermate» e «Le proposte, schermata per schermata») e i mockup proposti *Sistema visivo*, *Oggi*, *Dieta*, *Spesa* (HTML statici del 5 novembre). Le scelte non scritte in queste fonti sono segnate **[Scelta]**.
 
 ## Perché
 
@@ -23,7 +25,7 @@ Tutto sta in `iOS/Forma/Comune/` (`Tema.swift`, `Stile.swift`, `Riga.swift`, `Sc
 - Spaziature a passi di 4: `Spazio.xs` 4, `.s` 8, `.m` 12, `.l` 16, `.xl` 24 (24 tra sezioni fuori dalle liste).
 - Un solo raggio: `Misure.raggio` = 22 pt **[Scelta]** (quello del mockup). Pulsanti a capsula.
 - Bersagli di tocco: 44 × 44 pt (`Misure.tocco`) per tutto ciò che si tocca; mai sotto 28.
-- Margini: quelli di sistema delle liste. Nessun margine destro scritto a mano: le liste rispettano l'area sicura (anche la colonna di sistema a destra del telefono del proprietario) con `sfondoTema()`, che usa i margini del contenuto e non `listRowInsets` **[Scelta]**.
+- Margini: quelli di sistema delle liste. Nessun margine destro scritto a mano: le liste rispettano l'area sicura (anche la colonna di sistema a destra del telefono del proprietario) con `sfondoTema()`, che usa i margini del contenuto e non `listRowInsets` **[Scelta]**. Causa trovata sul simulatore iPhone Duo: `sfondoTema()` applicava sempre `contentMargins(.horizontal, 0)`, che toglie i margini di sistema delle liste; applicandolo solo quando il margine è maggiore di zero le liste tornano a riquadri con il margine destro giusto, senza la correzione `listRowInsets(.trailing, 20)`.
 
 ### Testo
 
