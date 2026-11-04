@@ -41,6 +41,10 @@ final class SpesaUITests: XCTestCase {
         let caffe = app.buttons["Caffè"]
         XCTAssertTrue(caffe.waitForExistence(timeout: 5), "«Caffè» non compare")
         XCTAssertTrue(altro.exists, "Manca il reparto Altro")
-        XCTAssertLessThan(altro.frame.minY, caffe.frame.minY, "«Caffè» sta sotto «Altro»")
+        // La riga nuova entra con un'animazione: si aspetta che sia al suo posto
+        let sotto = NSPredicate { _, _ in altro.frame.minY < caffe.frame.minY }
+        let attesa = XCTNSPredicateExpectation(predicate: sotto, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [attesa], timeout: 3), .completed,
+                       "«Caffè» deve stare sotto «Altro» (Altro \(altro.frame.minY), Caffè \(caffe.frame.minY))")
     }
 }
