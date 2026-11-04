@@ -52,7 +52,7 @@ struct ProfiliImpostazioni: View {
                         aggiungiProfilo = true
                     }
                 } footer: {
-                    Text("Il profilo con ★ si apre all'avvio. Per cambiarlo usa il menu in alto a destra in Oggi.")
+                    Text("Il profilo con ★ si apre all'avvio. Per cambiarlo usa il menu in alto a destra.")
                 }
             }
             .righeTema()
@@ -167,7 +167,7 @@ struct PromemoriaImpostazioni: View {
         .sfondoTema()
         .navigationTitle("Promemoria")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
+        .alert("Notifiche non consentite", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
             Button("OK") {}
         } message: {
             Text(errore ?? "")
@@ -190,7 +190,7 @@ struct PromemoriaImpostazioni: View {
                 if !prima.pasti { q.pasti = false }
                 if !prima.acqua { q.acqua = false }
                 archivio.stato.promemoria = q
-                errore = "Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma."
+                errore = "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma."
             }
             await archivio.programmaPromemoria()
         }
@@ -209,13 +209,13 @@ struct BackupImpostazioni: View {
         lista
             .fileImporter(isPresented: $importaBackup, allowedContentTypes: [.json]) { risultato in
                 guard case .success(let url) = risultato else {
-                    errore = "Non riesco ad aprire il file."
+                    errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
                     return
                 }
                 let accesso = url.startAccessingSecurityScopedResource()
                 defer { if accesso { url.stopAccessingSecurityScopedResource() } }
                 guard let dati = try? Data(contentsOf: url) else {
-                    errore = "Non riesco ad aprire il file."
+                    errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
                     return
                 }
                 backupLetto = dati

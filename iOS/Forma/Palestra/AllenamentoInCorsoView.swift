@@ -91,7 +91,7 @@ struct AllenamentoInCorsoView: View {
                     if a.fine != nil { Text(durataTesto(a.durata)) }
                     else { Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false).monospacedDigit() }
                 }
-                dato("Volume") { Text(volumeTesto(a.volume)) }
+                dato("Kg totali") { Text(volumeTesto(a.volume)) }
                 dato("Serie") { Text("\(a.serieFatte)") }
             }
         }

@@ -71,7 +71,7 @@ struct LibreriaView: View {
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 } footer: {
-                    Text("\(filtrati.count) esercizi")
+                    Text(filtrati.count == 1 ? "1 esercizio" : "\(filtrati.count) esercizi")
                 }
                 let gruppi = Dictionary(grouping: filtrati, by: \.muscolo)
                 ForEach(Muscolo.allCases.filter { gruppi[$0] != nil }) { m in

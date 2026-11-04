@@ -35,7 +35,7 @@ struct ProgressiView: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button("Aggiungi misurazione", systemImage: "square.and.pencil") { nuovaMisura = true }
-                            Button("Carica referto BIA (PDF)", systemImage: "doc.badge.plus") { richiesta = .bia }
+                            Button("Carica la BIA (PDF)", systemImage: "doc.badge.plus") { richiesta = .bia }
                         } label: {
                             Image(systemName: "plus")
                         }

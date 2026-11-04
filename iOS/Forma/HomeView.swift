@@ -110,7 +110,7 @@ struct HomeView: View {
                 disposizione {
                     Text("Nessun piano per oggi").font(.headline)
                     Spacer(minLength: 8)
-                    Button("Carica piano") { richiesta = .schema }
+                    Button("Carica il piano alimentare (PDF)") { richiesta = .schema }
                         .buttonStyle(PulsanteAccento())
                 }
             }

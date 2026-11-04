@@ -42,7 +42,7 @@ final class ProgressiPalestraTests: XCTestCase {
     func testCalendarioETuttiSiAprono() {
         continueAfterFailure = false
         let app = avvia()
-        XCTAssertTrue(app.staticTexts["Kg sollevati per settimana"].waitForExistence(timeout: 5), "Manca il grafico")
+        XCTAssertTrue(app.staticTexts["Kg totali per settimana"].waitForExistence(timeout: 5), "Manca il grafico")
         let calendario = app.buttons["Calendario"]
         porta(calendario, app)
         calendario.tap()

@@ -28,12 +28,12 @@ struct ImportaPDF: ViewModifier {
             .fileImporter(isPresented: $aperto, allowedContentTypes: [.pdf]) { risultato in
                 switch risultato {
                 case .failure:
-                    errore = "Non riesco ad aprire il file."
+                    errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
                 case .success(let url):
                     let accesso = url.startAccessingSecurityScopedResource()
                     defer { if accesso { url.stopAccessingSecurityScopedResource() } }
                     guard let dati = try? Data(contentsOf: url) else {
-                        errore = "Non riesco ad aprire il file."
+                        errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
                         return
                     }
                     let scelto = tipo
@@ -81,12 +81,12 @@ struct ImportaPDF: ViewModifier {
         case .schema:
             let g = giorni ?? []
             guard g.count == 7, g.allSatisfy({ !$0.pasti.isEmpty }) else {
-                return .errore("Non riesco a leggere lo schema da questo PDF (trovati \(g.count) giorni su 7). Controlla che sia il piano alimentare, oppure crealo a mano da Dieta → Piani e misure.")
+                return .errore("Non riesco a leggere il piano da questo PDF (\(g.count == 1 ? "trovato 1 giorno" : "trovati \(g.count) giorni") su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Dieta → Piani e misure.")
             }
             return .piano(g)
         case .bia:
             guard let m = misura, !m.data.isEmpty, m.peso != nil else {
-                return .errore("Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA, oppure aggiungi la misurazione a mano.")
+                return .errore("Non riesco a leggere i valori da questo PDF. Controlla che sia la BIA, oppure aggiungi la misurazione a mano.")
             }
             return .bia(m)
         }
@@ -102,7 +102,7 @@ struct ImportaPDF: ViewModifier {
             case .bia: esito = Self.valuta(tipo, giorni: nil, misura: try await LettorePDF.condiviso.bia(dati))
             }
         } catch {
-            errore = "Non riesco a leggere questo PDF."
+            errore = "Il file non è leggibile. Scegli un altro PDF."
             return
         }
         switch esito {

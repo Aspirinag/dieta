@@ -41,7 +41,7 @@ struct DettaglioPastoView: View {
                     set: { nuova in archivio.cambiaSlot(giorno, indice) { $0.opt = nuova } }
                 )) {
                     ForEach(pasto.opzioni.indices, id: \.self) { j in
-                        Text(pasto.opzioni[j].titolo ?? "Opzione \(j + 1)").tag(j)
+                        Text(pasto.opzioni[j].titolo ?? "Alternativa \(j + 1)").tag(j)
                     }
                 }
                 Group {

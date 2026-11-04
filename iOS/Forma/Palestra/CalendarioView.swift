@@ -47,7 +47,7 @@ struct CalendarioContenuto: View {
             Text(Giorni.nomi[Giorni.indice(scelto)] + " " + Giorni.breve(scelto)).font(.headline).padding(.horizontal, 4)
             Riquadro {
                 HStack {
-                    Text("Programmato")
+                    Text("In programma")
                     Spacer()
                     Image(systemName: t.simbolo).foregroundStyle(Colori.accento)
                     Text(t.nome).foregroundStyle(.secondary)
@@ -137,7 +137,7 @@ struct GrigliaMese: View {
         if !palestra.cardio(del: iso).isEmpty { parti.append("cardio fatto") }
         if parti.count == 1 {
             if palestra.stato.saltati.contains(iso) { parti.append("saltato") }
-            else if palestra.programmato(iso) != .riposo { parti.append("previsto \(palestra.programmato(iso).nome.lowercased())") }
+            else if palestra.programmato(iso) != .riposo { parti.append("in programma: \(palestra.programmato(iso).nome.lowercased())") }
         }
         return parti.joined(separator: ", ")
     }

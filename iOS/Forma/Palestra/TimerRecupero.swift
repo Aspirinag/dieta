@@ -28,7 +28,7 @@ final class TimerRecupero {
         fine = f
         let secondi = Int(f.timeIntervalSinceNow.rounded())
         Notifiche.cancella(["recupero"])
-        Task { await Notifiche.traSecondi(id: "recupero", titolo: "Recupero finito", testo: "Via con la prossima serie 💪", secondi: secondi) }
+        Task { await Notifiche.traSecondi(id: "recupero", titolo: "Recupero finito", testo: "Puoi iniziare la prossima serie.", secondi: secondi) }
         compito = Task {
             try? await Task.sleep(for: .seconds(max(secondi, 0)))
             guard !Task.isCancelled else { return }

@@ -17,7 +17,7 @@ struct ProgressiPalestraView: View {
         if stato.allenamenti.isEmpty && stato.cardio.isEmpty {
             Riquadro {
                 Text("Nessun allenamento").font(.headline)
-                Text("Gli allenamenti finiti compaiono qui, con i kg sollevati e i record.")
+                Text("Gli allenamenti finiti compaiono qui, con i kg totali e i record.")
                     .font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
             }
         } else {
@@ -27,7 +27,7 @@ struct ProgressiPalestraView: View {
         }
     }
 
-    // ---------- Kg sollevati per settimana ----------
+    // ---------- Kg totali per settimana ----------
 
     private struct Barra: Identifiable {
         let inizio: String          // lunedì della settimana
@@ -46,7 +46,7 @@ struct ProgressiPalestraView: View {
         // Se questa settimana non ha ancora pesi, il titolo mostra l'ultima con dati
         let titolo = barre.last { $0.kg > 0 } ?? barre[barre.count - 1]
         return Riquadro {
-            Text("Kg sollevati per settimana").font(.headline)
+            Text("Kg totali per settimana").font(.headline)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(volumeTesto(titolo.kg)).font(.system(size: 34, weight: .bold)).monospacedDigit()
                 Text(titolo.ultima ? "questa settimana" : "settimana del \(etichetta(titolo.inizio))")
@@ -69,7 +69,7 @@ struct ProgressiPalestraView: View {
                 .frame(height: 150)
                 .padding(.top, 8)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Grafico: kg sollevati per settimana")
+                .accessibilityLabel("Grafico: kg totali per settimana")
                 .accessibilityValue(barre.map { "settimana del \(etichetta($0.inizio)): \(volumeTesto($0.kg))" }.joined(separator: ", "))
             }
         }

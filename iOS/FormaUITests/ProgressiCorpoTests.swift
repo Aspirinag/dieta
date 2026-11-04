@@ -60,7 +60,7 @@ final class ProgressiCorpoTests: XCTestCase {
         let app = avvia()
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
         app.navigationBars["Progressi"].buttons["Aggiungi"].tap()
-        XCTAssertTrue(app.buttons["Carica referto BIA (PDF)"].waitForExistence(timeout: 3), "Manca il caricamento del referto")
+        XCTAssertTrue(app.buttons["Carica la BIA (PDF)"].waitForExistence(timeout: 3), "Manca il caricamento del referto")
         app.buttons["Aggiungi misurazione"].tap()
         XCTAssertTrue(app.navigationBars["Nuova misurazione"].waitForExistence(timeout: 5), "Si apre l'editor")
     }
@@ -70,7 +70,7 @@ final class ProgressiCorpoTests: XCTestCase {
         let app = avvia()
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
         app.segmentedControls.buttons["Palestra"].tap()
-        XCTAssertTrue(app.staticTexts["Kg sollevati per settimana"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Kg totali per settimana"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Calendario"].exists)
         XCTAssertFalse(app.navigationBars["Progressi"].buttons["Aggiungi"].exists, "Il + è solo di Corpo")
     }

@@ -8,7 +8,7 @@ final class LettorePDF: NSObject, WKNavigationDelegate {
 
     enum Errore: LocalizedError {
         case lettura
-        var errorDescription: String? { "Non riesco a leggere questo PDF." }
+        var errorDescription: String? { "Il file non è leggibile. Scegli un altro PDF." }
     }
 
     private var web: WKWebView?

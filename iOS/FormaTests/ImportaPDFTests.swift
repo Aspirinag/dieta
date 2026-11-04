@@ -30,7 +30,7 @@ struct ImportaPDFTests {
         var m = Misura(data: "")
         m.peso = 80
         guard case .errore(let t) = ImportaPDF.valuta(.bia, giorni: nil, misura: m) else { Issue.record("atteso errore"); return }
-        #expect(t.contains("referto BIA"))
+        #expect(t.contains("la BIA"))
     }
 
     @Test func biaValida() {
