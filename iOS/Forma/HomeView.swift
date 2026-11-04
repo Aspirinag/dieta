@@ -33,7 +33,10 @@ struct HomeView: View {
             .navigationSubtitleSePossibile(titolo)
             .importaPDF($richiesta)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { MenuProfilo() }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    MenuProfilo()
+                    Button("Impostazioni", systemImage: "gearshape") { navigazione.impostazioniAperte = true }
+                }
             }
             .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
             .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }

@@ -75,7 +75,6 @@ struct PastiView: View {
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button("Settimana e spesa", systemImage: "calendar") { settimana = true }
-                    MenuProfilo()
                 }
             }
             .animation(.default, value: giorno)

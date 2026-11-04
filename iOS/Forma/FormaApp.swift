@@ -33,13 +33,15 @@ struct FormaApp: App {
 }
 
 enum Scheda: String {
-    case oggi, dieta, allenamento, profilo
+    case oggi, dieta, allenamento, progressi
 }
 
 // Scheda selezionata e allenamento aperto: anche i pulsanti dentro le schermate possono cambiarli
 @Observable
 final class Navigazione {
     var scheda = Scheda(rawValue: Avvio.valore("-tab") ?? "") ?? .oggi
+    // Le Impostazioni sono un foglio; `-tab profilo` resta come sinonimo di `-tab impostazioni`
+    var impostazioniAperte = ["impostazioni", "profilo"].contains(Avvio.valore("-tab") ?? "")
     var allenamentoAperto = Avvio.valore("-tab") == "inCorso"
     var riepilogo: Allenamento?   // riepilogo mostrato appena finito un allenamento
     var compila: UUID?            // sessione del Watch a cui aggiungere esercizi e pesi
@@ -60,7 +62,12 @@ struct Radice: View {
             Tab("Oggi", systemImage: "sun.max", value: .oggi) { HomeView() }
             Tab("Dieta", systemImage: "fork.knife", value: .dieta) { PastiView() }
             Tab("Palestra", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
-            Tab("Impostazioni", systemImage: "gearshape", value: .profilo) { ImpostazioniView() }
+            Tab("Progressi", systemImage: "chart.xyaxis.line", value: .progressi) {
+                NavigationStack { AndamentoPagina() }
+            }
+        }
+        .sheet(isPresented: $navigazione.impostazioniAperte) {
+            ImpostazioniView().applicaTema()
         }
         // La barra compare solo con un allenamento in corso o un recupero che scorre
         .accessorioAllenamento(visibile: palestra.stato.inCorso != nil || timer.attivo)
@@ -155,7 +162,7 @@ struct MenuProfilo: View {
     @Environment(Archivio.self) private var archivio
 
     var body: some View {
-        if archivio.stato.profili.count > 1 {
+        if archivio.stato.profili.count >= 2 {
             Menu {
                 Picker("Profilo", selection: Binding(
                     get: { archivio.stato.attivo },

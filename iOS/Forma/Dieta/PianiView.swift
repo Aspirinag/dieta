@@ -195,7 +195,6 @@ struct AndamentoPagina: View {
         .sfondoTema()
         .navigationTitle("Andamento")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { MenuProfilo() } }
     }
 }
 
