@@ -10,11 +10,11 @@ final class SpesaUITests: XCTestCase {
     }
 
     private func conteggio(_ app: XCUIApplication) -> Int? {
-        let testo = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'per la settimana'")).firstMatch
+        let testo = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label MATCHES %@", ".*[0-9]+ di [0-9]+ presi")).firstMatch
         guard testo.waitForExistence(timeout: 8) else { return nil }
-        let parti = testo.label.components(separatedBy: " · ")
-        guard let ultima = parti.last, let primo = ultima.split(separator: " ").first else { return nil }
-        return Int(primo)
+        let parti = testo.label.components(separatedBy: " di ")
+        return parti.first.flatMap { Int($0.split(separator: " ").last ?? "") }
     }
 
     func testSpesaPerRepartoEAggiunta() {
@@ -37,8 +37,8 @@ final class SpesaUITests: XCTestCase {
         campo.tap()
         campo.typeText("Caffè\n")
 
-        let altro = app.staticTexts["Altro"]
-        let caffe = app.buttons["Caffè"].firstMatch
+        let altro = app.staticTexts["reparto.altro"]
+        let caffe = app.buttons["Caffè"]
         XCTAssertTrue(caffe.waitForExistence(timeout: 5), "«Caffè» non compare")
         XCTAssertTrue(altro.exists, "Manca il reparto Altro")
         XCTAssertLessThan(altro.frame.minY, caffe.frame.minY, "«Caffè» sta sotto «Altro»")

@@ -29,6 +29,11 @@ struct SpesaView: View {
                     }
                 }
                 aggiungi
+                Text("Le spunte restano per questa settimana e la prossima.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
@@ -49,7 +54,7 @@ struct SpesaView: View {
                     }
                     .disabled(presi.values.allSatisfy { !$0 })
                 } label: {
-                    Label("Altro", systemImage: "ellipsis.circle")
+                    Label("Opzioni", systemImage: "ellipsis.circle")
                 }
             }
         }
@@ -62,11 +67,17 @@ struct SpesaView: View {
         return VStack(spacing: 8) {
             HStack(spacing: 0) {
                 freccia("chevron.left", "Settimana precedente", attiva: lunSpesa != questa) { lunSpesa = questa }
-                Text("per la settimana \(periodo) · \(quanti) di \(voci.count)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                VStack(spacing: 2) {
+                    Text(lunSpesa == questa ? periodo : "Prossima settimana · \(periodo)")
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text("\(quanti) di \(voci.count) presi")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .combine)
                 freccia("chevron.right", "Settimana successiva", attiva: lunSpesa != prossima) { lunSpesa = prossima }
             }
             ProgressView(value: Double(quanti), total: Double(max(voci.count, 1)))
@@ -111,6 +122,7 @@ struct SpesaView: View {
                 .foregroundStyle(.secondary)
                 .padding(.leading, 4)
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("reparto.\(reparto.rawValue)")
             Riquadro {
                 ForEach(Array(righe.enumerated()), id: \.element.id) { i, voce in
                     if i > 0 { Divider() }
@@ -137,7 +149,7 @@ struct SpesaView: View {
             .buttonStyle(.plain)
             .sensoryFeedback(.selection, trigger: preso)
             .accessibilityIdentifier("spunta.\(v.chiave)")
-            .accessibilityLabel(v.nome)
+            .accessibilityLabel("Segna \(v.nome)")
             .accessibilityValue(preso ? "preso" : "da prendere")
 
             Button {
@@ -216,7 +228,7 @@ struct SpesaView: View {
                     .onSubmit {
                         archivio.profilo.aggiungiExtra(nuovo, lunedi: lunSpesa)
                         nuovo = ""
-                        scrivendo = false
+                        scrivendo = true
                     }
                     .frame(minHeight: 44)
             }
@@ -227,7 +239,7 @@ struct SpesaView: View {
     private var vuoto: some View {
         Riquadro {
             Text("Nessun piano in questa settimana").font(.headline)
-            Text("Carica il PDF del piano alimentare per avere la lista.")
+            Text("Carica il piano alimentare da Dieta → Piani e misure.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
