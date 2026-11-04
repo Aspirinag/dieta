@@ -52,7 +52,7 @@ struct EditorMisura: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle(dataEsistente == nil ? "Nuova misurazione" : "Modifica misurazione")
+        .navigationTitle(dataEsistente == nil ? LocalizedStringKey("Nuova misurazione") : LocalizedStringKey("Modifica misurazione"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if dataEsistente == nil {

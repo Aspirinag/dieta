@@ -24,8 +24,8 @@ struct LibreriaView: View {
         palestra.stato.esercizi
             .filter { muscolo == nil || $0.muscolo == muscolo }
             .filter { attrezzo == nil || $0.attrezzo == attrezzo }
-            .filter { cerca.isEmpty || $0.nome.localizedCaseInsensitiveContains(cerca) }
-            .sorted { $0.nome.localizedCompare($1.nome) == .orderedAscending }
+            .filter { cerca.isEmpty || $0.titolo.localizedCaseInsensitiveContains(cerca) }
+            .sorted { $0.titolo.localizedCompare($1.titolo) == .orderedAscending }
     }
 
     var body: some View {
@@ -45,13 +45,13 @@ struct LibreriaView: View {
                 Section {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            filtro(titolo: muscolo?.nome ?? "Muscolo", attivo: muscolo != nil) {
+                            filtro(titolo: muscolo?.nome ?? String(localized: "Muscolo"), attivo: muscolo != nil) {
                                 Picker("Muscolo", selection: $muscolo) {
                                     Text("Tutti").tag(Muscolo?.none)
                                     ForEach(Muscolo.allCases) { Text($0.nome).tag(Muscolo?.some($0)) }
                                 }
                             }
-                            filtro(titolo: attrezzo?.nome ?? "Attrezzo", attivo: attrezzo != nil) {
+                            filtro(titolo: attrezzo?.nome ?? String(localized: "Attrezzo"), attivo: attrezzo != nil) {
                                 Picker("Attrezzo", selection: $attrezzo) {
                                     Text("Tutti").tag(Attrezzo?.none)
                                     ForEach(Attrezzo.allCases) { Text($0.nome).tag(Attrezzo?.some($0)) }
@@ -71,7 +71,7 @@ struct LibreriaView: View {
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 } footer: {
-                    Text(filtrati.count == 1 ? "1 esercizio" : "\(filtrati.count) esercizi")
+                    Text("\(filtrati.count) esercizi")
                 }
                 let gruppi = Dictionary(grouping: filtrati, by: \.muscolo)
                 ForEach(Muscolo.allCases.filter { gruppi[$0] != nil }) { m in
@@ -83,7 +83,7 @@ struct LibreriaView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle(inScelta ? "Aggiungi esercizi" : "Libreria esercizi")
+        .navigationTitle(inScelta ? LocalizedStringKey("Aggiungi esercizi") : LocalizedStringKey("Libreria esercizi"))
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $cerca, prompt: "Cerca esercizio")
         .toolbar {
@@ -92,7 +92,7 @@ struct LibreriaView: View {
                     Button("Annulla", role: .cancel) { chiudi() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(scelti.isEmpty ? "Aggiungi" : "Aggiungi (\(scelti.count))") {
+                    Button(scelti.isEmpty ? LocalizedStringKey("Aggiungi") : LocalizedStringKey("Aggiungi (\(scelti.count))")) {
                         fatto(scelti)
                         chiudi()
                     }
@@ -129,7 +129,7 @@ struct LibreriaView: View {
         let etichetta = HStack(spacing: 12) {
             IconaEsercizio(esercizio: e)
             VStack(alignment: .leading, spacing: 2) {
-                Text(e.nome).foregroundStyle(.primary)
+                Text(verbatim: e.titolo).foregroundStyle(.primary)
                 Text(e.attrezzo.nome).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()

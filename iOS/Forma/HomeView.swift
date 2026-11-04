@@ -11,7 +11,7 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var dimensione
 
     private var titolo: String {
-        Date().formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT"))).capitalized
+        Date().formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalized
     }
 
     var body: some View {
@@ -101,7 +101,7 @@ struct HomeView: View {
                     .sensoryFeedback(.selection, trigger: fatto)
                     .accessibilityIdentifier("riga-pasto")
                     .accessibilityLabel("Segna \(elenco[i].nome)")
-                    .accessibilityValue(fatto ? "fatto" : "da fare")
+                    .accessibilityValue(fatto ? Text("fatto") : Text("da fare"))
                     .accessibilityAddTraits(fatto ? .isSelected : [])
                 }
             }
@@ -127,7 +127,7 @@ struct HomeView: View {
         Riquadro {
             if let a = palestra.stato.inCorso {
                 disposizione {
-                    sottotitolato(a.nome, "In corso")
+                    sottotitolato(a.nome, Text("In corso"))
                     Spacer(minLength: 8)
                     Button("Riprendi") { navigazione.allenamentoAperto = true }
                         .buttonStyle(PulsanteAccento())
@@ -135,7 +135,7 @@ struct HomeView: View {
             } else if tipo == .pesi && fatti.isEmpty {
                 if let r = palestra.stato.prossimaRoutine() {
                     disposizione {
-                        sottotitolato(r.nome, "\(r.voci.count) \(r.voci.count == 1 ? "esercizio" : "esercizi") · circa \(minutiStimati(r)) min")
+                        sottotitolato(r.nome, Text("\(Self.esercizi(r.voci.count)) · circa \(minutiStimati(r)) min"))
                         Spacer(minLength: 8)
                         Button("Inizia") {
                             palestra.inizia(r)
@@ -166,7 +166,7 @@ struct HomeView: View {
             ForEach(fatti) { a in
                 NavigationLink(value: a.id) {
                     HStack(spacing: 12) {
-                        sottotitolato(a.nome, durataTesto(a.durata))
+                        sottotitolato(a.nome, Text(durataTesto(a.durata)))
                         Spacer(minLength: 8)
                         Spunta(fatta: true)
                     }
@@ -177,7 +177,7 @@ struct HomeView: View {
             }
             ForEach(cardio) { c in
                 HStack(spacing: 12) {
-                    Text("\(c.tipo) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""))
+                    Text("\(Libreria.nomeCardio(c.tipo)) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""))
                     Spacer(minLength: 8)
                     Spunta(fatta: true)
                 }
@@ -229,7 +229,7 @@ struct HomeView: View {
             let variazione = bia.first.flatMap { $0.data != ultimo.data ? $0.peso : nil }.map { kg - $0 }
             let testoVariazione = variazione.map { v in
                 let r = (v * 10).rounded() / 10
-                return "\(r > 0 ? "+" : r < 0 ? "−" : "")\(num(abs(r))) kg"
+                return "\(r > 0 ? "+" : r < 0 ? "−" : "")\(kgTesto(abs(r)))"
             }
             Button { navigazione.scheda = .progressi } label: {
                 Riquadro {
@@ -259,7 +259,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Peso")
-            .accessibilityValue("\(num(kg)) kg" + (testoVariazione.map { ", \($0) dall'inizio" } ?? ""))
+            .accessibilityValue(kgTesto(kg) + (testoVariazione.map { ", " + String(localized: "\($0) dall'inizio") } ?? ""))
             .accessibilityHint("Apre Progressi")
         } else {
             Button { nuovaMisura = true } label: {
@@ -285,10 +285,13 @@ struct HomeView: View {
         return layout { contenuto() }
     }
 
-    private func sottotitolato(_ titolo: String, _ sotto: String) -> some View {
+    // «1 esercizio» · «5 esercizi»: il plurale sta nel catalogo delle stringhe
+    private static func esercizi(_ n: Int) -> String { String(localized: "\(n) esercizi") }
+
+    private func sottotitolato(_ titolo: String, _ sotto: Text) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(titolo).font(.headline)
-            Text(sotto).font(.footnote).foregroundStyle(.secondary)
+            Text(verbatim: titolo).font(.headline)
+            sotto.font(.footnote).foregroundStyle(.secondary)
         }
     }
 }

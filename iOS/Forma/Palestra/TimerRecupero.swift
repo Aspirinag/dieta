@@ -28,7 +28,7 @@ final class TimerRecupero {
         fine = f
         let secondi = Int(f.timeIntervalSinceNow.rounded())
         Notifiche.cancella(["recupero"])
-        Task { await Notifiche.traSecondi(id: "recupero", titolo: "Recupero finito", testo: "Puoi iniziare la prossima serie.", secondi: secondi) }
+        Task { await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi) }
         compito = Task {
             try? await Task.sleep(for: .seconds(max(secondi, 0)))
             guard !Task.isCancelled else { return }
@@ -68,7 +68,7 @@ struct BarraAllenamento: View {
             } else if let a = palestra.stato.inCorso {
                 Image(systemName: "dumbbell.fill").foregroundStyle(.tint)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(a.nome).font(.subheadline.weight(.semibold)).lineLimit(1)
+                    Text(verbatim: a.titolo).font(.subheadline.weight(.semibold)).lineLimit(1)
                     Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false)
                         .font(.caption)
                         .monospacedDigit()

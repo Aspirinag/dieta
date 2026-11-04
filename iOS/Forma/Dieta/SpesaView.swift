@@ -68,7 +68,7 @@ struct SpesaView: View {
             HStack(spacing: 0) {
                 freccia("chevron.left", "Settimana precedente", attiva: lunSpesa != questa) { lunSpesa = questa }
                 VStack(spacing: 2) {
-                    Text(lunSpesa == questa ? periodo : "Prossima settimana · \(periodo)")
+                    Text(verbatim: lunSpesa == questa ? periodo : String(localized: "Prossima settimana · \(periodo)"))
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
@@ -88,7 +88,7 @@ struct SpesaView: View {
         .padding(.top, 4)
     }
 
-    private func freccia(_ simbolo: String, _ nome: String, attiva: Bool, azione: @escaping () -> Void) -> some View {
+    private func freccia(_ simbolo: String, _ nome: LocalizedStringResource, attiva: Bool, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             Image(systemName: simbolo)
                 .font(.body.weight(.semibold))
@@ -98,19 +98,14 @@ struct SpesaView: View {
         .buttonStyle(.plain)
         .foregroundStyle(attiva ? Colori.accento : Color(.tertiaryLabel))
         .disabled(!attiva)
-        .accessibilityLabel(nome)
+        .accessibilityLabel(Text(nome))
     }
 
-    // «2 – 8 novembre», oppure «30 novembre – 6 dicembre» a cavallo di due mesi
+    // «2 – 8 novembre» (in inglese «2 – 8 November»), «30 novembre – 6 dicembre» a cavallo di due mesi
     private var periodo: String {
         let dal = Giorni.data(lunSpesa)
-        let al = Giorni.data(Giorni.aggiungi(lunSpesa, 6))
-        let it = Locale(identifier: "it_IT")
-        let giornoAl = al.formatted(.dateTime.day().month(.wide).locale(it))
-        if Giorni.calendario.component(.month, from: dal) == Giorni.calendario.component(.month, from: al) {
-            return "\(Giorni.calendario.component(.day, from: dal)) – \(giornoAl)"
-        }
-        return "\(dal.formatted(.dateTime.day().month(.wide).locale(it))) – \(giornoAl)"
+        let al = Giorni.data(Giorni.aggiungi(lunSpesa, 6))   // la domenica a mezzanotte, dentro l'intervallo
+        return (dal..<al).formatted(.interval.day().month(.wide))
     }
 
     // ---------- Reparti ----------
@@ -150,7 +145,7 @@ struct SpesaView: View {
             .sensoryFeedback(.selection, trigger: preso)
             .accessibilityIdentifier("spunta.\(v.chiave)")
             .accessibilityLabel("Segna \(v.nome)")
-            .accessibilityValue(preso ? "preso" : "da prendere")
+            .accessibilityValue(preso ? Text("preso") : Text("da prendere"))
 
             Button {
                 guard !v.giorni.isEmpty else { return }
@@ -168,7 +163,7 @@ struct SpesaView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(v.quanto.isEmpty ? v.nome : "\(v.nome), \(v.quanto)")
             .accessibilityValue(aperta ? giorni : "")
-            .accessibilityHint(v.giorni.isEmpty ? "" : "Mostra i giorni")
+            .accessibilityHint(v.giorni.isEmpty ? Text(verbatim: "") : Text("Mostra i giorni"))
         }
         .contextMenu {
             Menu("Sposta in…", systemImage: "arrow.right") {
@@ -250,7 +245,7 @@ struct SpesaView: View {
 
     // Testo semplice, un reparto per volta, senza i prodotti già presi
     private func testo(voci: [Profilo.VoceSpesa], presi: [String: Bool]) -> String {
-        var righe = ["Lista della spesa"]
+        var righe = [String(localized: "Lista della spesa")]
         for r in Reparto.allCases {
             let da = voci.filter { $0.reparto == r && presi[$0.chiave] != true }
             guard !da.isEmpty else { continue }

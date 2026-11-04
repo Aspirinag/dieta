@@ -13,6 +13,13 @@ struct CorpoView: View {
     enum Periodo: String, CaseIterable, Identifiable {
         case mese = "1 mese", treMesi = "3 mesi", tutto = "Tutto"
         var id: String { rawValue }
+        var etichetta: LocalizedStringKey {
+            switch self {
+            case .mese: "1 mese"
+            case .treMesi: "3 mesi"
+            case .tutto: "Tutto"
+            }
+        }
         var giorni: Int? {
             switch self {
             case .mese: 30
@@ -24,7 +31,7 @@ struct CorpoView: View {
 
     // Tra le misure del riquadro: -1 è bene se scende, 1 è bene se sale
     private static let riquadri: [(campo: CampoMisura, nome: String, verso: Double)] = [
-        (.grasso, "Grasso", -1), (.magra, "Magra", 1), (.vita, "Vita", -1),
+        (.grasso, String(localized: "Grasso"), -1), (.magra, String(localized: "Magra"), 1), (.vita, String(localized: "Vita"), -1),
     ]
 
     var body: some View {
@@ -134,7 +141,7 @@ struct CorpoView: View {
                 }
             }
             if punti.count < 2 {
-                Text(punti.isEmpty ? "Nessun valore in questo periodo." : "Servono due misurazioni in questo periodo.")
+                Text(punti.isEmpty ? LocalizedStringKey("Nessun valore in questo periodo.") : LocalizedStringKey("Servono due misurazioni in questo periodo."))
                     .font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 120)
             } else {
@@ -180,7 +187,7 @@ struct CorpoView: View {
         HStack(spacing: 8) {
             ForEach(Periodo.allCases) { p in
                 Button { periodo = p } label: {
-                    Text(p.rawValue)
+                    Text(p.etichetta)
                         .font(.subheadline.weight(p == periodo ? .semibold : .regular))
                         .foregroundStyle(p == periodo ? AnyShapeStyle(Colori.sulAccento) : AnyShapeStyle(.primary))
                         .padding(.horizontal, 14)
@@ -208,7 +215,7 @@ struct CorpoView: View {
                     withAnimation { metrica = scelto ? .peso : r.campo }
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(r.nome).font(.caption).foregroundStyle(.secondary)
+                        Text(verbatim: r.nome).font(.caption).foregroundStyle(.secondary)
                         HStack(alignment: .firstTextBaseline, spacing: 3) {
                             Text(num(ultimo)).font(.title3.weight(.bold)).monospacedDigit()
                             Text(r.campo.unita).font(.caption).foregroundStyle(.secondary)
@@ -233,7 +240,7 @@ struct CorpoView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(r.campo.nome)
                 .accessibilityValue("\(num(ultimo)) \(r.campo.unita)" + (delta.map { ", \(Self.testoVariazione($0, r.campo.unita))" } ?? ""))
-                .accessibilityHint(scelto ? "Torna al peso nel grafico" : "Mostra nel grafico")
+                .accessibilityHint(scelto ? Text("Torna al peso nel grafico") : Text("Mostra nel grafico"))
                 .accessibilityAddTraits(scelto ? .isSelected : [])
                 .accessibilityIdentifier("metrica-\(r.campo.rawValue)")
             }
@@ -278,14 +285,14 @@ struct RigheMisure: View {
                 HStack {
                     Text(dataMisura(m.data))
                     Spacer()
-                    Text(m.peso.map { "\(num($0)) kg" } ?? "–").foregroundStyle(.secondary).monospacedDigit()
+                    Text(verbatim: m.peso.map { kgTesto($0) } ?? "–").foregroundStyle(.secondary).monospacedDigit()
                     Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
                 }
                 .frame(minHeight: 44)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(dataMisura(m.data)), \(m.peso.map { "\(num($0)) kg" } ?? "senza peso")")
+            .accessibilityLabel("\(dataMisura(m.data)), \(m.peso.map { kgTesto($0) } ?? String(localized: "senza peso"))")
             .accessibilityHint("Apre la misurazione per modificarla")
             .accessibilityIdentifier("misura-\(m.data)")
             .contextMenu {
@@ -305,7 +312,7 @@ struct MisurazioniView: View {
         let bia = archivio.profilo.bia.sorted { $0.data > $1.data }
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text(bia.count == 1 ? "1 misurazione" : "\(bia.count) misurazioni")
+                Text("\(bia.count) misurazioni")
                     .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)
                 if bia.isEmpty {
                     Text("Nessuna misurazione.").font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)

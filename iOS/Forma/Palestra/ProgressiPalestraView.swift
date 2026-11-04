@@ -49,7 +49,7 @@ struct ProgressiPalestraView: View {
             Text("Kg totali per settimana").font(.headline)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(volumeTesto(titolo.kg)).font(.system(size: 34, weight: .bold)).monospacedDigit()
-                Text(titolo.ultima ? "questa settimana" : "settimana del \(etichetta(titolo.inizio))")
+                Text(titolo.ultima ? LocalizedStringKey("questa settimana") : LocalizedStringKey("settimana del \(etichetta(titolo.inizio))"))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             if volumi.allSatisfy({ $0 == 0 }) {
@@ -70,13 +70,13 @@ struct ProgressiPalestraView: View {
                 .padding(.top, 8)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Grafico: kg totali per settimana")
-                .accessibilityValue(barre.map { "settimana del \(etichetta($0.inizio)): \(volumeTesto($0.kg))" }.joined(separator: ", "))
+                .accessibilityValue(barre.map { String(localized: "settimana del \(etichetta($0.inizio)): \(volumeTesto($0.kg))") }.joined(separator: ", "))
             }
         }
     }
 
     private func etichetta(_ iso: String) -> String {
-        Giorni.data(iso).formatted(.dateTime.day().month(.abbreviated).locale(Locale(identifier: "it_IT")))
+        Giorni.data(iso).formatted(.dateTime.day().month(.abbreviated))
     }
 
     // ---------- Record ----------
@@ -124,7 +124,7 @@ struct ProgressiPalestraView: View {
         }
     }
 
-    private func intestazione<Azioni: View>(_ titolo: String, @ViewBuilder azioni: () -> Azioni) -> some View {
+    private func intestazione<Azioni: View>(_ titolo: LocalizedStringKey, @ViewBuilder azioni: () -> Azioni) -> some View {
         HStack {
             Text(titolo).font(.headline)
             Spacer()
@@ -133,14 +133,14 @@ struct ProgressiPalestraView: View {
         .padding(.horizontal, 4)
     }
 
-    private func collegamento(_ testo: String, etichetta: String, pagina: PaginaProgressi) -> some View {
+    private func collegamento(_ testo: LocalizedStringKey, etichetta: LocalizedStringKey, pagina: PaginaProgressi) -> some View {
         NavigationLink(value: pagina) {
             Text(testo).font(.subheadline.weight(.semibold)).foregroundStyle(Colori.accento)
                 .padding(.horizontal, 6)
                 .frame(minHeight: 44)
                 .contentShape(.rect)
         }
-        .accessibilityLabel(etichetta)
+        .accessibilityLabel(Text(etichetta))
     }
 }
 
@@ -183,7 +183,7 @@ struct RigaRecente: View {
                     .foregroundStyle(Colori.accento)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(allenamento.nome).font(.headline)
+                    Text(verbatim: allenamento.titolo).font(.headline)
                     Text(sottotitolo).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
@@ -202,7 +202,7 @@ struct RigaRecente: View {
     }
 
     private var sottotitolo: String {
-        let giorno = allenamento.inizio.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Locale(identifier: "it_IT")))
+        let giorno = allenamento.inizio.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
         return "\(giorno) · \(durataTesto(allenamento.durata))" + (allenamento.soloWatch ? " · Watch" : "")
     }
 }
@@ -215,7 +215,7 @@ struct RecordView: View {
         let tutti = palestra.stato.recordPerEsercizio()
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text(tutti.count == 1 ? "1 esercizio" : "\(tutti.count) esercizi")
+                Text("\(tutti.count) esercizi")
                     .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)
                 if !tutti.isEmpty {
                     Riquadro {

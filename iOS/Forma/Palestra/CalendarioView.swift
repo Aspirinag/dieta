@@ -14,7 +14,7 @@ struct CalendarioContenuto: View {
                         Button("Mese precedente", systemImage: "chevron.left") { cambia(-1) }
                             .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
                         Spacer()
-                        Text(mese.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized)
+                        Text(mese.formatted(.dateTime.month(.wide).year()).capitalized)
                             .font(.headline)
                         Spacer()
                         Button("Mese successivo", systemImage: "chevron.right") { cambia(1) }
@@ -44,7 +44,7 @@ struct CalendarioContenuto: View {
         let saltato = palestra.stato.saltati.contains(scelto)
         let pesi = palestra.allenamenti(del: scelto), cardio = palestra.cardio(del: scelto)
         VStack(alignment: .leading, spacing: 4) {
-            Text(Giorni.nomi[Giorni.indice(scelto)] + " " + Giorni.breve(scelto)).font(.headline).padding(.horizontal, 4)
+            Text(Giorni.nomeGiorno(Giorni.indice(scelto)) + " " + Giorni.breve(scelto)).font(.headline).padding(.horizontal, 4)
             Riquadro {
                 HStack {
                     Text("In programma")
@@ -92,7 +92,7 @@ struct GrigliaMese: View {
         let settimane = stride(from: 0, to: celle.count, by: 7).map { Array(celle[$0..<min($0 + 7, celle.count)]) }
         Grid(horizontalSpacing: 4, verticalSpacing: 4) {
             GridRow {
-                ForEach(Array(["L", "M", "M", "G", "V", "S", "D"].enumerated()), id: \.offset) { _, l in
+                ForEach(Array(Giorni.iniziali.enumerated()), id: \.offset) { _, l in
                     Text(l).font(.caption.weight(.semibold)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                 }
             }
@@ -131,13 +131,13 @@ struct GrigliaMese: View {
 
     // Per VoiceOver: data e cosa è successo (o cosa era previsto) quel giorno
     private func etichetta(_ iso: String) -> String {
-        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT")))
+        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide))
         var parti = [data]
-        if !palestra.allenamenti(del: iso).isEmpty { parti.append("pesi fatti") }
-        if !palestra.cardio(del: iso).isEmpty { parti.append("cardio fatto") }
+        if !palestra.allenamenti(del: iso).isEmpty { parti.append(String(localized: "pesi fatti")) }
+        if !palestra.cardio(del: iso).isEmpty { parti.append(String(localized: "cardio fatto")) }
         if parti.count == 1 {
-            if palestra.stato.saltati.contains(iso) { parti.append("saltato") }
-            else if palestra.programmato(iso) != .riposo { parti.append("in programma: \(palestra.programmato(iso).nome.lowercased())") }
+            if palestra.stato.saltati.contains(iso) { parti.append(String(localized: "saltato")) }
+            else if palestra.programmato(iso) != .riposo { parti.append(String(localized: "in programma: \(palestra.programmato(iso).nome.lowercased())")) }
         }
         return parti.joined(separator: ", ")
     }

@@ -126,9 +126,10 @@ struct PalestraTests {
 
     // Un solo formato per i kg: punto delle migliaia anche sotto le 10.000
     @Test func kgConMigliaia() {
-        #expect(volumeTesto(8565) == "8.565 kg")
-        #expect(volumeTesto(17130) == "17.130 kg")
-        #expect(volumeTesto(950) == "950 kg")
-        #expect(volumeTesto(1234567) == "1.234.567 kg")
+        let it = Locale(identifier: "it_IT")
+        #expect(volumeTesto(8565, locale: it) == "8.565 kg")
+        #expect(volumeTesto(17130, locale: it) == "17.130 kg")
+        #expect(volumeTesto(950, locale: it) == "950 kg")
+        #expect(volumeTesto(1234567, locale: it) == "1.234.567 kg")
     }
 }

@@ -65,7 +65,7 @@ struct ProfiliImpostazioni: View {
     private func riga(_ id: String) -> some View {
         let nome = archivio.stato.profili[id]?.nome ?? ""
         return Menu {
-            Button(archivio.stato.preferito == id ? "Non aprire all'avvio" : "Apri all'avvio", systemImage: "star") {
+            Button(archivio.stato.preferito == id ? LocalizedStringKey("Non aprire all'avvio") : LocalizedStringKey("Apri all'avvio"), systemImage: "star") {
                 archivio.stato.preferito = archivio.stato.preferito == id ? nil : id
             }
             Button("Rinomina", systemImage: "pencil") {
@@ -100,7 +100,7 @@ struct OlioAcquaImpostazioni: View {
             Group {
                 Section {
                     Stepper(value: Binding(get: { p.olio }, set: { archivio.profilo.olioTot = $0 }), in: 0...15) {
-                        LabeledContent("Olio al giorno", value: "\(p.olio) cucchiaini")
+                        LabeledContent("Olio al giorno", value: String(localized: "\(p.olio) cucchiaini"))
                     }
                     Stepper(value: Binding(get: { p.acqua }, set: { archivio.profilo.acquaTot = $0 }), in: 0.5...5, step: 0.25) {
                         LabeledContent("Acqua al giorno", value: "\(num(p.acqua)) L")
@@ -144,7 +144,7 @@ struct PromemoriaImpostazioni: View {
                         Label("Ricordami di segnare i pasti", systemImage: "checklist")
                     }
                     if pr.pasti {
-                        SceltaOrario(titolo: "Alle", minuti: pr.oraPasti) { m in cambiaPromemoria { $0.oraPasti = m } }
+                        SceltaOrario(titolo: "alle-pasti", minuti: pr.oraPasti) { m in cambiaPromemoria { $0.oraPasti = m } }
                     }
                     Toggle(isOn: Binding(get: { pr.acqua }, set: { v in cambiaPromemoria { $0.acqua = v } })) {
                         Label("Ricordami di bere", systemImage: "drop.fill")
@@ -152,13 +152,13 @@ struct PromemoriaImpostazioni: View {
                     if pr.acqua {
                         SceltaOrario(titolo: "Dalle", minuti: pr.acquaDalle) { m in cambiaPromemoria { $0.acquaDalle = m; $0.acquaAlle = max($0.acquaAlle, m) } }
                         SceltaOrario(titolo: "Alle", minuti: pr.acquaAlle) { m in cambiaPromemoria { $0.acquaAlle = m; $0.acquaDalle = min($0.acquaDalle, m) } }
-                        Stepper(pr.acquaOgni == 1 ? "Ogni ora" : "Ogni \(pr.acquaOgni) ore", value: Binding(
+                        Stepper(pr.acquaOgni == 1 ? LocalizedStringKey("Ogni ora") : LocalizedStringKey("Ogni \(pr.acquaOgni) ore"), value: Binding(
                             get: { pr.acquaOgni }, set: { v in cambiaPromemoria { $0.acquaOgni = v } }
                         ), in: 1...6)
                     }
                 } footer: {
                     if pr.acqua {
-                        Text("Acqua alle " + pr.orariAcqua.map(Self.orario).joined(separator: ", ") + ".")
+                        Text("Acqua alle \(pr.orariAcqua.map(Self.orario).joined(separator: ", ")).")
                     }
                 }
             }
@@ -174,7 +174,11 @@ struct PromemoriaImpostazioni: View {
         }
     }
 
-    static func orario(_ minuti: Int) -> String { String(format: "%d:%02d", minuti / 60, minuti % 60) }
+    // Ora nel formato del telefono (9:00 · 09:00 · 9:00 AM)
+    static func orario(_ minuti: Int) -> String {
+        let ora = Giorni.calendario.date(bySettingHour: minuti / 60, minute: minuti % 60, second: 0, of: Date()) ?? Date()
+        return ora.formatted(date: .omitted, time: .shortened)
+    }
 
     // Salva subito la modifica (così due tocchi veloci non si sovrascrivono), poi riprogramma
     private func cambiaPromemoria(_ modifica: (inout Promemoria) -> Void) {
@@ -190,7 +194,7 @@ struct PromemoriaImpostazioni: View {
                 if !prima.pasti { q.pasti = false }
                 if !prima.acqua { q.acqua = false }
                 archivio.stato.promemoria = q
-                errore = "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma."
+                errore = String(localized: "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma.")
             }
             await archivio.programmaPromemoria()
         }
@@ -209,13 +213,13 @@ struct BackupImpostazioni: View {
         lista
             .fileImporter(isPresented: $importaBackup, allowedContentTypes: [.json]) { risultato in
                 guard case .success(let url) = risultato else {
-                    errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
+                    errore = String(localized: "Non riesco ad aprire il file. Riprova o scegline un altro.")
                     return
                 }
                 let accesso = url.startAccessingSecurityScopedResource()
                 defer { if accesso { url.stopAccessingSecurityScopedResource() } }
                 guard let dati = try? Data(contentsOf: url) else {
-                    errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
+                    errore = String(localized: "Non riesco ad aprire il file. Riprova o scegline un altro.")
                     return
                 }
                 backupLetto = dati
@@ -230,7 +234,7 @@ struct BackupImpostazioni: View {
                             await archivio.programmaPromemoria()
                             await palestra.programmaPagamento()
                         }
-                    } catch { errore = "File non valido: scegli un backup di Forma, Dieta o Palestra." }
+                    } catch { errore = String(localized: "File non valido: scegli un backup di Forma, Dieta o Palestra.") }
                 }
                 Button("Annulla", role: .cancel) {}
             } message: { _ in
@@ -298,7 +302,7 @@ struct FoglioNuovoPiano: View {
                             Text("Il piano precedente si chiude il giorno prima.")
                         }
                     }
-                    Section("Anteprima: \(piano.giorni.first?.nome ?? "")") {
+                    Section("Anteprima: \(Giorni.nomeGiorno(0))") {
                         ForEach(Array((piano.giorni.first?.pasti ?? []).enumerated()), id: \.offset) { _, pasto in
                             LabeledContent(pasto.nome, value: pasto.opzioni.first?.alimenti.map(\.nome).joined(separator: ", ") ?? "")
                         }

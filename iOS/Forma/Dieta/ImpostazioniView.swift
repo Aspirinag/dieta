@@ -53,7 +53,7 @@ struct ImpostazioniView: View {
         }
     }
 
-    private func riga(_ titolo: String, _ simbolo: String, _ pagina: PaginaImpostazioni) -> some View {
+    private func riga(_ titolo: LocalizedStringKey, _ simbolo: String, _ pagina: PaginaImpostazioni) -> some View {
         NavigationLink(value: pagina) { Label(titolo, systemImage: simbolo) }
     }
 }

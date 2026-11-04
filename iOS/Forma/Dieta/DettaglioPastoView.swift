@@ -23,7 +23,7 @@ struct DettaglioPastoView: View {
             .padding(.bottom, 16)
         }
         .sfondoTema()
-        .navigationTitle(pasto?.nome ?? "Pasto")
+        .navigationTitle(pasto?.nome ?? String(localized: "Pasto"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -31,7 +31,7 @@ struct DettaglioPastoView: View {
         let s = archivio.slot(giorno, indice)
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
         Riquadro {
-            Text("\(Giorni.nomi[Giorni.indice(giorno)]) \(Giorni.calendario.component(.day, from: Giorni.data(giorno)))")
+            Text("\(Giorni.nomeGiorno(Giorni.indice(giorno))) \(Giorni.calendario.component(.day, from: Giorni.data(giorno)))")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 6)
@@ -41,7 +41,7 @@ struct DettaglioPastoView: View {
                     set: { nuova in archivio.cambiaSlot(giorno, indice) { $0.opt = nuova } }
                 )) {
                     ForEach(pasto.opzioni.indices, id: \.self) { j in
-                        Text(pasto.opzioni[j].titolo ?? "Alternativa \(j + 1)").tag(j)
+                        Text(pasto.opzioni[j].titolo ?? String(localized: "Alternativa \(j + 1)")).tag(j)
                     }
                 }
                 Group {
@@ -67,7 +67,7 @@ struct DettaglioPastoView: View {
             RigaSpunta(fatto: s.fatto, azione: {
                 archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() }
             }) {
-                Text(s.fatto ? "Fatto" : "Segna come fatto")
+                Text(s.fatto ? LocalizedStringKey("Fatto") : LocalizedStringKey("Segna come fatto"))
             }
             .frame(minHeight: 44)
             // VoiceOver: «Colazione, fatto» invece di «Fatto, fatto»

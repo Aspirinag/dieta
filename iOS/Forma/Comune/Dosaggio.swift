@@ -4,8 +4,8 @@ import SwiftUI
 // Toccare l'elemento n segna n; ritoccare l'ultimo segnato lo toglie.
 // Oltre la dose gli elementi diventano arancioni, fino al doppio della dose.
 struct Dosaggio: View {
-    let nome: String
-    let unita: String
+    let nome: LocalizedStringResource
+    let unita: LocalizedStringResource
     @Binding var valore: Int
     let dose: Int
     let colore: Color
@@ -23,7 +23,7 @@ struct Dosaggio: View {
     private var visibili: Int { min(max(dose, valore + (valore >= dose ? 1 : 0)), massimo) }
 
     var testo: String {
-        "\(num(Double(valore) * quantitaPerElemento)) di \(doseTesto ?? num(Double(dose) * quantitaPerElemento)) \(unita)"
+        String(localized: "\(num(Double(valore) * quantitaPerElemento)) di \(doseTesto ?? num(Double(dose) * quantitaPerElemento)) \(String(localized: unita))")
     }
 
     var body: some View {
@@ -43,7 +43,7 @@ struct Dosaggio: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background { Color.clear.onGeometryChange(for: CGFloat.self) { $0.size.width } action: { larghezza = $0 } }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(nome)
+        .accessibilityLabel(Text(nome))
         .accessibilityValue(testo)
         .accessibilityAdjustableAction { direzione in
             switch direzione {
@@ -58,7 +58,7 @@ struct Dosaggio: View {
     private var etichetta: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(nome)
-            Text(testo).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+            Text(verbatim: testo).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
         }
     }
 

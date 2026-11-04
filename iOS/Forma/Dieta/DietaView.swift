@@ -14,8 +14,8 @@ struct DietaView: View {
 
     private var sottotitolo: String {
         guard let p = archivio.profilo.piano(per: giorno) ?? archivio.profilo.piano(per: ultimoOggi) else { return "" }
-        let dal = Giorni.data(p.dal).formatted(.dateTime.day().month(.wide).locale(Locale(identifier: "it_IT")))
-        return "\(p.nome) · dal \(dal)"
+        let dal = Giorni.data(p.dal).formatted(.dateTime.day().month(.wide))
+        return String(localized: "\(p.nome) · dal \(dal)")
     }
 
     var body: some View {
@@ -86,7 +86,7 @@ struct DietaView: View {
         if !voci.isEmpty {
             let presi = archivio.spunteSpesa(lunedi: lun)
             let quanti = voci.filter { presi[$0.chiave] == true }.count
-            let testo = "\(voci.count) \(voci.count == 1 ? "prodotto" : "prodotti") · \(quanti) \(quanti == 1 ? "preso" : "presi")"
+            let testo = String(localized: "\(String(localized: "\(voci.count) prodotti")) · \(String(localized: "\(quanti) presi"))")
             NavigationLink(value: PaginaDieta.spesa) {
                 Riquadro {
                     HStack(spacing: 12) {
@@ -98,7 +98,7 @@ struct DietaView: View {
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Spesa della settimana").foregroundStyle(.primary)
-                            Text(testo).font(.footnote).foregroundStyle(.secondary)
+                            Text(verbatim: testo).font(.footnote).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 8)
                         Image(systemName: "chevron.right")
@@ -113,7 +113,7 @@ struct DietaView: View {
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Spesa della settimana")
-            .accessibilityValue(testo)
+            .accessibilityValue(Text(verbatim: testo))
             .accessibilityAddTraits(.isButton)
         }
     }
@@ -149,7 +149,7 @@ struct StrisciaGiorni: View {
         let numero = Giorni.calendario.component(.day, from: Giorni.data(iso))
         return Button { selezionato = iso } label: {
             VStack(spacing: 4) {
-                Text(String(Giorni.nomi[i].prefix(3)).lowercased()).font(.caption)
+                Text(Giorni.sigla(i)).font(.caption)
                 Text("\(numero)").font(.headline).monospacedDigit()
                 HStack(spacing: 2) {
                     ForEach(0..<pasti, id: \.self) { p in
@@ -168,8 +168,8 @@ struct StrisciaGiorni: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(Giorni.nomi[i]) \(numero)")
-        .accessibilityValue((oggi ? "oggi, " : "") + (pasti > 0 ? "\(fatti) di \(pasti) pasti segnati" : "nessun piano"))
+        .accessibilityLabel("\(Giorni.nomeGiorno(i)) \(numero)")
+        .accessibilityValue(Text(verbatim: (oggi ? String(localized: "oggi") + ", " : "") + (pasti > 0 ? String(localized: "\(fatti) di \(pasti) pasti segnati") : String(localized: "nessun piano"))))
         .accessibilityAddTraits(scelto ? [.isButton, .isSelected] : .isButton)
     }
 
@@ -194,7 +194,7 @@ private struct RiquadroPasto: View {
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
         let cibi = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta].riassunto : ""
         let alternative = pasto.opzioni.indices.filter { $0 != scelta }.map { pasto.opzioni[$0].principale }.filter { !$0.isEmpty }
-        let oppure = alternative.isEmpty ? "" : "oppure " + alternative.joined(separator: ", ")
+        let oppure = alternative.isEmpty ? "" : String(localized: "oppure \(alternative.joined(separator: ", "))")
         NavigationLink(value: PaginaDieta.pasto(giorno, indice)) {
             Riquadro {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -228,7 +228,7 @@ private struct RiquadroPasto: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(pasto.nome)
-        .accessibilityValue([cibi, oppure, s.fatto ? "fatto" : ""].filter { !$0.isEmpty }.joined(separator: ". "))
+        .accessibilityValue(Text(verbatim: [cibi, oppure, s.fatto ? String(localized: "fatto") : ""].filter { !$0.isEmpty }.joined(separator: ". ")))
         .accessibilityAddTraits(.isButton)
     }
 }

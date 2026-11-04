@@ -78,7 +78,7 @@ struct AllenamentoView: View {
     }
 
     private func nuovaScheda() {
-        let r = Routine(nome: "Nuova scheda")
+        let r = Routine(nome: String(localized: "Nuova scheda"))
         palestra.stato.routine.append(r)
         percorso.append(ApriScheda(id: r.id))
     }
@@ -101,7 +101,7 @@ struct AllenamentoView: View {
         if let a = palestra.stato.inCorso {
             Riquadro {
                 Text("In corso").font(.footnote).foregroundStyle(.secondary)
-                Text(a.nome).font(.title2.bold()).padding(.top, 2)
+                Text(verbatim: a.titolo).font(.title2.bold()).padding(.top, 2)
                 Button { navigazione.allenamentoAperto = true } label: {
                     Text("Riprendi").frame(maxWidth: .infinity, minHeight: 28)
                 }
@@ -154,7 +154,7 @@ struct AllenamentoView: View {
         let fatti = palestra.stato.giorniAllenati(settimanaDi: oggi)
         let durata = palestra.stato.durataSettimana(oggi)
         let n = fatti.count
-        let riepilogo = n == 0 ? "Nessun allenamento" : "\(n) \(n == 1 ? "allenamento" : "allenamenti") · \(durataTesto(durata))"
+        let riepilogo = n == 0 ? String(localized: "Nessun allenamento") : "\(String(localized: "\(n) allenamenti")) · \(durataTesto(durata))"
         return Riquadro {
             Text("Questa settimana").font(.headline)
             Text(riepilogo).font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
@@ -164,7 +164,7 @@ struct AllenamentoView: View {
                         Circle()
                             .fill(fatti.contains(i) ? Colori.accento : Color(.systemFill))
                             .frame(width: 18, height: 18)
-                        Text(Giorni.iniziali[i])
+                        Text(Giorni.iniziale(i))
                             .font(.caption2.weight(i == Giorni.indice(oggi) ? .bold : .regular))
                             .foregroundStyle(i == Giorni.indice(oggi) ? Color.primary : Color.secondary)
                     }
@@ -226,7 +226,7 @@ struct AllenamentoView: View {
                         Button("Duplica", systemImage: "plus.square.on.square") {
                             var copia = r
                             copia.id = UUID()
-                            copia.nome += " (copia)"
+                            copia.nome = String(localized: "\(r.nome) (copia)")
                             palestra.stato.routine.append(copia)
                         }
                         Button("Elimina", systemImage: "trash", role: .destructive) { schedaDaEliminare = r }
@@ -402,7 +402,7 @@ struct NuovoCardioView: View {
             Form {
                 Group {
                     Picker("Tipo", selection: $tipo) {
-                        ForEach(Libreria.tipiCardio, id: \.self) { Label($0, systemImage: Libreria.simboloCardio($0)).tag($0) }
+                        ForEach(Libreria.tipiCardio, id: \.self) { Label(Libreria.nomeCardio($0), systemImage: Libreria.simboloCardio($0)).tag($0) }
                     }
                     DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
                     LabeledContent("Minuti") {
@@ -443,7 +443,7 @@ enum PaginaPalestraDest: Hashable {
 }
 
 struct PaginaPalestra<Contenuto: View>: View {
-    let titolo: String
+    let titolo: LocalizedStringKey
     @ViewBuilder let contenuto: Contenuto
 
     var body: some View {

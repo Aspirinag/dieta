@@ -28,12 +28,12 @@ struct ImportaPDF: ViewModifier {
             .fileImporter(isPresented: $aperto, allowedContentTypes: [.pdf]) { risultato in
                 switch risultato {
                 case .failure:
-                    errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
+                    errore = String(localized: "Non riesco ad aprire il file. Riprova o scegline un altro.")
                 case .success(let url):
                     let accesso = url.startAccessingSecurityScopedResource()
                     defer { if accesso { url.stopAccessingSecurityScopedResource() } }
                     guard let dati = try? Data(contentsOf: url) else {
-                        errore = "Non riesco ad aprire il file. Riprova o scegline un altro."
+                        errore = String(localized: "Non riesco ad aprire il file. Riprova o scegline un altro.")
                         return
                     }
                     let scelto = tipo
@@ -64,8 +64,8 @@ struct ImportaPDF: ViewModifier {
     }
 
     private func riassuntoBia(_ m: Misura) -> String {
-        var t = "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm"
-        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\nSostituisce la misurazione della stessa data." }
+        var t = String(localized: "Peso \(num(m.peso)) kg · massa grassa \(num(m.grassoKg)) kg · vita \(num(m.vitaCm)) cm")
+        if archivio.profilo.bia.contains(where: { $0.data == m.data }) { t += "\n" + String(localized: "Sostituisce la misurazione della stessa data.") }
         return t
     }
 
@@ -81,12 +81,12 @@ struct ImportaPDF: ViewModifier {
         case .schema:
             let g = giorni ?? []
             guard g.count == 7, g.allSatisfy({ !$0.pasti.isEmpty }) else {
-                return .errore("Non riesco a leggere il piano da questo PDF (\(g.count == 1 ? "trovato 1 giorno" : "trovati \(g.count) giorni") su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Dieta → Piani e misure.")
+                return .errore(String(localized: "Non riesco a leggere il piano da questo PDF (\(String(localized: "trovati \(g.count) giorni")) su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Dieta → Piani e misure."))
             }
             return .piano(g)
         case .bia:
             guard let m = misura, !m.data.isEmpty, m.peso != nil else {
-                return .errore("Non riesco a leggere i valori da questo PDF. Controlla che sia la BIA, oppure aggiungi la misurazione a mano.")
+                return .errore(String(localized: "Non riesco a leggere i valori da questo PDF. Controlla che sia la BIA, oppure aggiungi la misurazione a mano."))
             }
             return .bia(m)
         }
@@ -102,7 +102,7 @@ struct ImportaPDF: ViewModifier {
             case .bia: esito = Self.valuta(tipo, giorni: nil, misura: try await LettorePDF.condiviso.bia(dati))
             }
         } catch {
-            errore = "Il file non è leggibile. Scegli un altro PDF."
+            errore = String(localized: "Il file non è leggibile. Scegli un altro PDF.")
             return
         }
         switch esito {
@@ -136,7 +136,7 @@ struct PianiDietaView: View {
                         Button { pianoDaModificare = p } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(p.nome).font(.headline).foregroundStyle(.primary)
-                                Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? "in corso" : Giorni.breve(p.al))")
+                                Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? String(localized: "in corso") : Giorni.breve(p.al))")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }

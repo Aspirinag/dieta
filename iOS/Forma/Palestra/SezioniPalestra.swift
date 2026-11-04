@@ -114,13 +114,13 @@ struct PianoSettimanaleView: View {
                     }
                 } footer: {
                     Text(palestra.stato.usaAB
-                         ? "Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo."
-                         : "Ogni settimana vale lo stesso piano. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
+                         ? LocalizedStringKey("Le settimane A e B si alternano da sole. Il piano dice in Oggi se è giorno di pesi, cardio o riposo.")
+                         : LocalizedStringKey("Ogni settimana vale lo stesso piano. Il piano dice in Oggi se è giorno di pesi, cardio o riposo."))
                 }
                 ForEach(palestra.stato.usaAB ? ["A", "B"] : ["A"], id: \.self) { w in
-                    Section(palestra.stato.usaAB ? "Settimana \(w)" : "Ogni settimana") {
+                    Section(palestra.stato.usaAB ? LocalizedStringKey("Settimana \(w)") : LocalizedStringKey("Ogni settimana")) {
                         ForEach(0..<7, id: \.self) { i in
-                            Picker(Giorni.nomi[i], selection: Binding(
+                            Picker(Giorni.nomeGiorno(i), selection: Binding(
                                 get: { palestra.stato.piani[w]?[i] ?? .riposo },
                                 set: { palestra.stato.piani[w]?[i] = $0 }
                             )) {

@@ -333,17 +333,18 @@ extension Profilo {
     }
 
     // Quantità somma di grammi/millilitri (kg e l si convertono); senza quantità si contano le porzioni
-    private static func testoQuantita(_ unita: [String: Double], porzioni: Int) -> String {
+    // Le unità restano metriche in ogni lingua; cambiano solo il separatore decimale e la parola «porzioni»
+    private static func testoQuantita(_ unita: [String: Double], porzioni: Int, locale: Locale) -> String {
         var parti: [String] = []
-        if let g = unita["g"] { parti.append(g >= 1000 ? "\(num(g / 1000)) kg" : "\(num(g)) g") }
-        if let ml = unita["ml"] { parti.append(ml >= 1000 ? "\(num(ml / 1000)) L" : "\(num(ml)) ml") }
+        if let g = unita["g"] { parti.append(g >= 1000 ? "\(num(g / 1000, locale: locale)) kg" : "\(num(g, locale: locale)) g") }
+        if let ml = unita["ml"] { parti.append(ml >= 1000 ? "\(num(ml / 1000, locale: locale)) L" : "\(num(ml, locale: locale)) ml") }
         if !parti.isEmpty { return parti.joined(separator: " + ") }
-        return porzioni == 1 ? "1 porzione" : "\(porzioni) porzioni"
+        return String(localized: "\(porzioni) porzioni", locale: locale)
     }
 
     // Alimenti della settimana: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
     // Le quantità in g, ml, kg o l si sommano, le altre si contano come porzioni
-    func vociSpesa(lunedi lun: String) -> [VoceSpesa] {
+    func vociSpesa(lunedi lun: String, locale: Locale = .current) -> [VoceSpesa] {
         struct Somma { var unita: [String: Double] = [:]; var volte = 0 }
         var voci: [String: (nome: String, tot: Somma, giorni: [Int: Somma])] = [:]
         let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
@@ -382,9 +383,9 @@ extension Profilo {
             .sorted { $0.value.nome.localizedCompare($1.value.nome) == .orderedAscending }
             .map { k, v in
                 VoceSpesa(chiave: k, nome: v.nome,
-                          quanto: Self.testoQuantita(v.tot.unita, porzioni: v.tot.volte),
+                          quanto: Self.testoQuantita(v.tot.unita, porzioni: v.tot.volte, locale: locale),
                           reparto: reparto(di: k),
-                          giorni: v.giorni.sorted { $0.key < $1.key }.map { (String(Giorni.nomi[$0.key].prefix(3)).lowercased(), Self.testoQuantita($0.value.unita, porzioni: $0.value.volte)) },
+                          giorni: v.giorni.sorted { $0.key < $1.key }.map { (Giorni.sigla($0.key), Self.testoQuantita($0.value.unita, porzioni: $0.value.volte, locale: locale)) },
                           aggiunta: false)
             }
         if let sett = settimaneSpesa.first(where: { $0.settimana == lun }) {

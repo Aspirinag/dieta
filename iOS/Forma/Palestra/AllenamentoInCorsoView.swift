@@ -39,7 +39,7 @@ struct AllenamentoInCorsoView: View {
                     .righeTema()
                 }
                 .sfondoTema()
-                .navigationTitle(a.nome)
+                .navigationTitle(a.titolo)
                 .navigationBarTitleDisplayMode(.inline)
                 .scrollDismissesKeyboard(.interactively)
                 .toolbar { barra(a) }
@@ -97,7 +97,7 @@ struct AllenamentoInCorsoView: View {
         }
     }
 
-    private func dato<V: View>(_ titolo: String, @ViewBuilder _ valore: () -> V) -> some View {
+    private func dato<V: View>(_ titolo: LocalizedStringKey, @ViewBuilder _ valore: () -> V) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(titolo).font(.caption).foregroundStyle(.secondary)
             valore().font(.headline).foregroundStyle(.tint)
@@ -181,7 +181,7 @@ struct SezioneEsercizioInCorso: View {
         HStack(spacing: 12) {
             IconaEsercizio(esercizio: ex)
             VStack(alignment: .leading, spacing: 2) {
-                Text(ex.nome).font(.headline)
+                Text(verbatim: ex.titolo).font(.headline)
                 Text("\(ex.muscolo.nome) · recupero \(e.recupero) s").font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
@@ -202,8 +202,8 @@ struct SezioneEsercizioInCorso: View {
             } label: {
                 Image(systemName: "ellipsis.circle").font(.title3)
             }
-            .accessibilityLabel("Opzioni di \(ex.nome)")
-            .confirmationDialog("Rimuovere \(ex.nome)?", isPresented: $chiediRimuovi, titleVisibility: .visible) {
+            .accessibilityLabel("Opzioni di \(ex.titolo)")
+            .confirmationDialog("Rimuovere \(ex.titolo)?", isPresented: $chiediRimuovi, titleVisibility: .visible) {
                 Button("Rimuovi", role: .destructive) { palestra.stato.inCorso?.esercizi.removeAll { $0.id == idEsercizio } }
             } message: {
                 Text("Le serie di questo esercizio non vengono salvate.")
@@ -242,7 +242,7 @@ struct RigaSerie: View {
                         set: { v in modifica { $0.riscaldamento = v } }
                     ))
                 } label: {
-                    Text(s.riscaldamento ? "R" : "\(numero + 1)")
+                    Text(verbatim: s.riscaldamento ? String(localized: "R") : "\(numero + 1)")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(s.riscaldamento ? AnyShapeStyle(.orange) : AnyShapeStyle(.primary))
                         .frame(width: 36)
@@ -255,7 +255,7 @@ struct RigaSerie: View {
                     .minimumScaleFactor(0.8)
                 cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? "kg", tastiera: .decimalPad, larghezza: 64)
                     .onChange(of: kg) { _, v in modifica { $0.kg = leggiNumero(v) } }
-                cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? "rip", tastiera: .numberPad, larghezza: 52)
+                cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, larghezza: 52)
                     .onChange(of: rip) { _, v in modifica { $0.rip = Int(v) } }
                 Button {
                     segna(s, prec, e.recupero)
@@ -267,9 +267,9 @@ struct RigaSerie: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: 32)
-                .accessibilityLabel(s.riscaldamento ? "Serie di riscaldamento" : "Serie \(numero + 1)")
-                .accessibilityValue(s.fatta ? "fatta" : "da fare")
-                .accessibilityHint(s.fatta ? "" : "Segna la serie e fa partire il recupero")
+                .accessibilityLabel(s.riscaldamento ? Text("Serie di riscaldamento") : Text("Serie \(numero + 1)"))
+                .accessibilityValue(s.fatta ? Text("fatta") : Text("da fare"))
+                .accessibilityHint(s.fatta ? Text(verbatim: "") : Text("Segna la serie e fa partire il recupero"))
             }
             .listRowBackground(s.fatta ? Color.green.opacity(0.14) : nil)
             .sensoryFeedback(.success, trigger: s.fatta) { _, nuovo in nuovo }

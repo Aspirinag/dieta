@@ -6,6 +6,12 @@ struct ProgressiView: View {
     private enum Sezione: String, CaseIterable, Identifiable {
         case corpo = "Corpo", palestra = "Palestra"
         var id: String { rawValue }
+        var etichetta: LocalizedStringKey {
+            switch self {
+            case .corpo: "Corpo"
+            case .palestra: "Palestra"
+            }
+        }
     }
 
     @State private var sezione: Sezione = .corpo
@@ -17,7 +23,7 @@ struct ProgressiView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     Picker("Mostra", selection: $sezione) {
-                        ForEach(Sezione.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(Sezione.allCases) { Text($0.etichetta).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     switch sezione {

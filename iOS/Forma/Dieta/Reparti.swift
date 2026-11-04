@@ -6,12 +6,12 @@ enum Reparto: String, CaseIterable, Codable {
 
     var nome: String {
         switch self {
-        case .fruttaVerdura: "Frutta e verdura"
-        case .carnePesceUova: "Carne, pesce, uova"
-        case .latticini: "Latticini"
-        case .panePastaCereali: "Pane, pasta, cereali"
-        case .dispensa: "Dispensa"
-        case .altro: "Altro"
+        case .fruttaVerdura: String(localized: "Frutta e verdura")
+        case .carnePesceUova: String(localized: "Carne, pesce, uova")
+        case .latticini: String(localized: "Latticini")
+        case .panePastaCereali: String(localized: "Pane, pasta, cereali")
+        case .dispensa: String(localized: "Dispensa")
+        case .altro: String(localized: "Altro")
         }
     }
 

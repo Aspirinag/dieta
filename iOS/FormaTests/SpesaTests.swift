@@ -35,11 +35,11 @@ struct SpesaTests {
 
     @Test func kgSopraIlChilo() {
         let p = profilo(cibo: "Riso", quantita: "150 g")
-        #expect(p.vociSpesa(lunedi: "2026-11-02").first?.quanto == "1,05 kg")
+        #expect(p.vociSpesa(lunedi: "2026-11-02", locale: Locale(identifier: "it_IT")).first?.quanto == "1,05 kg")
     }
 
     @Test func millilitriELitri() {
-        #expect(profilo(cibo: "Latte", quantita: "250 ml").vociSpesa(lunedi: "2026-11-02").first?.quanto == "1,75 L")
+        #expect(profilo(cibo: "Latte", quantita: "250 ml").vociSpesa(lunedi: "2026-11-02", locale: Locale(identifier: "it_IT")).first?.quanto == "1,75 L")
         #expect(profilo(cibo: "Latte", quantita: "1 l").vociSpesa(lunedi: "2026-11-02").first?.quanto == "7 L")
     }
 

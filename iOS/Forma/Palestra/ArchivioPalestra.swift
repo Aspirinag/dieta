@@ -79,7 +79,7 @@ final class Palestra {
         stato.esercizi.first { $0.id == id } ?? Esercizio(id: id, nome: id, muscolo: .altro, attrezzo: .altro)
     }
 
-    func nome(_ id: String) -> String { esercizio(id).nome }
+    func nome(_ id: String) -> String { esercizio(id).titolo }
 
     @discardableResult
     func nuovoEsercizio(nome: String, muscolo: Muscolo, attrezzo: Attrezzo) -> Esercizio {
@@ -111,7 +111,7 @@ final class Palestra {
     // ---------- Allenamento in corso ----------
 
     func inizia(_ routine: Routine?) {
-        var a = Allenamento(nome: routine?.nome ?? "Allenamento libero", routine: routine?.id)
+        var a = Allenamento(nome: routine?.nome ?? Allenamento.nomeLibero, routine: routine?.id)
         for v in routine?.voci ?? [] {
             a.esercizi.append(EsercizioFatto(esercizio: v.esercizio, recupero: v.recupero, serie: (0..<v.serie).map { _ in SerieFatta() }))
         }
@@ -177,13 +177,13 @@ final class Palestra {
                 })
             }
         } else if a.nome == Self.nomeWatch {
-            a.nome = "Allenamento libero"
+            a.nome = Allenamento.nomeLibero
         }
         stato.inCorso = a
         return true
     }
 
-    static let nomeWatch = "Palestra · dal Watch"
+    static let nomeWatch = Allenamento.nomeWatch
 
     enum EsitoWatch { case nuovo(Allenamento), agganciato, cardio, ignorato }
 
@@ -266,8 +266,8 @@ final class Palestra {
             guard !valide.isEmpty, prima.pesoMax > 0 || stato.allenamenti.contains(where: { $0.inizio < a.inizio && $0.esercizi.contains { $0.esercizio == e.esercizio } }) else { continue }
             let peso = valide.compactMap(\.kg).max() ?? 0
             let massimale = valide.map(\.massimale).max() ?? 0
-            if peso > prima.pesoMax { testi.append("\(nome(e.esercizio)): peso massimo \(num(peso)) kg") }
-            else if massimale > prima.massimale + 0.01 { testi.append("\(nome(e.esercizio)): massimale stimato \(num((massimale * 10).rounded() / 10)) kg") }
+            if peso > prima.pesoMax { testi.append(String(localized: "\(nome(e.esercizio)): peso massimo \(num(peso)) kg")) }
+            else if massimale > prima.massimale + 0.01 { testi.append(String(localized: "\(nome(e.esercizio)): massimale stimato \(num((massimale * 10).rounded() / 10)) kg")) }
         }
         return testi
     }
@@ -329,10 +329,10 @@ final class Palestra {
             guard pagamenti[mese] == nil else { continue }
             let mancano = Giorni.calendario.dateComponents([.day], from: Giorni.data(oggi), to: Giorni.data(paga)).day ?? 0
             let testo = switch mancano {
-            case ..<0: "Ultimo giorno per pagare la palestra."
-            case 0: "Oggi si paga la palestra."
-            case 1: "Domani si paga la palestra."
-            default: "Tra \(mancano) giorni si paga la palestra."
+            case ..<0: String(localized: "Ultimo giorno per pagare la palestra.")
+            case 0: String(localized: "Oggi si paga la palestra.")
+            case 1: String(localized: "Domani si paga la palestra.")
+            default: String(localized: "Tra \(mancano) giorni si paga la palestra.")
             }
             return (mese, testo)
         }
@@ -356,8 +356,8 @@ final class Palestra {
         guard stato.pagamentoAttivo,
               let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)
         else { return }
-        await Notifiche.una(id: "pagamento", titolo: "Palestra",
-                            testo: p.primo ? "Oggi si paga la palestra." : "Ultimo giorno per pagare la palestra.",
+        await Notifiche.una(id: "pagamento", titolo: String(localized: "Palestra"),
+                            testo: p.primo ? String(localized: "Oggi si paga la palestra.") : String(localized: "Ultimo giorno per pagare la palestra."),
                             quando: p.quando)
     }
 

@@ -206,16 +206,16 @@ enum CampoMisura: String, CaseIterable, Identifiable {
 
     var nome: String {
         switch self {
-        case .peso: "Peso"
-        case .grasso: "Massa grassa"
-        case .magra: "Massa magra"
-        case .acqua: "Acqua"
-        case .bmr: "Metabolismo"
-        case .vat: "Grasso viscerale"
-        case .vita: "Vita"
-        case .addome: "Addome"
-        case .fianchi: "Fianchi"
-        case .torace: "Torace"
+        case .peso: String(localized: "Peso")
+        case .grasso: String(localized: "Massa grassa")
+        case .magra: String(localized: "Massa magra")
+        case .acqua: String(localized: "Acqua")
+        case .bmr: String(localized: "Metabolismo")
+        case .vat: String(localized: "Grasso viscerale")
+        case .vita: String(localized: "Vita")
+        case .addome: String(localized: "Addome")
+        case .fianchi: String(localized: "Fianchi")
+        case .torace: String(localized: "Torace")
         }
     }
 
@@ -336,10 +336,10 @@ struct Promemoria: Codable, Hashable {
     // Le notifiche giornaliere da programmare con le scelte attuali
     var notifiche: [Notifica] {
         var n: [Notifica] = []
-        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Ecco la dieta di oggi 🥗")) }
-        if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: "Dieta", testo: "Hai segnato i pasti di oggi?")) }
+        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: String(localized: "Dieta"), testo: String(localized: "Ecco la dieta di oggi 🥗"))) }
+        if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: String(localized: "Dieta"), testo: String(localized: "Hai segnato i pasti di oggi?"))) }
         if acqua {
-            n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.") }
+            n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: String(localized: "Acqua 💧"), testo: String(localized: "È il momento di un bicchiere d'acqua.")) }
         }
         return n
     }
@@ -352,7 +352,7 @@ struct Stato: Codable, Hashable {
     var promemoria: Promemoria?
 
     // Prima installazione: un solo profilo, senza note (si rinomina in Impostazioni)
-    static let iniziale = Stato(profili: ["io": Profilo(nome: "Io", note: "")], attivo: "io")
+    static let iniziale = Stato(profili: ["io": Profilo(nome: String(localized: "Io"), note: "")], attivo: "io")
 
     init(profili: [String: Profilo], attivo: String, preferito: String? = nil, promemoria: Promemoria? = nil) {
         self.profili = profili

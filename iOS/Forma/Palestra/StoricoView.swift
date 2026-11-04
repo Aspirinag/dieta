@@ -57,9 +57,9 @@ struct DettaglioEsercizioView: View {
                     }
                     ForEach(Array(storico.enumerated()), id: \.offset) { _, voce in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(voce.allenamento.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "it_IT"))))
+                            Text(voce.allenamento.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                                 .font(.subheadline.weight(.semibold))
-                            Text(voce.serie.map { "\($0.riscaldamento ? "R " : "")\(num($0.kg ?? 0)) × \($0.rip ?? 0)" }.joined(separator: " · "))
+                            Text(voce.serie.map { "\($0.riscaldamento ? String(localized: "R") + " " : "")\(num($0.kg ?? 0)) × \($0.rip ?? 0)" }.joined(separator: " · "))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -69,7 +69,7 @@ struct DettaglioEsercizioView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle(e.nome)
+        .navigationTitle(e.titolo)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -99,7 +99,7 @@ struct StoricoAllenamenti: View {
                     let mesi = Dictionary(grouping: tutte) { String($0.giorno.prefix(7)) }
                     ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized)
+                            Text(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year()).capitalized)
                                 .font(.headline).padding(.horizontal, 4)
                             Riquadro {
                                 ForEach(Array((mesi[m] ?? []).enumerated()), id: \.element.id) { i, voce in
@@ -125,7 +125,7 @@ struct StoricoAllenamenti: View {
         statistica("Totale", "\(lista.count)")
     }
 
-    private func statistica(_ titolo: String, _ valore: String) -> some View {
+    private func statistica(_ titolo: LocalizedStringKey, _ valore: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(titolo).font(.caption).foregroundStyle(.secondary)
             Text(valore).font(.headline).monospacedDigit()
@@ -172,7 +172,7 @@ struct DettaglioAllenamentoView: View {
                 .righeTema()
             }
             .sfondoTema()
-            .navigationTitle(a.nome)
+            .navigationTitle(a.titolo)
             .navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Eliminare l'allenamento?", isPresented: $chiediElimina, titleVisibility: .visible) {
                 Button("Elimina", role: .destructive) {
@@ -192,7 +192,7 @@ struct ContenutoAllenamento: View {
     var body: some View {
         let a = allenamento
         Section {
-            LabeledContent("Data", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute().locale(Locale(identifier: "it_IT"))))
+            LabeledContent("Data", value: a.inizio.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute()))
             LabeledContent("Durata", value: durataTesto(a.durata))
             if !a.esercizi.isEmpty {
                 LabeledContent("Kg totali", value: volumeTesto(a.volume))
@@ -216,7 +216,7 @@ struct ContenutoAllenamento: View {
         ForEach(a.esercizi) { e in
             Section {
                 ForEach(Array(e.serie.enumerated()), id: \.offset) { n, s in
-                    LabeledContent(s.riscaldamento ? "Riscaldamento" : "Serie \(e.serie[..<n].filter { !$0.riscaldamento }.count + 1)",
+                    LabeledContent(s.riscaldamento ? LocalizedStringKey("Riscaldamento") : LocalizedStringKey("Serie \(e.serie[..<n].filter { !$0.riscaldamento }.count + 1)"),
                                    value: "\(num(s.kg ?? 0)) kg × \(s.rip ?? 0)")
                 }
             } header: {
@@ -244,7 +244,7 @@ struct RiepilogoView: View {
                                 .foregroundStyle(.tint)
                                 .symbolEffect(.bounce, value: allenamento.id)
                             Text("Allenamento finito!").font(.title2.weight(.bold))
-                            Text(allenamento.nome).foregroundStyle(.secondary)
+                            Text(verbatim: allenamento.titolo).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
@@ -278,7 +278,7 @@ struct RigaCardio: View {
                 .foregroundStyle(Colori.accento)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
-                Text(cardio.tipo).font(.headline)
+                Text(verbatim: Libreria.nomeCardio(cardio.tipo)).font(.headline)
                 Text(dettaglio).font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
@@ -302,7 +302,7 @@ struct RigaCardio: View {
 
     private var dettaglio: String {
         var parti: [String] = []
-        if conData { parti.append(Giorni.data(cardio.data).formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Locale(identifier: "it_IT")))) }
+        if conData { parti.append(Giorni.data(cardio.data).formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))) }
         parti.append("\(cardio.minuti) min")
         if let w = cardio.watch {
             parti.append("Watch")
