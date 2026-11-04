@@ -18,6 +18,7 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    pagamento
                     pasti
                     allenamento
                     if archivio.profilo.piano(per: Giorni.oggi()) != nil {
@@ -44,6 +45,23 @@ struct HomeView: View {
             .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
             .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
             .destinazioniDieta()
+        }
+    }
+
+    // ---------- Pagamento ----------
+
+    // Solo da una settimana prima del giorno di pagamento al giorno dopo, finché non è segnato pagato
+    @ViewBuilder private var pagamento: some View {
+        if let p = palestra.promemoriaPagamento() {
+            Riquadro {
+                disposizione {
+                    Text(p.testo).font(.subheadline)
+                    Spacer(minLength: 8)
+                    Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
+                        .buttonStyle(PulsanteAccento())
+                }
+            }
+            .accessibilityIdentifier("riquadro-pagamento")
         }
     }
 
@@ -117,7 +135,7 @@ struct HomeView: View {
             } else if tipo == .pesi && fatti.isEmpty {
                 if let r = palestra.stato.prossimaRoutine() {
                     disposizione {
-                        sottotitolato(r.nome, "\(r.voci.count) esercizi · circa \(minutiStimati(r)) min")
+                        sottotitolato(r.nome, "\(r.voci.count) \(r.voci.count == 1 ? "esercizio" : "esercizi") · circa \(minutiStimati(r)) min")
                         Spacer(minLength: 8)
                         Button("Inizia") {
                             palestra.inizia(r)

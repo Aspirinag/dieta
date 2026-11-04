@@ -180,24 +180,6 @@ struct MenuProfilo: View {
     }
 }
 
-// Avviso di pagamento della palestra (da una settimana prima), finché non è segnato pagato
-struct SezionePagamento: View {
-    @Environment(Palestra.self) private var palestra
-
-    var body: some View {
-        if let p = palestra.promemoriaPagamento() {
-            Section {
-                Label {
-                    Text(p.testo).font(.subheadline)
-                } icon: {
-                    Image(systemName: "creditcard.fill").foregroundStyle(.tint)
-                }
-                Button("Segna come pagato", systemImage: "checkmark.circle") { palestra.segnaPagato(p.mese) }
-            }
-        }
-    }
-}
-
 // Backup condivisibile come file .json
 struct FileBackup: Transferable {
     let dati: Data

@@ -23,6 +23,11 @@ extension StatoPalestra {
             s.cardio.append(SessioneCardio(data: Giorni.aggiungi(Giorni.oggi(), k), tipo: k == -12 ? "Bici" : "Corsa",
                                            minuti: 30, km: k == -12 ? 12 : 4.5))
         }
+        // `-pagamento-tra N`: il pagamento cade tra N giorni (per vedere il riquadro in Oggi)
+        if let n = Avvio.valore("-pagamento-tra").flatMap(Int.init) {
+            let giorno = Giorni.aggiungi(Giorni.oggi(), n)
+            s.giornoPagamento = min(Int(giorno.suffix(2)) ?? 1, 28)
+        }
         s.saltati = [Giorni.aggiungi(Giorni.oggi(), -8)]
         // Dal Watch: una camminata e una sessione di palestra ancora senza esercizi
         s.cardio.append(SessioneCardio(data: Giorni.aggiungi(Giorni.oggi(), -4), tipo: "Camminata", minuti: 52, km: 4.6,

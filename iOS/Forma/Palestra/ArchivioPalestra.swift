@@ -302,8 +302,13 @@ final class Palestra {
 
     // Mese da pagare e testo dell'avviso in Oggi, finché non è segnato pagato
     func promemoriaPagamento() -> (mese: String, testo: String)? {
-        guard stato.pagamentoAttivo else { return nil }
-        return Self.avvisoPagamento(oggi: Giorni.oggi(), giorno: stato.giornoPagamento, pagamenti: stato.pagamenti)
+        Self.promemoriaPagamento(oggi: Giorni.oggi(), attivo: stato.pagamentoAttivo, giorno: stato.giornoPagamento, pagamenti: stato.pagamenti)
+    }
+
+    // La condizione con cui Oggi mostra il riquadro del pagamento
+    static func promemoriaPagamento(oggi: String, attivo: Bool, giorno: Int, pagamenti: [String: String]) -> (mese: String, testo: String)? {
+        guard attivo else { return nil }
+        return avvisoPagamento(oggi: oggi, giorno: giorno, pagamenti: pagamenti)
     }
 
     // Giorno di pagamento di un mese (yyyy-MM-01), senza superare la fine del mese

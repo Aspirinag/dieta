@@ -12,9 +12,9 @@ struct Dosaggio: View {
     let simbolo: SimboloDose
     var quantitaPerElemento: Double = 1     // 0,25 per le gocce (litri)
     var doseTesto: String? = nil            // dose esatta, se non è un multiplo degli elementi
-    @Environment(\.dynamicTypeSize) private var dimensione
 
-    private static let lato: CGFloat = 24
+    // Ogni elemento da toccare è largo e alto almeno 44 punti; se non stanno in una riga vanno a capo
+    private static let lato: CGFloat = 44
 
     private var massimo: Int { max(dose * 2, 1) }
     // Con la dose raggiunta compare un elemento vuoto in più, per poter andare oltre
@@ -26,21 +26,12 @@ struct Dosaggio: View {
 
     var body: some View {
         let colonne = [GridItem(.adaptive(minimum: Self.lato, maximum: Self.lato), spacing: 0, alignment: .center)]
-        Group {
-            if dimensione.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 8) {
-                    etichetta
-                    LazyVGrid(columns: colonne, alignment: .leading, spacing: 0) { elementi }
-                }
-            } else {
-                HStack(spacing: 8) {
-                    etichetta
-                    Spacer(minLength: 8)
-                    LazyVGrid(columns: colonne, alignment: .trailing, spacing: 0) { elementi }
-                        .frame(maxWidth: Self.lato * CGFloat(min(visibili, 12)), alignment: .trailing)
-                }
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            etichetta
+            LazyVGrid(columns: colonne, alignment: .leading, spacing: 0) { elementi }
+                .padding(.leading, -12)    // il primo segno si allinea al testo
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(nome)
         .accessibilityValue(testo)
@@ -70,8 +61,9 @@ struct Dosaggio: View {
             } label: {
                 forma
                     .fill(pieno ? (oltre ? Color.orange : colore) : (oltre ? Color.orange.opacity(0.25) : Color(.systemFill)))
-                    .frame(width: simbolo == .cucchiaino ? 13 : 16, height: simbolo == .cucchiaino ? 22 : 18)
-                    .frame(width: Self.lato, height: 36)
+                    .frame(width: simbolo == .cucchiaino ? 28 : 16, height: simbolo == .cucchiaino ? 14 : 18)
+                    .rotationEffect(.degrees(simbolo == .cucchiaino ? -40 : 0))
+                    .frame(width: Self.lato, height: Self.lato)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
