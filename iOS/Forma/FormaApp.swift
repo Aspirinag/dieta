@@ -70,7 +70,8 @@ struct Radice: View {
                         .navigationDestination(for: PaginaPalestraDest.self) { pagina in
                             switch pagina {
                             case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
-                            default: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
+                            case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
+                            case .libreria, .modelli, .pianoSettimanale: EmptyView()
                             }
                         }
                 }

@@ -47,7 +47,6 @@ struct AllenamentoView: View {
                 case .modelli: ModelliView(percorso: $percorso)
                 case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
                 case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
-                case .impostazioni: PaginaPalestra(titolo: "Impostazioni palestra") { SezioniPalestra() }
                 case .pianoSettimanale: PianoSettimanaleView()
                 }
             }
@@ -188,35 +187,41 @@ struct AllenamentoView: View {
             Text("Schede").font(.headline).padding(.leading, 4).padding(.top, 8)
             Riquadro {
                 ForEach(palestra.stato.routine) { r in
-                    HStack(spacing: 8) {
-                        NavigationLink(value: ApriScheda(id: r.id)) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(r.nome).font(.headline).foregroundStyle(.primary)
+                    let testo = NavigationLink(value: ApriScheda(id: r.id)) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(r.nome).font(.headline).foregroundStyle(.primary)
+                                .multilineTextAlignment(.leading)
+                            if !r.voci.isEmpty {
+                                Text(frase(r, massimo: 44))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
                                     .multilineTextAlignment(.leading)
-                                if !r.voci.isEmpty {
-                                    Text(frase(r, massimo: 44))
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.leading)
-                                        .lineLimit(2)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .frame(minHeight: 44)
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
-                        Button { avvia(r) } label: {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 15))
-                                .foregroundStyle(Colori.sulAccento)
-                                .frame(width: 44, height: 44)
-                                .background(Colori.accento, in: .circle)
-                                .contentShape(.circle)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Inizia \(r.nome)")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    let play = Button { avvia(r) } label: {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Colori.accento)
+                            .frame(width: 36, height: 36)
+                            .background(Colori.accento.opacity(0.12), in: .circle)
+                            .frame(width: 44, height: 44)
+                            .contentShape(.circle)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Inizia \(r.nome)")
+                    let layout = dimensione.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                        : AnyLayout(HStackLayout(spacing: 8))
+                    layout {
+                        testo
+                        play
                     }
                     .padding(.vertical, 4)
                     .contextMenu {
@@ -436,7 +441,7 @@ struct NuovoCardioView: View {
 // Pagine della Palestra aperte per valore: le destinazioni stanno sulla radice della scheda.
 // Con collegamenti diretti, il primo collegamento per valore (allenamento, esercizio) le chiudeva
 enum PaginaPalestraDest: Hashable {
-    case libreria, modelli, storico, calendario, impostazioni, pianoSettimanale
+    case libreria, modelli, storico, calendario, pianoSettimanale
 }
 
 struct PaginaPalestra<Contenuto: View>: View {

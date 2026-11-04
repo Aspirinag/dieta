@@ -1,10 +1,10 @@
 import SwiftUI
 
-// Impostazioni della palestra (dalla scheda Palestra): piano settimanale A/B, pagamento, libreria
+// Impostazioni della palestra: pagamento e Apple Watch
 struct SezioniPalestra: View {
-    // Nelle Impostazioni pagamento e Watch stanno in due pagine; piano e libreria si aprono dalla Palestra
-    enum Parte { case tutto, pagamento, watch }
-    var parte: Parte = .tutto
+    // Nelle Impostazioni pagamento e Watch stanno in due pagine
+    enum Parte { case pagamento, watch }
+    let parte: Parte
     @Environment(Palestra.self) private var palestra
     @AppStorage(Salute.chiave) private var watch = true
     @State private var senzaPermesso = false
@@ -50,22 +50,6 @@ struct SezioniPalestra: View {
         let mese = Palestra.mese(Giorni.oggi())
         let pagato = palestra.stato.pagamenti[mese]
         Section {
-            if parte == .tutto {
-            NavigationLink(value: PaginaPalestraDest.pianoSettimanale) {
-                LabeledContent {
-                    Text(palestra.stato.usaAB ? "questa settimana: \(palestra.settimana(Giorni.oggi()))" : "uguale ogni settimana")
-                } label: {
-                    Label("Piano settimanale", systemImage: "calendar.badge.clock")
-                }
-            }
-            NavigationLink(value: PaginaPalestraDest.libreria) {
-                LabeledContent {
-                    Text("\(palestra.stato.esercizi.count)")
-                } label: {
-                    Label("Libreria esercizi", systemImage: "books.vertical")
-                }
-            }
-            }
             Toggle(isOn: Binding(get: { palestra.stato.pagamentoAttivo }, set: { v in
                 palestra.stato.pagamentoAttivo = v
                 Task {

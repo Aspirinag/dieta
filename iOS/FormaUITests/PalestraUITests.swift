@@ -62,4 +62,15 @@ final class PalestraUITests: XCTestCase {
         play.tap()
         XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5), "Il ▶ deve avviare la scheda")
     }
+
+    func testConAllenamentoInCorsoMostraRiprendi() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        app.buttons["Inizia"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5))
+        app.buttons["Nascondi"].tap()
+        XCTAssertTrue(app.buttons["Riprendi"].waitForExistence(timeout: 5), "Con un allenamento in corso manca «Riprendi»")
+        XCTAssertFalse(app.staticTexts["Prossima scheda"].exists, "«Prossima scheda» non va mostrata con un allenamento in corso")
+    }
 }
