@@ -6,6 +6,8 @@
 
 **Architecture:** La logica nuova (dosi, reparti, spesa per reparto, riepiloghi della palestra) va in funzioni pure su `Profilo` / `StatoPalestra`, coperte da test Swift Testing. Le viste si riscrivono una schermata alla volta riusando i pezzi esistenti (grafico BIA, dettaglio allenamento, editor). Ogni schermata si verifica con le schermate del simulatore (`ui-checker`) contro le bozze approvate.
 
+**Ordine:** 1–10, poi 12 (lingua), poi 11 (pulizia e verifica finale).
+
 **Tech Stack:** SwiftUI (iOS 18+, Liquid Glass su iOS 26), Swift Charts, Swift Testing, XCTest UI.
 
 **Spec:** `docs/superpowers/specs/2026-11-03-nuovo-design-design.md`. Bozze vincolanti: `.superpowers/brainstorm/85159-1793700809/content/` → `oggi-v3.html`, `dieta-spesa-v3.html`, `palestra-progressi-v2.html`, Impostazioni in `schermate.html`.
@@ -192,6 +194,21 @@ Contenuto e ordine come la spec, sezione «Oggi»: Pasti (barra a segmenti + rig
 - [ ] **Step 2:** applicare le riscritture; i test UI che cercano testi per etichetta vanno aggiornati nello stesso commit.
 - [ ] **Step 3:** suite completa → PASS.
 - [ ] **Step 4:** commit «Forma: testi più chiari».
+
+### Task 12: Lingua inglese
+
+**Files:**
+- Create: `iOS/Forma/Localizable.xcstrings` (catalogo stringhe: sorgente `it`, lingue `en` e `en-GB`)
+- Modify: `iOS/Forma.xcodeproj/project.pbxproj` (`knownRegions` + `en`, `en-GB`), le viste e i file con testi fuori da `Text`/`Label`/`Button` (notifiche, avvisi, `String` costruite a mano → `String(localized:)`), ogni `Locale(identifier: "it_IT")` → formato del telefono, `Libreria.swift` (nomi degli esercizi della libreria e delle schede pronte)
+- Test: `iOS/FormaUITests/LinguaTests.swift`, `iOS/FormaTests/LinguaTests.swift`
+
+**Interfaces:** nessuna nuova; le chiavi del catalogo sono i testi italiani. Unità sempre metriche. La lettura dei PDF e i nomi scritti dall'utente non si traducono.
+
+- [ ] **Step 1: Test che falliscono**
+  - UI: con `-AppleLanguages (en) -AppleLocale en_US -demo -tab oggi` la tab bar ha «Today», «Diet», «Gym», «Progress»; con `(en-GB) en_GB` lo stesso; con `(fr) fr_FR` resta «Oggi».
+  - Unità: con `en_US` il peso di Oggi si legge «81.1 kg» (non libbre).
+- [ ] **Step 2:** FAIL. **Step 3:** catalogo con tutte le stringhe tradotte (nessuna voce `en` vuota: verificare con uno script sul JSON del catalogo), `en-GB` solo dove l'ortografia cambia; formati data/numero dal telefono. **Step 4:** PASS + `ui-checker` in inglese su tutte le schede.
+- [ ] **Step 5:** commit «Forma: inglese per iPhone in inglese».
 
 ### Task 11: Pulizia e verifica finale
 

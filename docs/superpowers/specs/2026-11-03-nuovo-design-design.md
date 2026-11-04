@@ -105,6 +105,16 @@ Tutti i testi dell'app vanno rivisti con queste regole:
 - Errori: dicono cosa è successo e cosa fare, senza scuse.
 - Niente etichette tecniche («schema», «A/B», «volume») dove esiste una parola comune; dove servono, spiegate una volta.
 
+## Lingua
+
+*(Aggiunta del 4 novembre, decisa dal proprietario.)*
+- L'app segue la lingua del telefono **solo se è inglese** (Regno Unito o Stati Uniti): allora è in inglese. Con qualunque altra lingua resta in **italiano**, che è la lingua di base.
+- Inglese britannico e americano condividono lo stesso testo; la variante britannica cambia solo dove l'ortografia è diversa (es. «programme», «colour»).
+- Date e numeri seguono il formato del telefono (niente formato italiano fisso nel codice).
+- **Unità sempre metriche**, anche negli Stati Uniti: kg, g, L, cm (deciso dal proprietario).
+- Restano in italiano: la lettura dei PDF del nutrizionista; i nomi scritti dall'utente (cibi, pasti, schede, esercizi creati a mano). I nomi degli esercizi della libreria e delle schede pronte si traducono.
+- I testi inglesi seguono le stesse regole della sezione «Testi».
+
 ## Dati
 
 - Il formato di `dieta.json` resta compatibile con la web app. Aggiunte permesse, solo come campi nuovi con valore predefinito:
