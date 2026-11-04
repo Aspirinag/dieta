@@ -96,6 +96,16 @@ struct PromemoriaTests {
         #expect(Palestra.avvisoPagamento(oggi: "2026-10-24", giorno: 1, pagamenti: [:]) == nil)
     }
 
+    @Test func avvisoPagamentoGiornoDopoAFineMese() {
+        // Pagamento il 28: a febbraio il giorno dopo è il 1° marzo, l'avviso deve ancora esserci
+        #expect(Palestra.avvisoPagamento(oggi: "2027-03-01", giorno: 28, pagamenti: [:])?.mese == "2027-02")
+        #expect(Palestra.avvisoPagamento(oggi: "2027-03-01", giorno: 28, pagamenti: [:])?.testo == "Ultimo giorno per pagare la palestra.")
+        // Febbraio pagato: niente avviso il 1° marzo
+        #expect(Palestra.avvisoPagamento(oggi: "2027-03-01", giorno: 28, pagamenti: ["2027-02": "2027-02-27"]) == nil)
+        // Mese prima pagato non nasconde l'avviso del mese dopo (giorno 1: il 25 avvisa per il mese dopo)
+        #expect(Palestra.avvisoPagamento(oggi: "2026-11-25", giorno: 1, pagamenti: ["2026-11": "2026-11-01"])?.mese == "2026-12")
+    }
+
     @Test func pianoABSpento() {
         var s = StatoPalestra()
         s.usaAB = false

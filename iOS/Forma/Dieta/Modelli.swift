@@ -257,11 +257,13 @@ struct Profilo: Codable, Hashable {
     var olioTot: Int?
     var acquaTot: Double?
     var note: String?
-    var spesa: Spesa?
+    var spesa: Spesa?               // settimana più vecchia: è quella che legge anche la web app
+    var spesaProssima: Spesa?       // seconda settimana (solo app), così spuntare la prossima non azzera questa
     var repartiSpesa: [String: String]?     // nome dell'alimento in minuscolo → Reparto.rawValue scelto a mano
 
     enum CodingKeys: String, CodingKey {
         case nome, piani, bia, dieta, note, spesa
+        case spesaProssima = "spesa_prossima"
         case olioTot = "olio_tot", acquaTot = "acqua_tot", repartiSpesa = "reparti_spesa"
     }
 
@@ -281,6 +283,7 @@ struct Profilo: Codable, Hashable {
         acquaTot = c.valore(.acquaTot, nil)
         note = c.valore(.note, nil)
         spesa = c.valore(.spesa, nil)
+        spesaProssima = c.valore(.spesaProssima, nil)
         repartiSpesa = c.valore(.repartiSpesa, nil)
     }
 }
@@ -333,7 +336,7 @@ struct Promemoria: Codable, Hashable {
     // Le notifiche giornaliere da programmare con le scelte attuali
     var notifiche: [Notifica] {
         var n: [Notifica] = []
-        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Controlla la dieta odierna 🥗")) }
+        if mattino { n.append(Notifica(id: "mattino", minuti: oraMattino, titolo: "Dieta", testo: "Ecco la dieta di oggi 🥗")) }
         if pasti { n.append(Notifica(id: "pasti", minuti: oraPasti, titolo: "Dieta", testo: "Hai segnato i pasti di oggi?")) }
         if acqua {
             n += orariAcqua.map { Notifica(id: "acqua-\($0)", minuti: $0, titolo: "Acqua 💧", testo: "È il momento di un bicchiere d'acqua.") }

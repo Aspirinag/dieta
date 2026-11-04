@@ -92,6 +92,7 @@ struct RigaSpunta<Etichetta: View>: View {
                     .font(.title3)
                     .foregroundStyle(fatto ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                     .contentTransition(.symbolEffect(.replace))
+                    .accessibilityHidden(true)   // lo stato lo dice già accessibilityValue
                 etichetta
                     .foregroundStyle(.primary)
                 Spacer(minLength: 0)

@@ -28,7 +28,7 @@ struct AndamentoView: View {
             ContentUnavailableView(
                 "Nessuna misurazione",
                 systemImage: "figure.stand",
-                description: Text("Carica la BIA in PDF o aggiungila a mano da Dieta → Piani e referti.")
+                description: Text("Carica la BIA in PDF o aggiungila a mano da Dieta → Piani e misure.")
             )
         }
     }

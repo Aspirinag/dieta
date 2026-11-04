@@ -109,7 +109,7 @@ struct OlioAcquaImpostazioni: View {
                     Text("Dosi di \(p.nome)")
                 }
                 Section {
-                    TextField("Note in fondo a Oggi", text: Binding(
+                    TextField("Note (in fondo a Oggi)", text: Binding(
                         get: { p.testoNote },
                         set: { archivio.profilo.note = $0 }
                     ), axis: .vertical)
@@ -135,19 +135,19 @@ struct PromemoriaImpostazioni: View {
             Group {
                 Section {
                     Toggle(isOn: Binding(get: { pr.mattino }, set: { v in cambiaPromemoria { $0.mattino = v } })) {
-                        Label("Controlla la dieta odierna", systemImage: "sun.horizon")
+                        Label("Dieta del giorno", systemImage: "sun.horizon")
                     }
                     if pr.mattino {
                         SceltaOrario(titolo: "Ogni mattina alle", minuti: pr.oraMattino) { m in cambiaPromemoria { $0.oraMattino = m } }
                     }
                     Toggle(isOn: Binding(get: { pr.pasti }, set: { v in cambiaPromemoria { $0.pasti = v } })) {
-                        Label("Segna i pasti", systemImage: "checklist")
+                        Label("Ricordami di segnare i pasti", systemImage: "checklist")
                     }
                     if pr.pasti {
-                        SceltaOrario(titolo: "Ogni sera alle", minuti: pr.oraPasti) { m in cambiaPromemoria { $0.oraPasti = m } }
+                        SceltaOrario(titolo: "Alle", minuti: pr.oraPasti) { m in cambiaPromemoria { $0.oraPasti = m } }
                     }
                     Toggle(isOn: Binding(get: { pr.acqua }, set: { v in cambiaPromemoria { $0.acqua = v } })) {
-                        Label("Bevi acqua", systemImage: "drop.fill")
+                        Label("Ricordami di bere", systemImage: "drop.fill")
                     }
                     if pr.acqua {
                         SceltaOrario(titolo: "Dalle", minuti: pr.acquaDalle) { m in cambiaPromemoria { $0.acquaDalle = m; $0.acquaAlle = max($0.acquaAlle, m) } }
@@ -236,7 +236,7 @@ struct BackupImpostazioni: View {
             } message: { _ in
                 Text("Un backup di Forma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
             }
-            .alert("Errore", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
+            .alert("Backup non importato", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
             } message: {
                 Text(errore ?? "")

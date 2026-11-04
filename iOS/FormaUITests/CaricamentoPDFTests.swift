@@ -18,20 +18,20 @@ final class CaricamentoPDFTests: XCTestCase {
     }
 
     private func apriPianiEReferti() {
-        let link = app.buttons["Piani e referti (PDF)"]
+        let link = app.buttons["Piani e misure"]
         for _ in 0..<6 where !link.isHittable { app.swipeUp() }
         link.tap()
     }
 
     func testCaricaBiaApreIlSelettore() {
         apriPianiEReferti()
-        app.buttons["Carica referto BIA (PDF)"].tap()
+        app.buttons["Carica la BIA (PDF)"].tap()
         XCTAssertTrue(selettoreAperto, "Il selettore dei file non si è aperto:\n\(app.debugDescription)")
     }
 
     func testCaricaSchemaDaPianiApreIlSelettore() {
         apriPianiEReferti()
-        app.buttons["Carica schema dietetico (PDF)"].tap()
+        app.buttons["Carica il piano alimentare (PDF)"].tap()
         XCTAssertTrue(selettoreAperto, "Il selettore dei file non si è aperto")
     }
 }

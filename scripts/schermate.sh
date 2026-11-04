@@ -8,8 +8,8 @@ APP=$1; BUNDLE=$2; SCHEDE=$3
 UDID=$(xcrun simctl list devices available -j | python3 -c '
 import json, sys
 d = json.load(sys.stdin)["devices"]
-runtime = sorted((r for r in d if "iOS" in r and any(x["name"].startswith("iPhone") for x in d[r])),
-                 key=lambda r: [int(n) for n in r.split("iOS-")[-1].split("-")])[-1]
+runtime = sorted((r for r in d if "iOS" in r and "iPhone" not in r.split("iOS-")[-1] and any(x["name"].startswith("iPhone") for x in d[r])),
+                 key=lambda r: [int(n) for n in r.split("iOS-")[-1].split("-") if n.isdigit()])[-1]
 iphone = [x for x in d[runtime] if x["name"].startswith("iPhone")]
 pro = [x for x in iphone if x["name"].endswith(" Pro")]
 print((pro or iphone)[0]["udid"])

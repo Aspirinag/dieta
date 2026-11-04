@@ -109,4 +109,36 @@ struct SpesaTests {
         #expect(p.spesa?.extra == ["Biscotti"])
         #expect(p.spesa?.settimana == "2026-11-02")
     }
+
+    @Test func spunteDiDueSettimaneConvivono() {
+        var p = Profilo(nome: "Io")
+        p.spunta("riso", lunedi: "2026-11-02")
+        p.spunta("pasta", lunedi: "2026-11-09")
+        #expect(p.spunteSpesa(lunedi: "2026-11-02") == ["riso": true])
+        #expect(p.spunteSpesa(lunedi: "2026-11-09") == ["pasta": true])
+        // Per la web app la settimana in «spesa» resta quella corrente
+        #expect(p.spesa?.settimana == "2026-11-02")
+        // Una terza settimana fa uscire la più vecchia
+        p.spunta("pane", lunedi: "2026-11-16")
+        #expect(p.spunteSpesa(lunedi: "2026-11-02").isEmpty)
+        #expect(p.spunteSpesa(lunedi: "2026-11-09") == ["pasta": true])
+        // Togliere le spunte vale solo per la settimana scelta
+        p.azzeraSpesa(lunedi: "2026-11-16")
+        #expect(p.spunteSpesa(lunedi: "2026-11-09") == ["pasta": true])
+        #expect(p.spunteSpesa(lunedi: "2026-11-16").isEmpty)
+    }
+
+    @Test func extraDelleDueSettimaniEPulizia() {
+        var p = Profilo(nome: "Io")
+        p.aggiungiExtra("Biscotti", lunedi: "2026-11-02")
+        p.aggiungiExtra("Latte", lunedi: "2026-11-09")
+        p.spunta("riso", lunedi: "2026-11-09")
+        #expect(p.spesa?.extra == ["Biscotti"])
+        #expect(p.spesaProssima?.extra == ["Latte"])
+        // Togliere le spunte di una settimana tiene i suoi extra
+        p.azzeraSpesa(lunedi: "2026-11-09")
+        #expect(p.spunteSpesa(lunedi: "2026-11-09").isEmpty)
+        #expect(p.spesaProssima?.extra == ["Latte"])
+        #expect(p.spesa?.extra == ["Biscotti"])
+    }
 }
