@@ -5,7 +5,7 @@ final class SpuntaVoceTests: XCTestCase {
     func testSpuntaNonRipeteFatto() {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-tab", "dieta"]
+        app.launchArguments = ["-demo", "-tab", "oggi"]
         app.launch()
 
         let voci = app.buttons.matching(NSPredicate(format: "value == 'fatto' OR value == 'da fare'"))

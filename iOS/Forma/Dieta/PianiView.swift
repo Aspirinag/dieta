@@ -201,8 +201,9 @@ struct AndamentoPagina: View {
 // Pagine della dieta aperte dentro una scheda. Le destinazioni stanno sulla radice della scheda:
 // registrate su una pagina aperta con un collegamento diretto, si perdevano al primo collegamento per valore
 enum PaginaDieta: Hashable {
-    case andamento, piani
+    case andamento, piani, spesa
     case misura(String)
+    case pasto(String, Int)   // giorno (aaaa-mm-gg) e posizione del pasto
 }
 
 extension View {
@@ -211,6 +212,8 @@ extension View {
             switch pagina {
             case .andamento: AndamentoPagina()
             case .piani: PianiDietaView()
+            case .spesa: SettimanaView()
+            case .pasto(let giorno, let indice): DettaglioPastoView(giorno: giorno, indice: indice)
             case .misura(let data): EditorMisura(dataEsistente: data)
             }
         }

@@ -5,11 +5,11 @@ final class EditorPianoTests: XCTestCase {
     func testCopiaSuTuttiIGiorniChiedeConferma() {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-tab", "dieta"]
+        app.launchArguments = ["-demo", "-tab", "oggi"]
         app.launch()
 
-        let piani = app.buttons["Piani e misure"]
-        for _ in 0..<5 where !piani.isHittable { app.swipeUp() }
+        let piani = app.buttons["Piani alimentari"]
+        app.buttons["Impostazioni"].tap()
         XCTAssertTrue(piani.waitForExistence(timeout: 8))
         piani.tap()
 

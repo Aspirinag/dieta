@@ -60,10 +60,10 @@ struct Radice: View {
         @Bindable var navigazione = navigazione
         TabView(selection: $navigazione.scheda) {
             Tab("Oggi", systemImage: "sun.max", value: .oggi) { HomeView() }
-            Tab("Dieta", systemImage: "fork.knife", value: .dieta) { PastiView() }
+            Tab("Dieta", systemImage: "fork.knife", value: .dieta) { DietaView() }
             Tab("Palestra", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
             Tab("Progressi", systemImage: "chart.xyaxis.line", value: .progressi) {
-                NavigationStack { AndamentoPagina() }
+                NavigationStack { AndamentoPagina().destinazioniDieta() }
             }
         }
         .sheet(isPresented: $navigazione.impostazioniAperte) {
