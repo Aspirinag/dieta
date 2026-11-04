@@ -83,9 +83,9 @@ enum Giorni {
     }
 
     // Data breve nel formato del telefono: 04/11/2026 in Italia, 11/4/2026 negli Stati Uniti
-    static func breve(_ iso: String) -> String {
+    static func breve(_ iso: String, locale: Locale = .current) -> String {
         guard iso.split(separator: "-").count == 3 else { return iso }
-        return data(iso).formatted(date: .numeric, time: .omitted)
+        return data(iso).formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(locale))
     }
 }
 

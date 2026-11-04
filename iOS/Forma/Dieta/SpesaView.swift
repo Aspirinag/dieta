@@ -101,11 +101,13 @@ struct SpesaView: View {
         .accessibilityLabel(Text(nome))
     }
 
-    // «2 – 8 novembre» (in inglese «2 – 8 November»), «30 novembre – 6 dicembre» a cavallo di due mesi
-    private var periodo: String {
-        let dal = Giorni.data(lunSpesa)
-        let al = Giorni.data(Giorni.aggiungi(lunSpesa, 6))   // la domenica a mezzanotte, dentro l'intervallo
-        return (dal..<al).formatted(.interval.day().month(.wide))
+    // «2–8 novembre» (in inglese «November 2 – 8»), «30 novembre – 6 dicembre» a cavallo di due mesi
+    private var periodo: String { Self.periodo(lunedi: lunSpesa) }
+
+    static func periodo(lunedi: String, locale: Locale = .current) -> String {
+        let dal = Giorni.data(lunedi)
+        let al = Giorni.data(Giorni.aggiungi(lunedi, 6))   // la domenica a mezzanotte, dentro l'intervallo
+        return (dal..<al).formatted(Date.IntervalFormatStyle().day().month(.wide).locale(locale))
     }
 
     // ---------- Reparti ----------

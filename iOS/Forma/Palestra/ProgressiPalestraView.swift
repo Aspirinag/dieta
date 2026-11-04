@@ -53,7 +53,7 @@ struct ProgressiPalestraView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
             }
             if volumi.allSatisfy({ $0 == 0 }) {
-                Text("Ancora nessun peso sollevato nelle ultime \(Self.settimane) settimane.")
+                Text("Ancora nessun allenamento con i pesi nelle ultime \(Self.settimane) settimane.")
                     .font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 80, alignment: .leading)
             } else {
