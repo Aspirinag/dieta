@@ -160,7 +160,7 @@ struct PianiDietaView: View {
                 } header: {
                     Text("Misurazioni BIA")
                 } footer: {
-                    Text("Le misurazioni si vedono, modificano ed eliminano in Andamento.")
+                    Text("Le misurazioni si vedono, modificano ed eliminano in Progressi.")
                 }
             }
             .righeTema()
@@ -186,42 +186,10 @@ struct PianiDietaView: View {
     }
 }
 
-// Dieta → Andamento: aderenza, misure BIA e grafico
-struct AndamentoPagina: View {
-    // Provvisorio fino al Task 9: Progressi dà accesso a Storico e Calendario, tolti dalla Palestra
-    var conArchivioPalestra = false
-    @Environment(Palestra.self) private var palestra
-
-    var body: some View {
-        List {
-            Group {
-                AndamentoView()
-                if conArchivioPalestra {
-                    Section("Palestra") {
-                        NavigationLink(value: PaginaPalestraDest.storico) {
-                            LabeledContent {
-                                Text("\(palestra.stato.allenamenti.count)")
-                            } label: {
-                                Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
-                            }
-                        }
-                        NavigationLink(value: PaginaPalestraDest.calendario) {
-                            Label("Calendario", systemImage: "calendar")
-                        }
-                    }
-                }
-            }.righeTema()
-        }
-        .sfondoTema()
-        .navigationTitle("Andamento")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 // Pagine della dieta aperte dentro una scheda. Le destinazioni stanno sulla radice della scheda:
 // registrate su una pagina aperta con un collegamento diretto, si perdevano al primo collegamento per valore
 enum PaginaDieta: Hashable {
-    case andamento, piani, spesa
+    case misure, piani, spesa
     case misura(String)
     case pasto(String, Int)   // giorno (aaaa-mm-gg) e posizione del pasto
 }
@@ -230,7 +198,7 @@ extension View {
     func destinazioniDieta() -> some View {
         navigationDestination(for: PaginaDieta.self) { pagina in
             switch pagina {
-            case .andamento: AndamentoPagina()
+            case .misure: MisurazioniView()
             case .piani: PianiDietaView()
             case .spesa: SpesaView()
             case .pasto(let giorno, let indice): DettaglioPastoView(giorno: giorno, indice: indice)

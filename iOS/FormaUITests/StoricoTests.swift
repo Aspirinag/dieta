@@ -8,6 +8,7 @@ final class StoricoTests: XCTestCase {
         app.launchArguments = ["-demo", "-tab", "progressi"]
         app.launch()
 
+        app.segmentedControls.buttons["Palestra"].tap()   // la scelta in alto di Progressi: Corpo / Palestra
         let storico = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Storico e record'")).firstMatch
         for _ in 0..<6 where !storico.isHittable { app.swipeUp() }
         XCTAssertTrue(storico.waitForExistence(timeout: 8), "Manca il collegamento allo Storico")

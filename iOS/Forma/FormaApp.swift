@@ -63,18 +63,7 @@ struct Radice: View {
             Tab("Dieta", systemImage: "fork.knife", value: .dieta) { DietaView() }
             Tab("Palestra", systemImage: "dumbbell", value: .allenamento) { AllenamentoView() }
             Tab("Progressi", systemImage: "chart.xyaxis.line", value: .progressi) {
-                NavigationStack {
-                    AndamentoPagina(conArchivioPalestra: true)
-                        .destinazioniDieta()
-                        .destinazioniArchivioPalestra()
-                        .navigationDestination(for: PaginaPalestraDest.self) { pagina in
-                            switch pagina {
-                            case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
-                            case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
-                            case .libreria, .modelli, .pianoSettimanale: EmptyView()
-                            }
-                        }
-                }
+                ProgressiView()
             }
         }
         .sheet(isPresented: $navigazione.impostazioniAperte) {
