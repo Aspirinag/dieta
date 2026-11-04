@@ -311,14 +311,25 @@ extension Profilo {
         repartiSpesa = m
     }
 
-    mutating func aggiungiExtra(_ nome: String, lunedi lun: String) {
+    // Falso se il nome è vuoto o è già nella lista (tra i prodotti del piano o tra gli extra)
+    @discardableResult
+    mutating func aggiungiExtra(_ nome: String, lunedi lun: String) -> Bool {
         let pulito = nome.trimmingCharacters(in: .whitespaces)
+        guard !pulito.isEmpty, !vociSpesa(lunedi: lun).contains(where: { $0.chiave == pulito.lowercased() }) else { return false }
         var settimane = settimaneSpesa
         if !settimane.contains(where: { $0.settimana == lun }) { settimane.append(Spesa(settimana: lun)) }
-        guard !pulito.isEmpty, let i = settimane.firstIndex(where: { $0.settimana == lun }),
-              !settimane[i].extra.contains(where: { $0.lowercased() == pulito.lowercased() }) else { return }
+        guard let i = settimane.firstIndex(where: { $0.settimana == lun }) else { return false }
         settimane[i].extra.append(pulito)
         salvaSettimane(settimane)
+        return true
+    }
+
+    // Senza prodotti dal piano (la lista è vuota o ha solo le voci aggiunte a mano)
+    static func senzaPiano(_ voci: [VoceSpesa]) -> Bool { voci.allSatisfy(\.aggiunta) }
+
+    // Se l'app resta aperta oltre la mezzanotte la settimana proposta si aggiorna; in uno stesso giorno resta quella scelta
+    static func settimanaSpesaAggiornata(corrente: String, ultimoOggi: String, oggi: String) -> String {
+        oggi == ultimoOggi ? corrente : lunediSpesa(oggi: oggi)
     }
 
     // Toglie le spunte di tutte le settimane e tiene le settimane e le voci aggiunte a mano

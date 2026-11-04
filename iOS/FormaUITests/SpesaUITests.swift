@@ -47,4 +47,17 @@ final class SpesaUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [attesa], timeout: 3), .completed,
                        "«Caffè» deve stare sotto «Altro» (Altro \(altro.frame.minY), Caffè \(caffe.frame.minY))")
     }
+
+    func testExtraGiaNellaListaDaFeedback() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-tab", "dieta", "-vista", "spesa"]
+        app.launch()
+        XCTAssertTrue(app.buttons["spunta.petto di pollo"].waitForExistence(timeout: 8))
+        let campo = app.textFields["Aggiungi qualcos'altro"]
+        for _ in 0..<5 where !campo.isHittable { app.swipeUp() }
+        campo.tap()
+        campo.typeText("Petto di pollo\n")
+        XCTAssertTrue(app.staticTexts["È già nella lista"].waitForExistence(timeout: 3), "Manca l'avviso «È già nella lista»")
+    }
 }

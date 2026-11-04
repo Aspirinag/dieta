@@ -11553,6 +11553,38 @@
         }
       }
     },
+    "meno di 1 min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less than 1 min"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less than 1 min"
+          }
+        }
+      }
+    },
+    "È già nella lista": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already on the list"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already on the list"
+          }
+        }
+      }
+    },
     "Apre la misurazione per modificarla. Tieni premuto per eliminarla.": {
       "localizations": {
         "en": {

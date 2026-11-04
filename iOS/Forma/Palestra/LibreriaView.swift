@@ -119,7 +119,7 @@ struct LibreriaView: View {
             .font(.subheadline.weight(.semibold))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .foregroundStyle(attivo ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+            .foregroundStyle(attivo ? AnyShapeStyle(Colori.sulAccento) : AnyShapeStyle(.primary))
             .background(attivo ? AnyShapeStyle(.tint) : AnyShapeStyle(.fill.secondary), in: .capsule)
         }
     }
@@ -144,7 +144,7 @@ struct LibreriaView: View {
                     if let n {
                         Text("\(n + 1)")
                             .font(.caption.weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Colori.sulAccento)
                             .frame(width: 24, height: 24)
                             .background(.tint, in: .circle)
                     } else {

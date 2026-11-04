@@ -8,6 +8,7 @@ struct HomeView: View {
     @Environment(Navigazione.self) private var navigazione
     @State private var richiesta: TipoPDF?
     @State private var nuovaMisura = false
+    @State private var cardioAperto = false
     @Environment(\.dynamicTypeSize) private var dimensione
 
     private var titolo: String {
@@ -34,6 +35,7 @@ struct HomeView: View {
             .navigationTitle("Oggi")
             .navigationSubtitleSePossibile(titolo)
             .importaPDF($richiesta)
+            .sheet(isPresented: $cardioAperto) { NuovoCardioView() }
             .sheet(isPresented: $nuovaMisura) {
                 NavigationStack { EditorMisura(dataEsistente: nil) }
             }
@@ -177,7 +179,12 @@ struct HomeView: View {
                 }
             } else if fatti.isEmpty && cardio.isEmpty {
                 if tipo == .cardio {
-                    Text("Oggi cardio").font(.headline)
+                    disposizione {
+                        Text("Oggi cardio").font(.headline)
+                        Spacer(minLength: 8)
+                        Button("Registra cardio") { cardioAperto = true }
+                            .font(.subheadline)
+                    }
                 } else {
                     disposizione {
                         Text("Oggi riposo").font(.headline)
