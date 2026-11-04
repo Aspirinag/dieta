@@ -123,4 +123,12 @@ struct PalestraTests {
         #expect(r.count == 2)
         #expect(r.map(\.giorno) == ["2026-11-05", "2026-11-04"])
     }
+
+    // Un solo formato per i kg: punto delle migliaia anche sotto le 10.000
+    @Test func kgConMigliaia() {
+        #expect(volumeTesto(8565) == "8.565 kg")
+        #expect(volumeTesto(17130) == "17.130 kg")
+        #expect(volumeTesto(950) == "950 kg")
+        #expect(volumeTesto(1234567) == "1.234.567 kg")
+    }
 }

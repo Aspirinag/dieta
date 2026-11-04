@@ -51,8 +51,8 @@ struct ProgressiView: View {
             .destinazioniArchivioPalestra()
             .navigationDestination(for: PaginaProgressi.self) { pagina in
                 switch pagina {
-                case .allenamenti: PaginaPalestra(titolo: "Allenamenti") { StoricoAllenamenti() }
-                case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
+                case .allenamenti: StoricoAllenamenti()
+                case .calendario: CalendarioContenuto()
                 case .record: RecordView()
                 }
             }

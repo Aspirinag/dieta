@@ -74,87 +74,75 @@ struct DettaglioEsercizioView: View {
     }
 }
 
-// Elenco degli allenamenti, dal più recente
+// Progressi → Palestra → Tutti: riepilogo e tutti gli allenamenti (pesi e cardio), un riquadro per mese
 struct StoricoAllenamenti: View {
     @Environment(Palestra.self) private var palestra
 
     var body: some View {
-        let lista = palestra.stato.allenamenti.sorted { $0.inizio > $1.inizio }
-        if lista.isEmpty && palestra.stato.cardio.isEmpty {
-            ContentUnavailableView("Nessun allenamento", systemImage: "dumbbell",
-                                   description: Text("Gli allenamenti finiti compaiono qui."))
-        } else {
-            Section {
-                let settimana = lista.filter { $0.inizio > Date().addingTimeInterval(-7 * 86400) }
-                HStack {
-                    statistica("Questa settimana", "\(settimana.count)")
-                    statistica("Kg totali", volumeTesto(settimana.reduce(0) { $0 + $1.volume }))
-                    statistica("Totale", "\(lista.count)")
-                }
-            }
-            let record = palestra.stato.conteggioRecord()
-            let mesi = Dictionary(grouping: palestra.stato.attivitaRecenti()) { String($0.giorno.prefix(7)) }
-            ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
-                Section(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized) {
-                    ForEach(mesi[m] ?? []) { voce in
-                        switch voce {
-                        case .pesi(let a): NavigationLink(value: a.id) { RigaAllenamento(allenamento: a, record: record[a.id]) }
-                        case .cardio(let c): RigaCardio(cardio: c, conData: true)
+        let tutte = palestra.stato.attivitaRecenti()
+        let lista = palestra.stato.allenamenti
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                if tutte.isEmpty {
+                    Riquadro {
+                        Text("Nessun allenamento").font(.headline)
+                        Text("Gli allenamenti finiti compaiono qui.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+                    }
+                } else {
+                    let settimana = lista.filter { $0.inizio > Date().addingTimeInterval(-7 * 86400) }
+                    Riquadro {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(alignment: .top) { statistiche(settimana, lista) }
+                            VStack(alignment: .leading, spacing: 8) { statistiche(settimana, lista) }
+                        }
+                    }
+                    let mesi = Dictionary(grouping: tutte) { String($0.giorno.prefix(7)) }
+                    ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized)
+                                .font(.headline).padding(.horizontal, 4)
+                            Riquadro {
+                                ForEach(Array((mesi[m] ?? []).enumerated()), id: \.element.id) { i, voce in
+                                    if i > 0 { Divider() }
+                                    RigaAttivita(voce: voce)
+                                }
+                            }
                         }
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
+        .sfondoTema()
+        .navigationTitle("Allenamenti")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder private func statistiche(_ settimana: [Allenamento], _ lista: [Allenamento]) -> some View {
+        statistica("Questa settimana", "\(settimana.count)")
+        statistica("Kg totali", volumeTesto(settimana.reduce(0) { $0 + $1.volume }))
+        statistica("Totale", "\(lista.count)")
     }
 
     private func statistica(_ titolo: String, _ valore: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(titolo).font(.caption).foregroundStyle(.secondary)
-            Text(valore).font(.headline)
+            Text(valore).font(.headline).monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-struct RigaAllenamento: View {
-    @Environment(Palestra.self) private var palestra
-    let allenamento: Allenamento
-    var record: Int? = nil      // già calcolato dall'elenco; altrimenti si calcola qui
+// Una riga di allenamento: stesso stile ovunque (Progressi, Tutti, Calendario)
+struct RigaAttivita: View {
+    let voce: Attivita
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(allenamento.nome).font(.headline)
-                Spacer()
-                Text(allenamento.inizio.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Locale(identifier: "it_IT"))))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            HStack(spacing: 14) {
-                Label(durataTesto(allenamento.durata), systemImage: "clock")
-                if allenamento.soloWatch {
-                    if let kcal = allenamento.watch?.calorie { Label("\(Int(kcal.rounded())) kcal", systemImage: "flame") }
-                    if let bpm = allenamento.watch?.battito { Label("\(Int(bpm.rounded())) bpm", systemImage: "heart") }
-                } else {
-                    Label(volumeTesto(allenamento.volume), systemImage: "scalemass")
-                }
-                let record = self.record ?? palestra.nuoviRecord(allenamento).count
-                if record > 0 { Label("\(record)", systemImage: "trophy.fill").foregroundStyle(.yellow) }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            if allenamento.soloWatch {
-                Label("Dall'Apple Watch · tocca per aggiungere esercizi e pesi", systemImage: "applewatch")
-                    .font(.caption)
-                    .foregroundStyle(.tint)
-            } else {
-                Text(allenamento.esercizi.map { "\($0.serie.count) × \(palestra.nome($0.esercizio))" }.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
+        switch voce {
+        case .pesi(let a): RigaRecente(allenamento: a)
+        case .cardio(let c): RigaCardio(cardio: c, conData: true)
         }
-        .padding(.vertical, 2)
     }
 }
 
@@ -287,7 +275,7 @@ struct RigaCardio: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: Libreria.simboloCardio(cardio.tipo))
-                .foregroundStyle(Colori.acqua)
+                .foregroundStyle(Colori.accento)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(cardio.tipo).font(.headline)

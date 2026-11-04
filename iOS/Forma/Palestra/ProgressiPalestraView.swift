@@ -43,12 +43,14 @@ struct ProgressiPalestraView: View {
         let barre = volumi.enumerated().map { i, kg in
             Barra(inizio: Giorni.aggiungi(lunedi, -7 * (Self.settimane - 1 - i)), kg: kg, ultima: i == volumi.count - 1)
         }
-        let questa = volumi.last ?? 0
+        // Se questa settimana non ha ancora pesi, il titolo mostra l'ultima con dati
+        let titolo = barre.last { $0.kg > 0 } ?? barre[barre.count - 1]
         return Riquadro {
             Text("Kg sollevati per settimana").font(.headline)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(volumeTesto(questa)).font(.system(size: 34, weight: .bold)).monospacedDigit()
-                Text("questa settimana").font(.subheadline).foregroundStyle(.secondary)
+                Text(volumeTesto(titolo.kg)).font(.system(size: 34, weight: .bold)).monospacedDigit()
+                Text(titolo.ultima ? "questa settimana" : "settimana del \(etichetta(titolo.inizio))")
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             if volumi.allSatisfy({ $0 == 0 }) {
                 Text("Ancora nessun peso sollevato nelle ultime \(Self.settimane) settimane.")
@@ -150,7 +152,10 @@ struct RigaRecord: View {
     var body: some View {
         NavigationLink(value: palestra.esercizio(record.esercizio)) {
             HStack {
-                Text(palestra.nome(record.esercizio)).lineLimit(2)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(palestra.nome(record.esercizio)).lineLimit(2)
+                    Text("Peso massimo").font(.caption).foregroundStyle(.secondary)
+                }
                 Spacer(minLength: 8)
                 Text("\(num(record.kg)) kg × \(record.rip)").foregroundStyle(.secondary).monospacedDigit()
                 Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
@@ -161,7 +166,7 @@ struct RigaRecord: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(palestra.nome(record.esercizio))
-        .accessibilityValue("\(num(record.kg)) kg per \(record.rip) ripetizioni")
+        .accessibilityValue("peso massimo \(num(record.kg)) kg per \(record.rip) ripetizioni")
         .accessibilityHint("Apre il grafico dell'esercizio")
         .accessibilityIdentifier("record-\(record.esercizio)")
     }

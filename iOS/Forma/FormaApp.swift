@@ -197,9 +197,20 @@ func durataTesto(_ secondi: TimeInterval) -> String {
     return m >= 60 ? "\(m / 60) h \(String(format: "%02d", m % 60)) min" : "\(m) min"
 }
 
+// 8.565 e 17.130: il punto delle migliaia sempre, anche sotto le 10.000 (l'italiano di sistema lo toglie)
+func numeroConMigliaia(_ n: Int) -> String {
+    var cifre = String(abs(n)), gruppi: [String] = []
+    while cifre.count > 3 {
+        gruppi.insert(String(cifre.suffix(3)), at: 0)
+        cifre.removeLast(3)
+    }
+    gruppi.insert(cifre, at: 0)
+    return (n < 0 ? "−" : "") + gruppi.joined(separator: ".")
+}
+
 // Volume leggibile: 12.450 kg
 func volumeTesto(_ kg: Double) -> String {
-    "\(Int(kg.rounded()).formatted(.number.locale(Locale(identifier: "it_IT")))) kg"
+    "\(numeroConMigliaia(Int(kg.rounded()))) kg"
 }
 
 extension Radice {
