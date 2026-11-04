@@ -107,12 +107,12 @@ struct HomeView: View {
             }
         } else {
             Riquadro {
-                disposizione {
+                VStack(alignment: .leading, spacing: 10) {
                     Text("Nessun piano per oggi").font(.headline)
-                    Spacer(minLength: 8)
                     Button("Carica il piano alimentare (PDF)") { richiesta = .schema }
                         .buttonStyle(PulsanteAccento())
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
