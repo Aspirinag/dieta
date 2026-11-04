@@ -303,7 +303,7 @@ struct RigheMisure: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(dataMisura(m.data)), \(m.peso.map { kgTesto($0) } ?? String(localized: "senza peso"))")
-            .accessibilityHint("Apre la misurazione per modificarla")
+            .accessibilityHint(elimina == nil ? Text("Apre la misurazione per modificarla") : Text("Apre la misurazione per modificarla. Tieni premuto per eliminarla."))
             .accessibilityIdentifier("misura-\(m.data)")
             .contextMenu {
                 if let elimina { Button("Elimina", systemImage: "trash", role: .destructive) { elimina(m) } }

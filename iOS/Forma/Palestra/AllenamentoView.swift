@@ -154,7 +154,7 @@ struct AllenamentoView: View {
         let fatti = palestra.stato.giorniAllenati(settimanaDi: oggi)
         let durata = palestra.stato.durataSettimana(oggi)
         let n = palestra.stato.allenamentiSettimana(oggi)
-        let riepilogo = n == 0 ? String(localized: "Nessun allenamento") : "\(String(localized: "\(n) allenamenti")) · \(durataTesto(durata))"
+        let riepilogo = n == 0 ? String(localized: "Nessun allenamento") : "\(Self.conteggio(n)) · \(durataTesto(durata))"
         return Riquadro {
             Text("Questa settimana").font(.headline)
             Text(riepilogo).font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
@@ -203,6 +203,7 @@ struct AllenamentoView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityHint("Tieni premuto per duplicare o eliminare la scheda")
                     let play = Button { avvia(r) } label: {
                         Image(systemName: "play.fill")
                             .font(.system(size: 14))
@@ -247,6 +248,13 @@ struct AllenamentoView: View {
 }
 
 // Modifica di una scheda: nome, esercizi con serie, ripetizioni e recupero
+extension AllenamentoView {
+    // «1 allenamento» / «3 allenamenti» (inglese: workout / workouts)
+    static func conteggio(_ n: Int, bundle: Bundle = .main) -> String {
+        String(localized: "\(n) allenamenti", bundle: bundle)
+    }
+}
+
 struct EditorSchedaView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
