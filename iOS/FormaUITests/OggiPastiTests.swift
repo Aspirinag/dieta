@@ -30,7 +30,7 @@ final class OggiPastiTests: XCTestCase {
         XCTAssertEqual(olio.value as? String, "2 di 6 cucchiaini")
         // Si tocca il terzo cucchiaino: ogni cucchiaino occupa 44 punti, in una riga sotto il testo, dal bordo sinistro
         let terzo = olio.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: 2.5 * 44 - 12, dy: olio.frame.height - 22))
+            .withOffset(CGVector(dx: 2.5 * 44, dy: olio.frame.height - 22))
         terzo.tap()
         XCTAssertEqual(olio.value as? String, "3 di 6 cucchiaini")
     }

@@ -54,12 +54,12 @@ struct HomeView: View {
     @ViewBuilder private var pagamento: some View {
         if let p = palestra.promemoriaPagamento() {
             Riquadro {
-                disposizione {
-                    Text(p.testo).font(.subheadline)
-                    Spacer(minLength: 8)
-                    Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
-                        .buttonStyle(PulsanteAccento())
-                }
+                Text(p.testo).font(.subheadline)
+                Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .tint(Colori.accento)
+                    .padding(.top, 8)
             }
             .accessibilityIdentifier("riquadro-pagamento")
         }

@@ -53,17 +53,13 @@ struct Pittogramma: View {
 
 // Cucchiaino e goccia per le dosi di olio e acqua (stessi disegni del mockup)
 struct Cucchiaino: Shape {
-    // Visto dall'alto, in orizzontale: conca ovale larga a sinistra, manico corto a destra (riquadro 28 × 14)
+    // Dritto e simmetrico, visto dall'alto: conca ovale in alto, manico sottile al centro (riquadro 12 × 26)
     func path(in r: CGRect) -> Path {
-        let kx = r.width / 28, ky = r.height / 14
-        func q(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: r.minX + x * kx, y: r.minY + y * ky) }
+        let kx = r.width / 12, ky = r.height / 26
         var p = Path()
-        p.addEllipse(in: CGRect(x: r.minX, y: r.minY, width: 16 * kx, height: 14 * ky))
-        p.move(to: q(14, 5.2))
-        p.addLine(to: q(26.4, 5.8))
-        p.addQuadCurve(to: q(26.4, 8.2), control: q(28.2, 7))
-        p.addLine(to: q(14, 8.8))
-        p.closeSubpath()
+        p.addEllipse(in: CGRect(x: r.minX + 0.5 * kx, y: r.minY, width: 11 * kx, height: 16 * ky))
+        p.addRoundedRect(in: CGRect(x: r.minX + 4.8 * kx, y: r.minY + 15 * ky, width: 2.4 * kx, height: 11 * ky),
+                         cornerSize: CGSize(width: 1.2 * kx, height: 1.2 * kx))
         return p
     }
 }

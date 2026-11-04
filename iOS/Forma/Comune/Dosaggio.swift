@@ -13,8 +13,10 @@ struct Dosaggio: View {
     var quantitaPerElemento: Double = 1     // 0,25 per le gocce (litri)
     var doseTesto: String? = nil            // dose esatta, se non è un multiplo degli elementi
 
-    // Ogni elemento da toccare è largo e alto almeno 44 punti; se non stanno in una riga vanno a capo
+    // Ogni elemento da toccare è alto 44 punti e largo fino a 44: sulla stessa riga si stringono (mai sotto 32), poi vanno a capo
     private static let lato: CGFloat = 44
+    private static let latoMinimo: CGFloat = 32
+    @State private var larghezza: CGFloat = 0
 
     private var massimo: Int { max(dose * 2, 1) }
     // Con la dose raggiunta compare un elemento vuoto in più, per poter andare oltre
@@ -25,13 +27,21 @@ struct Dosaggio: View {
     }
 
     var body: some View {
-        let colonne = [GridItem(.adaptive(minimum: Self.lato, maximum: Self.lato), spacing: 0, alignment: .center)]
+        let larghezzaElemento = larghezza > 0 ? min(Self.lato, larghezza / CGFloat(visibili)) : Self.lato
         VStack(alignment: .leading, spacing: 0) {
             etichetta
-            LazyVGrid(columns: colonne, alignment: .leading, spacing: 0) { elementi }
-                .padding(.leading, -12)    // il primo segno si allinea al testo
+            if larghezzaElemento >= Self.latoMinimo {
+                // La riga non decide la larghezza: la misura viene dal segnaposto, gli elementi stanno sopra
+                Color.clear.frame(maxWidth: .infinity).frame(height: Self.lato)
+                    .overlay(alignment: .leading) { HStack(spacing: 0) { elementi(larghezzaElemento) } }
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.latoMinimo, maximum: Self.lato), spacing: 0)], alignment: .leading, spacing: 0) {
+                    elementi(Self.latoMinimo)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background { Color.clear.onGeometryChange(for: CGFloat.self) { $0.size.width } action: { larghezza = $0 } }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(nome)
         .accessibilityValue(testo)
@@ -52,7 +62,7 @@ struct Dosaggio: View {
         }
     }
 
-    private var elementi: some View {
+    private func elementi(_ larghezza: CGFloat) -> some View {
         ForEach(1...visibili, id: \.self) { n in
             let pieno = n <= valore
             let oltre = n > dose
@@ -61,9 +71,8 @@ struct Dosaggio: View {
             } label: {
                 forma
                     .fill(pieno ? (oltre ? Color.orange : colore) : (oltre ? Color.orange.opacity(0.25) : Color(.systemFill)))
-                    .frame(width: simbolo == .cucchiaino ? 28 : 16, height: simbolo == .cucchiaino ? 14 : 18)
-                    .rotationEffect(.degrees(simbolo == .cucchiaino ? -40 : 0))
-                    .frame(width: Self.lato, height: Self.lato)
+                    .frame(width: simbolo == .cucchiaino ? 12 : 16, height: simbolo == .cucchiaino ? 26 : 18)
+                    .frame(width: larghezza, height: Self.lato)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
