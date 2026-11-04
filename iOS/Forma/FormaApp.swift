@@ -197,6 +197,13 @@ func durataTesto(_ secondi: TimeInterval) -> String {
     return m >= 60 ? "\(m / 60) h \(String(format: "%02d", m % 60)) min" : "\(m) min"
 }
 
+// «3 allenamenti · 1 h 05 min»; sotto il minuto «meno di 1 min» (non «0 min»)
+func riepilogoAllenamenti(_ n: Int, durata: TimeInterval) -> String {
+    guard n > 0 else { return String(localized: "Nessun allenamento") }
+    let tempo = durata < 60 ? String(localized: "meno di 1 min") : durataTesto(durata)
+    return "\(String(localized: "\(n) allenamenti")) · \(tempo)"
+}
+
 // 8.565 e 17.130 (in inglese 8,565 e 17,130): le migliaia sempre, anche sotto le 10.000 (l'italiano di sistema le toglie)
 func numeroConMigliaia(_ n: Int, locale: Locale = .current) -> String {
     let separatore = locale.groupingSeparator ?? ","

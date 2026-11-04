@@ -28,6 +28,13 @@ extension StatoPalestra {
             let giorno = Giorni.aggiungi(Giorni.oggi(), n)
             s.giornoPagamento = min(Int(giorno.suffix(2)) ?? 1, 28)
         }
+        // `-oggi-cardio`: oggi è giorno di cardio (per vedere il riquadro in Oggi)
+        if Avvio.argomenti.contains("-oggi-cardio") {
+            var p = s.piani[s.settimana(Giorni.oggi())] ?? []
+            while p.count < 7 { p.append(.riposo) }
+            p[Giorni.indice(Giorni.oggi())] = .cardio
+            s.piani[s.settimana(Giorni.oggi())] = p
+        }
         s.saltati = [Giorni.aggiungi(Giorni.oggi(), -8)]
         // Dal Watch: una camminata e una sessione di palestra ancora senza esercizi
         s.cardio.append(SessioneCardio(data: Giorni.aggiungi(Giorni.oggi(), -4), tipo: "Camminata", minuti: 52, km: 4.6,

@@ -6,6 +6,9 @@ import SwiftUI
 struct SpesaView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dynamicTypeSize) private var dimensione
+    @Environment(\.scenePhase) private var fase
+    @State private var ultimoOggi = Giorni.oggi()
+    @State private var giaPresente = false
     @State private var lunSpesa = Profilo.lunediSpesa(oggi: Giorni.oggi())
     @State private var aperti: Set<String> = []
     @State private var nuovo = ""
@@ -23,6 +26,14 @@ struct SpesaView: View {
                 if voci.isEmpty {
                     vuoto
                 } else {
+                    // Solo voci aggiunte a mano: la lista le mostra e un cenno ricorda che manca il piano
+                    if Profilo.senzaPiano(voci) {
+                        Text(Self.indicazioneVuoto)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                    }
                     ForEach(Reparto.allCases, id: \.self) { reparto in
                         let righe = voci.filter { $0.reparto == reparto }
                         if !righe.isEmpty { sezione(reparto, righe, presi: presi) }
@@ -39,12 +50,21 @@ struct SpesaView: View {
             .padding(.bottom, 16)
         }
         .scrollDismissesKeyboard(.interactively)
+        // Se l'app resta aperta oltre la mezzanotte la lista passa alla settimana giusta
+        .onChange(of: fase) { _, nuova in
+            guard nuova == .active else { return }
+            let oggi = Giorni.oggi()
+            lunSpesa = Profilo.settimanaSpesaAggiornata(corrente: lunSpesa, ultimoOggi: ultimoOggi, oggi: oggi)
+            ultimoOggi = oggi
+        }
         .sfondoTema()
         .navigationTitle("Spesa")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ShareLink(item: testo(voci: voci, presi: presi), preview: SharePreview("Lista della spesa")) {
-                    Label("Condividi", systemImage: "square.and.arrow.up")
+            if !voci.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: testo(voci: voci, presi: presi), preview: SharePreview("Lista della spesa")) {
+                        Label("Condividi", systemImage: "square.and.arrow.up")
+                    }
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -70,8 +90,9 @@ struct SpesaView: View {
                 VStack(spacing: 2) {
                     Text(verbatim: lunSpesa == questa ? periodo : String(localized: "Prossima settimana · \(periodo)"))
                         .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .lineLimit(dimensione.isAccessibilitySize ? nil : 1)
+                        .minimumScaleFactor(dimensione.isAccessibilitySize ? 1 : 0.7)
+                        .multilineTextAlignment(.center)
                     Text("\(quanti) di \(voci.count) presi")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -221,14 +242,33 @@ struct SpesaView: View {
                     .focused($scrivendo)
                     .submitLabel(.done)
                     .onSubmit {
-                        archivio.profilo.aggiungiExtra(nuovo, lunedi: lunSpesa)
+                        let aggiunto = archivio.profilo.aggiungiExtra(nuovo, lunedi: lunSpesa)
+                        if !aggiunto && !nuovo.trimmingCharacters(in: .whitespaces).isEmpty { avvisaGiaPresente() }
                         nuovo = ""
                         scrivendo = true
                     }
                     .frame(minHeight: 44)
             }
+            if giaPresente {
+                Text("È già nella lista")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 48)
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
         }
         .padding(.top, 4)
+    }
+
+    // L'avviso resta due secondi (e lo legge anche VoiceOver)
+    private func avvisaGiaPresente() {
+        withAnimation { giaPresente = true }
+        AccessibilityNotification.Announcement(String(localized: "È già nella lista")).post()
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation { giaPresente = false }
+        }
     }
 
     static var indicazioneVuoto: String { String(localized: "Carica un piano alimentare da Impostazioni → Piani alimentari.") }
