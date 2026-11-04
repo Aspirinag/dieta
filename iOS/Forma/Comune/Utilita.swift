@@ -2,6 +2,7 @@ import SwiftUI
 
 // Date come nella web app: stringhe yyyy-MM-dd nel fuso del telefono, settimana da lunedì
 enum Giorni {
+    static let iniziali = ["L", "M", "M", "G", "V", "S", "D"]
     static let nomi = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
 
     static let calendario: Calendar = {

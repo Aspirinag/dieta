@@ -188,9 +188,29 @@ struct PianiDietaView: View {
 
 // Dieta → Andamento: aderenza, misure BIA e grafico
 struct AndamentoPagina: View {
+    // Provvisorio fino al Task 9: Progressi dà accesso a Storico e Calendario, tolti dalla Palestra
+    var conArchivioPalestra = false
+    @Environment(Palestra.self) private var palestra
+
     var body: some View {
         List {
-            Group { AndamentoView() }.righeTema()
+            Group {
+                AndamentoView()
+                if conArchivioPalestra {
+                    Section("Palestra") {
+                        NavigationLink(value: PaginaPalestraDest.storico) {
+                            LabeledContent {
+                                Text("\(palestra.stato.allenamenti.count)")
+                            } label: {
+                                Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
+                            }
+                        }
+                        NavigationLink(value: PaginaPalestraDest.calendario) {
+                            Label("Calendario", systemImage: "calendar")
+                        }
+                    }
+                }
+            }.righeTema()
         }
         .sfondoTema()
         .navigationTitle("Andamento")

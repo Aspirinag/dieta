@@ -149,7 +149,7 @@ struct PianoSettimanaleView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle("Piano settimanale")
+        .navigationTitle("Programma della settimana")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

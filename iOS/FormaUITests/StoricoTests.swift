@@ -1,11 +1,11 @@
 import XCTest
 
-// Palestra → Storico: toccando un allenamento si apre il dettaglio, e tornando indietro si torna allo Storico
+// Progressi → Storico (provvisorio fino al Task 9): toccando un allenamento si apre il dettaglio, e tornando indietro si torna allo Storico
 final class StoricoTests: XCTestCase {
     func testAllenamentoApreDettaglioETornaAlloStorico() {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["-demo", "-tab", "allenamento"]
+        app.launchArguments = ["-demo", "-tab", "progressi"]
         app.launch()
 
         let storico = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Storico e record'")).firstMatch
