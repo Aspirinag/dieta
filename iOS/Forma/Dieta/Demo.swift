@@ -31,8 +31,8 @@ extension Stato {
                 ])]),
             ])
         }
-        var p = Profilo(nome: "Raffaele")
-        p.piani = [Piano(nome: "Schema ottobre", dal: Giorni.aggiungi(oggi, -20), al: "", giorni: giorni)]
+        var p = Profilo(nome: "Esempio")
+        p.piani = [Piano(nome: "Piano di esempio", dal: Giorni.aggiungi(oggi, -20), al: "", giorni: giorni)]
         let misure: [(Int, Double, Double, Double, Double)] = [(-60, 84.2, 24.1, 60.1, 96), (-30, 82.5, 22.8, 59.7, 93), (-2, 81.1, 21.5, 59.6, 91)]
         p.bia = misure.map { k, peso, grasso, magra, vita in
             var m = Misura(data: Giorni.aggiungi(oggi, k))
@@ -58,6 +58,6 @@ extension Stato {
         oggiR.olio = 2
         oggiR.acqua = 0.75
         p.dieta[oggi] = oggiR
-        return Stato(profili: ["raffaele": p, "alessandra": Profilo(nome: "Alessandra")], attivo: "raffaele")
+        return Stato(profili: ["esempio": p, "esempio2": Profilo(nome: "Secondo esempio")], attivo: "esempio")
     }
 }
