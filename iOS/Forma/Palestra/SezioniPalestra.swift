@@ -94,7 +94,7 @@ struct SezioniPalestra: View {
         } footer: {
             if palestra.stato.pagamentoAttivo {
                 let g = palestra.stato.giornoPagamento
-                Text("L'avviso in Oggi compare una settimana prima. Il promemoria arriva il \(g) (o il \(g + 1)) del mese alle \(ProfiloView.orario(palestra.stato.oraPagamento)), solo se il mese non è già segnato pagato.")
+                Text("L'avviso in Oggi compare una settimana prima. Il promemoria arriva il \(g) (o il \(g + 1)) del mese alle \(PromemoriaImpostazioni.orario(palestra.stato.oraPagamento)), solo se il mese non è già segnato pagato.")
                 if senzaPermesso {
                     Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
                         .foregroundStyle(.orange)
