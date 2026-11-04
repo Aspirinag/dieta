@@ -71,6 +71,14 @@ struct AllenamentoInCorsoView: View {
         ToolbarItem(placement: .topBarLeading) {
             Button("Nascondi", systemImage: "chevron.down") { navigazione.allenamentoAperto = false }
         }
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                Button("Annulla allenamento", systemImage: "trash", role: .destructive) { chiediAnnulla = true }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+            }
+            .accessibilityLabel("Altro")
+        }
         ToolbarItem(placement: .confirmationAction) {
             Button("Fine") {
                 let daSegnare = a.esercizi.flatMap(\.serie).contains { !$0.fatta }
@@ -260,7 +268,7 @@ struct RigaSerie: View {
                 cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, larghezza: 52)
                     .onChange(of: rip) { _, v in modifica { $0.rip = Int(v) } }
                 Button {
-                    segna(s, prec, e.recupero)
+                    segna(s, prec, e.recupero, corpoLibero: palestra.esercizio(e.esercizio).attrezzo == .corpoLibero)
                 } label: {
                     Image(systemName: s.fatta ? "checkmark.square.fill" : "square")
                         .font(.title2)
@@ -307,27 +315,29 @@ struct RigaSerie: View {
         palestra.stato.inCorso?.esercizi[p.0].serie[p.1] = s
     }
 
-    // Spunta: i campi vuoti prendono i valori della serie precedente; poi parte il recupero
-    private func segna(_ s: SerieFatta, _ prec: SerieFatta?, _ recupero: Int) {
+    // Spunta: i campi vuoti prendono i valori della serie precedente (a corpo libero i kg vuoti valgono 0);
+    // se manca qualcosa il cursore va nel campo da compilare. Togliere la spunta ferma il recupero che aveva fatto partire
+    private func segna(_ s: SerieFatta, _ prec: SerieFatta?, _ recupero: Int, corpoLibero: Bool) {
         if s.fatta {
             modifica { $0.fatta = false }
+            timer.fermaSeAvviatoDa(s.id)
             return
         }
-        let k = s.kg ?? prec?.kg
-        let r = s.rip ?? prec?.rip
-        guard let k, let r, r > 0 else {
+        switch EsitoSpunta.valuta(kg: s.kg, rip: s.rip, precedente: prec, corpoLibero: corpoLibero) {
+        case .manca(let quale):
             errore += 1
-            return
+            campo.wrappedValue = "\(idSerie)-\(quale == .kg ? 64.0 : 52.0)"
+        case .segna(let k, let r):
+            modifica {
+                $0.kg = k
+                $0.rip = r
+                $0.fatta = true
+            }
+            kg = num(k)
+            rip = String(r)
+            campo.wrappedValue = nil
+            timer.avvia(recupero, serie: s.id)
         }
-        modifica {
-            $0.kg = k
-            $0.rip = r
-            $0.fatta = true
-        }
-        kg = num(k)
-        rip = String(r)
-        campo.wrappedValue = nil
-        timer.avvia(recupero)
     }
 }
 

@@ -11,7 +11,10 @@ final class TimerRecupero {
 
     var attivo: Bool { fine.map { $0 > Date() } ?? false }
 
-    func avvia(_ secondi: Int) {
+    private var avviatoDa: UUID?   // la serie la cui spunta ha fatto partire il recupero
+
+    func avvia(_ secondi: Int, serie: UUID? = nil) {
+        avviatoDa = serie
         durata = secondi
         programma(Date().addingTimeInterval(TimeInterval(secondi)))
     }
@@ -38,7 +41,13 @@ final class TimerRecupero {
         }
     }
 
+    // Se la serie tolta è quella che ha fatto partire il recupero, lo ferma (e toglie la notifica)
+    func fermaSeAvviatoDa(_ serie: UUID) {
+        if avviatoDa == serie { ferma() }
+    }
+
     func ferma() {
+        avviatoDa = nil
         compito?.cancel()
         compito = nil
         fine = nil
