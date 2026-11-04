@@ -52,7 +52,7 @@ struct ProfiliImpostazioni: View {
                         aggiungiProfilo = true
                     }
                 } footer: {
-                    Text("La stella indica il profilo che si apre all'avvio. Con due o più profili, quello in uso si cambia da Oggi.")
+                    Text("Il profilo con ★ si apre all'avvio. Per cambiarlo usa il menu in alto a destra in Oggi.")
                 }
             }
             .righeTema()
