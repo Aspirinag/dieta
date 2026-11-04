@@ -1,12 +1,11 @@
 import SwiftUI
 
-// Allenamento in corso (come Hevy): per ogni esercizio la tabella delle serie con la serie precedente,
-// kg, ripetizioni e la spunta; la spunta fa partire il recupero
+// Allenamento in corso: un registro compatto su un unico sfondo. In alto durata, kg e serie; per ogni esercizio
+// la tabella delle serie (precedente, kg, ripetizioni, spunta); la spunta fa partire il recupero
 struct AllenamentoInCorsoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
-    @Environment(\.dynamicTypeSize) private var dimensione
     @State private var aggiungi = false
     @State private var chiediFine = false
     @State private var chiediAnnulla = false
@@ -18,31 +17,24 @@ struct AllenamentoInCorsoView: View {
         NavigationStack {
             if let a = palestra.stato.inCorso {
                 ScrollViewReader { scorri in
-                List {
-                    Group {
-                        statistiche(a)
-                        SezioneRiscaldamento()
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        riepilogo(a)
+                        RigaRiscaldamento()
                         ForEach(a.esercizi) { e in
+                            Divider()
                             SezioneEsercizioInCorso(idEsercizio: e.id, campo: $campo, riaperti: $riaperti)
+                                .id(e.id)
                         }
-                        Section {
-                            Button {
-                                aggiungi = true
-                            } label: {
-                                Label("Aggiungi esercizio", systemImage: "plus").frame(maxWidth: .infinity)
-                            }
-                            .pulsanteVetro(evidente: true)
-                            .controlSize(.large)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets())
-                        }
-                        Section {
-                            Button("Annulla allenamento", systemImage: "trash", role: .destructive) { chiediAnnulla = true }
-                        }
+                        Divider()
+                        piede
                     }
-                    .righeTema()
+                    .padding(.horizontal, 16)
+                    // Su schermi larghi (iPhone in orizzontale, iPhone Duo aperto) il registro resta a larghezza leggibile
+                    .frame(maxWidth: 640)
+                    .frame(maxWidth: .infinity)
                 }
-                .sfondoTema()
+                .background(Color(.systemBackground), ignoresSafeAreaEdges: .all)
                 .onChange(of: a.esercizi.filter(PercorsoAllenamento.completo).map(\.id)) { prima, ora in
                     // Un esercizio tornato incompleto si riapre da solo e la sua chiusura in attesa salta
                     riaperti.formIntersection(ora)
@@ -108,11 +100,18 @@ struct AllenamentoInCorsoView: View {
             .accessibilityLabel("Altre azioni")
         }
         ToolbarItem(placement: .confirmationAction) {
+            // Sempre attivo: senza serie fatte non c'è nulla da salvare e propone di annullare l'allenamento
             Button("Fine") {
-                let daSegnare = a.esercizi.flatMap(\.serie).contains { !$0.fatta }
-                if daSegnare { chiediFine = true } else { finisci() }
+                if a.serieFatte == 0 {
+                    chiediAnnulla = true
+                } else if a.esercizi.flatMap(\.serie).contains(where: { !$0.fatta }) {
+                    chiediFine = true
+                } else {
+                    finisci()
+                }
             }
-            .disabled(a.serieFatte == 0)
+            .buttonStyle(.borderedProminent)
+            .tint(Colori.accento)
         }
         ToolbarItemGroup(placement: .keyboard) {
             Spacer()
@@ -120,27 +119,55 @@ struct AllenamentoInCorsoView: View {
         }
     }
 
-    private func statistiche(_ a: Allenamento) -> some View {
-        Section {
-            let layout = dimensione.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout())
-            layout {
-                dato("Durata") {
-                    // Sessione del Watch completata dopo: durata fissa; altrimenti cronometro
-                    if a.fine != nil { Text(durataTesto(a.durata)) }
-                    else { Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false).monospacedDigit() }
-                }
-                dato("Kg totali") { Text(volumeTesto(a.volume)) }
-                dato("Serie") { Text("\(a.serieFatte)") }
+    // Durata a sinistra, kg e serie fatte a destra: una riga sola (due con il testo molto grande)
+    private func riepilogo(_ a: Allenamento) -> some View {
+        let durata = Group {
+            // Sessione del Watch completata dopo: durata fissa; altrimenti cronometro
+            if a.fine != nil { Text(durataTesto(a.durata)) }
+            else { Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false) }
+        }
+        .font(.title3.weight(.semibold))
+        .monospacedDigit()
+        .foregroundStyle(.tint)
+        .accessibilityLabel(Text("Durata"))
+        let totali = Text("\(volumeTesto(a.volume)) · \(a.serieFatte) serie")
+            .font(.subheadline)
+            .monospacedDigit()
+            .foregroundStyle(.secondary)
+        return ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline) {
+                durata
+                Spacer()
+                totali
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                durata
+                totali
             }
         }
+        .padding(.top, 4)
+        .padding(.bottom, 6)
     }
 
-    private func dato<V: View>(_ titolo: LocalizedStringKey, @ViewBuilder _ valore: () -> V) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(titolo).font(.caption).foregroundStyle(.secondary)
-            valore().font(.headline).foregroundStyle(.tint)
+    private var piede: some View {
+        VStack(spacing: 4) {
+            Button {
+                aggiungi = true
+            } label: {
+                Label("Aggiungi esercizio", systemImage: "plus")
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            Button("Annulla allenamento", systemImage: "trash", role: .destructive) { chiediAnnulla = true }
+                .buttonStyle(.plain)
+                .foregroundStyle(.red)
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, minHeight: 44)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 16)
+        .padding(.bottom, 24)
     }
 
     private func finisci() {
@@ -153,15 +180,37 @@ struct AllenamentoInCorsoView: View {
     }
 }
 
-// Riscaldamento dei giorni di pesi, con la spiegazione dei movimenti
-struct SezioneRiscaldamento: View {
+// Riscaldamento dei giorni di pesi: una riga «Riscaldamento · 3/6» che si apre sui movimenti
+struct RigaRiscaldamento: View {
     @Environment(Palestra.self) private var palestra
     @State private var aperto = false
 
     var body: some View {
         let fatti = palestra.stato.inCorso?.riscaldamento ?? [:]
-        Section {
-            DisclosureGroup(isExpanded: $aperto) {
+        let conteggio = "\(fatti.values.filter { $0 }.count)/\(Libreria.riscaldamento.count)"
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.smooth) { aperto.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    (Text("Riscaldamento").fontWeight(.semibold)
+                     + Text(verbatim: " · \(conteggio)").monospacedDigit().foregroundStyle(.secondary))
+                        .font(.subheadline)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(aperto ? 90 : 0))
+                }
+                .frame(minHeight: 40)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Riscaldamento"))
+            .accessibilityValue(Text(verbatim: conteggio))
+            .accessibilityAddTraits(.isButton)
+            if aperto {
                 ForEach(Array(Libreria.riscaldamento.enumerated()), id: \.offset) { i, voce in
                     RigaSpunta(fatto: fatti[String(i)] == true, azione: {
                         palestra.stato.inCorso?.riscaldamento[String(i)] = !(fatti[String(i)] == true)
@@ -171,9 +220,47 @@ struct SezioneRiscaldamento: View {
                             Text(voce.1).font(.caption).foregroundStyle(.secondary)
                         }
                     }
+                    .padding(.vertical, 6)
                 }
-            } label: {
-                LabeledContent("Riscaldamento", value: "\(fatti.values.filter { $0 }.count)/\(Libreria.riscaldamento.count)")
+                .padding(.bottom, 6)
+            }
+        }
+    }
+}
+
+// Colonne della tabella delle serie, uguali per intestazione e righe. Con il testo molto grande ogni serie va su due righe
+struct ColonneSerie<Numero: View, Precedente: View, Kg: View, Rip: View, Spunta: View>: View {
+    @Environment(\.dynamicTypeSize) private var dimensione
+    let conPrecedente: Bool
+    @ViewBuilder let numero: Numero
+    @ViewBuilder let precedente: Precedente
+    @ViewBuilder let kg: Kg
+    @ViewBuilder let rip: Rip
+    @ViewBuilder let spunta: Spunta
+
+    static var spazio: CGFloat { 8 }
+
+    var body: some View {
+        if dimensione.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: Self.spazio) {
+                    numero.frame(minWidth: 28, alignment: .leading)
+                    precedente.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                HStack(spacing: Self.spazio) {
+                    kg.frame(maxWidth: .infinity)
+                    rip.frame(maxWidth: .infinity)
+                    spunta.frame(minWidth: 44)
+                }
+            }
+        } else {
+            HStack(spacing: Self.spazio) {
+                numero.frame(width: 28)
+                // Senza serie precedenti la colonna resta stretta e lo spazio va ai campi
+                precedente.frame(maxWidth: conPrecedente ? .infinity : 20)
+                kg.frame(maxWidth: conPrecedente ? 68 : .infinity)
+                rip.frame(maxWidth: conPrecedente ? 56 : .infinity)
+                spunta.frame(width: 44)
             }
         }
     }
@@ -193,60 +280,80 @@ struct SezioneEsercizioInCorso: View {
             let ex = palestra.esercizio(e.esercizio)
             let inModifica = e.serie.first { $0.id == campo.wrappedValue?.serie }?.id != nil ? e.id : nil
             if PercorsoAllenamento.compresso(e, riaperti: riaperti, inModifica: inModifica) {
-                Section {
+                Button {
+                    withAnimation(.smooth) { _ = riaperti.insert(e.id) }
+                } label: {
+                    HStack(spacing: 10) {
+                        IconaEsercizio(esercizio: ex, lato: 28)
+                        Text(verbatim: "\(ex.titolo) · " + String(localized: "\(PercorsoAllenamento.serieDiLavoro(e)) serie ✓"))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 6)
+                    .frame(minHeight: 44)
+                    .background(Colori.accento.opacity(0.14), in: .rect(cornerRadius: 10))
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Tocca per riaprire"))
+                .padding(.vertical, 8)
+            } else {
+                let conPrecedente = e.serie.indices.contains { j in
+                    palestra.precedente(e.esercizio, e.serie[..<j].filter { !$0.riscaldamento }.count) != nil
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    intestazione(ex, e, i)
+                        .padding(.bottom, 4)
+                    ColonneSerie(conPrecedente: conPrecedente) {
+                        Text("Serie")
+                    } precedente: {
+                        if conPrecedente { Text("Precedente") } else { Color.clear.frame(height: 1) }
+                    } kg: {
+                        Text("Kg")
+                    } rip: {
+                        Text("rip")
+                    } spunta: {
+                        Image(systemName: "checkmark")
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .textCase(.uppercase)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    ForEach(e.serie) { s in
+                        RigaSerie(idEsercizio: idEsercizio, idSerie: s.id, conPrecedente: conPrecedente, campo: campo, riaperti: $riaperti)
+                    }
                     Button {
-                        withAnimation(.smooth) { _ = riaperti.insert(e.id) }
+                        let ultima = e.serie.last
+                        palestra.stato.inCorso?.esercizi[i].serie.append(SerieFatta(kg: ultima?.kg, rip: ultima?.rip))
                     } label: {
-                        HStack(spacing: 12) {
-                            IconaEsercizio(esercizio: ex, lato: 32)
-                            Text(verbatim: "\(ex.titolo) · " + String(localized: "\(PercorsoAllenamento.serieDiLavoro(e)) serie ✓"))
-                                .font(.headline)
-                            Spacer()
-                            Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        }
-                        .contentShape(.rect)
+                        Label("Aggiungi serie", systemImage: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.tint)
+                            .frame(maxWidth: .infinity, minHeight: 34)
+                            .background(.fill.quaternary, in: .rect(cornerRadius: 8))
+                            .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityHint(Text("Tocca per riaprire"))
-                    .listRowBackground(Color.green.opacity(0.14))
-                    .id(idEsercizio)
+                    .padding(.top, 4)
                 }
-            } else {
-            Section {
-                intestazione(ex, e, i)
-                    .id(idEsercizio)
-                HStack(spacing: 8) {
-                    Text("Serie").frame(width: 36)
-                    Text("Ultima volta").frame(maxWidth: .infinity)
-                    Text("Kg").frame(width: 64)
-                    Text("Ripetizioni").frame(width: 52)
-                    Image(systemName: "checkmark").frame(width: 32)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                ForEach(e.serie) { s in
-                    RigaSerie(idEsercizio: idEsercizio, idSerie: s.id, campo: campo, riaperti: $riaperti)
-                }
-                Button("Aggiungi serie", systemImage: "plus") {
-                    let ultima = e.serie.last
-                    palestra.stato.inCorso?.esercizi[i].serie.append(SerieFatta(kg: ultima?.kg, rip: ultima?.rip))
-                }
-                .font(.subheadline.weight(.semibold))
-            }
+                .padding(.top, 10)
+                .padding(.bottom, 12)
             }
         }
     }
 
     private func intestazione(_ ex: Esercizio, _ e: EsercizioFatto, _ i: Int) -> some View {
-        HStack(spacing: 12) {
-            IconaEsercizio(esercizio: ex)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: ex.titolo).font(.headline)
+        HStack(spacing: 10) {
+            IconaEsercizio(esercizio: ex, lato: 28)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(verbatim: ex.titolo).font(.body.weight(.semibold)).foregroundStyle(.tint)
                 Text("\(ex.muscolo.nome) · recupero \(e.recupero) s").font(.caption).foregroundStyle(.secondary)
             }
-            Spacer()
+            Spacer(minLength: 0)
             Menu {
                 Picker("Recupero", selection: Binding(
                     get: { e.recupero },
@@ -262,7 +369,10 @@ struct SezioneEsercizioInCorso: View {
                 }
                 Button("Rimuovi esercizio", systemImage: "trash", role: .destructive) { chiediRimuovi = true }
             } label: {
-                Image(systemName: "ellipsis.circle").font(.title3)
+                Image(systemName: "ellipsis")
+                    .font(.body.weight(.semibold))
+                    .frame(width: 44, height: 36)
+                    .contentShape(.rect)
             }
             .accessibilityLabel("Opzioni di \(ex.titolo)")
             .confirmationDialog("Rimuovere \(ex.titolo)?", isPresented: $chiediRimuovi, titleVisibility: .visible) {
@@ -279,6 +389,7 @@ struct RigaSerie: View {
     @Environment(TimerRecupero.self) private var timer
     let idEsercizio: UUID
     let idSerie: UUID
+    let conPrecedente: Bool
     var campo: FocusState<PuntoDiFocus?>.Binding
     @Binding var riaperti: Set<UUID>
     @State private var kg = ""
@@ -294,49 +405,58 @@ struct RigaSerie: View {
 
     var body: some View {
         if let p = posizione, let e = palestra.stato.inCorso?.esercizi[p.0] {
-            let i = p.0, j = p.1
+            let j = p.1
             let s = e.serie[j]
             let numero = e.serie[..<j].filter { !$0.riscaldamento }.count
             let prec = palestra.precedente(e.esercizio, numero)
-            HStack(spacing: 8) {
+            ColonneSerie(conPrecedente: conPrecedente) {
+                // Il numero apre il menu della serie: riscaldamento ed eliminazione
                 Menu {
                     Toggle("Serie di riscaldamento", isOn: Binding(
                         get: { s.riscaldamento },
                         set: { v in modifica { $0.riscaldamento = v } }
                     ))
+                    Button("Elimina", systemImage: "trash", role: .destructive) { elimina() }
                 } label: {
                     Text(verbatim: s.riscaldamento ? String(localized: "R") : "\(numero + 1)")
                         .font(.subheadline.weight(.bold))
+                        .monospacedDigit()
                         .foregroundStyle(s.riscaldamento ? AnyShapeStyle(.orange) : AnyShapeStyle(.primary))
-                        .frame(width: 36)
+                        .frame(minWidth: 28, minHeight: 36)
+                        .contentShape(.rect)
                 }
+            } precedente: {
                 ultimaVolta(prec, fatta: s.fatta)
-                cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? "kg", tastiera: .decimalPad, larghezza: 64, quale: .kg)
+            } kg: {
+                cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? "kg", tastiera: .decimalPad, quale: .kg)
                     .onChange(of: kg) { _, v in modifica { $0.kg = leggiNumero(v) } }
-                cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, larghezza: 52, quale: .rip)
+            } rip: {
+                cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, quale: .rip)
                     .onChange(of: rip) { _, v in modifica { $0.rip = Int(v) } }
+            } spunta: {
                 Button {
                     segna(s, prec, e.recupero, corpoLibero: palestra.esercizio(e.esercizio).attrezzo == .corpoLibero)
                 } label: {
                     Image(systemName: s.fatta ? "checkmark.square.fill" : "square")
-                        .font(.title2)
-                        .foregroundStyle(s.fatta ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                        .font(.title3)
+                        .foregroundStyle(s.fatta ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                         .contentTransition(.symbolEffect(.replace))
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                .frame(width: 32)
                 .accessibilityLabel(s.riscaldamento ? Text("Serie di riscaldamento") : Text("Serie \(numero + 1)"))
                 .accessibilityValue(s.fatta ? Text("fatta") : Text("da fare"))
                 .accessibilityHint(s.fatta ? Text(verbatim: "") : Text("Segna la serie e fa partire il recupero"))
+                .accessibilityAction(named: Text("Elimina")) { elimina() }
             }
-            .listRowBackground(s.fatta ? Color.green.opacity(0.14) : nil)
+            .padding(.horizontal, 6)
+            .frame(minHeight: 44)
+            // Serie fatta: tutta la riga prende l'accento, dentro i margini del contenuto
+            .background(s.fatta ? Colori.accento.opacity(0.2) : .clear, in: .rect(cornerRadius: 8))
+            .animation(.smooth(duration: 0.2), value: s.fatta)
             .sensoryFeedback(.success, trigger: s.fatta) { _, nuovo in nuovo }
             .sensoryFeedback(.error, trigger: errore)
-            .swipeActions {
-                Button("Elimina", systemImage: "trash", role: .destructive) {
-                    palestra.stato.inCorso?.esercizi[i].serie.remove(at: j)
-                }
-            }
             .onAppear {
                 guard !caricato else { return }
                 caricato = true
@@ -349,12 +469,14 @@ struct RigaSerie: View {
     // Il testo della serie precedente è un pulsante: copia kg e ripetizioni nei campi, senza spuntare
     @ViewBuilder
     private func ultimaVolta(_ prec: SerieFatta?, fatta: Bool) -> some View {
-        let testo = prec.map { "\(num($0.kg ?? 0)) kg × \($0.rip ?? 0)" } ?? "–"
-        let etichetta = Text(verbatim: testo)
-            .font(.caption)
+        let breve = prec.map { "\(num($0.kg ?? 0)) × \($0.rip ?? 0)" } ?? "–"
+        let completo = prec.map { "\(num($0.kg ?? 0)) kg × \($0.rip ?? 0)" } ?? "–"
+        let etichetta = Text(verbatim: breve)
+            .font(.footnote.weight(.medium))
+            .monospacedDigit()
             .lineLimit(1)
-            .minimumScaleFactor(0.8)
-            .frame(maxWidth: .infinity)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity, minHeight: 36)
         if let v = UltimaVolta.valori(da: prec), !fatta {
             Button {
                 if let k = v.kg { kg = num(k) }
@@ -363,20 +485,23 @@ struct RigaSerie: View {
             .buttonStyle(.plain)
             .foregroundStyle(.tint)
             .accessibilityLabel(Text("Usa i valori dell'ultima volta"))
-            .accessibilityValue(Text(verbatim: testo))
+            .accessibilityValue(Text(verbatim: completo))
         } else {
-            etichetta.foregroundStyle(.secondary)
+            etichetta
+                .foregroundStyle(prec == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+                .accessibilityLabel(Text("Ultima volta"))
+                .accessibilityValue(Text(verbatim: completo))
         }
     }
 
-    private func cella(testo: Binding<String>, segnaposto: String, tastiera: UIKeyboardType, larghezza: CGFloat, quale: EsitoSpunta.Campo) -> some View {
+    private func cella(testo: Binding<String>, segnaposto: String, tastiera: UIKeyboardType, quale: EsitoSpunta.Campo) -> some View {
         TextField(segnaposto, text: testo)
             .keyboardType(tastiera)
             .multilineTextAlignment(.center)
-            .font(.body.weight(.semibold).monospacedDigit())
+            .font(.callout.weight(.semibold).monospacedDigit())
             .padding(.vertical, 6)
-            .frame(width: larghezza)
-            .background(.fill.tertiary, in: .rect(cornerRadius: 8))
+            .padding(.horizontal, 4)
+            .background(.fill.tertiary, in: .rect(cornerRadius: 7))
             .focused(campo, equals: PuntoDiFocus(serie: idSerie, campo: quale))
     }
 
@@ -384,6 +509,13 @@ struct RigaSerie: View {
         guard let p = posizione, var s = palestra.stato.inCorso?.esercizi[p.0].serie[p.1] else { return }
         cambia(&s)
         palestra.stato.inCorso?.esercizi[p.0].serie[p.1] = s
+    }
+
+    private func elimina() {
+        guard let p = posizione else { return }
+        if campo.wrappedValue?.serie == idSerie { campo.wrappedValue = nil }
+        timer.fermaSeAvviatoDa(idSerie)
+        palestra.stato.inCorso?.esercizi[p.0].serie.remove(at: p.1)
     }
 
     // Spunta: i campi vuoti prendono i valori della serie precedente (a corpo libero i kg vuoti valgono 0);
