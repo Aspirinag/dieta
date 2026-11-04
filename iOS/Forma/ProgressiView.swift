@@ -22,7 +22,7 @@ struct ProgressiView: View {
                     .pickerStyle(.segmented)
                     switch sezione {
                     case .corpo: CorpoView(aggiungi: { nuovaMisura = true })
-                    case .palestra: PalestraProvvisoria()
+                    case .palestra: ProgressiPalestraView()
                     }
                 }
                 .padding(.horizontal, 16)
@@ -49,40 +49,14 @@ struct ProgressiView: View {
             }
             .destinazioniDieta()
             .destinazioniArchivioPalestra()
-            .navigationDestination(for: PaginaPalestraDest.self) { pagina in
+            .navigationDestination(for: PaginaProgressi.self) { pagina in
                 switch pagina {
+                case .allenamenti: PaginaPalestra(titolo: "Allenamenti") { StoricoAllenamenti() }
                 case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
-                case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
-                case .libreria, .modelli, .pianoSettimanale: EmptyView()
+                case .record: RecordView()
                 }
             }
         }
     }
 }
 
-// Provvisorio fino al Task 9: dà accesso a Storico e Calendario
-private struct PalestraProvvisoria: View {
-    @Environment(Palestra.self) private var palestra
-
-    var body: some View {
-        Riquadro {
-            NavigationLink(value: PaginaPalestraDest.storico) {
-                LabeledContent {
-                    Text("\(palestra.stato.allenamenti.count)")
-                } label: {
-                    Label("Storico e record", systemImage: "chart.line.uptrend.xyaxis")
-                }
-                .frame(minHeight: 44)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            Divider()
-            NavigationLink(value: PaginaPalestraDest.calendario) {
-                Label("Calendario", systemImage: "calendar")
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-        }
-    }
-}

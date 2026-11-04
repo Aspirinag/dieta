@@ -42,7 +42,7 @@ struct CalendarioContenuto: View {
                 NavigationLink(value: a.id) { RigaAllenamento(allenamento: a) }
             }
             ForEach(palestra.cardio(del: scelto)) { c in
-                Label("\(c.tipo) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""), systemImage: Libreria.simboloCardio(c.tipo))
+                RigaCardio(cardio: c)
             }
             if scelto <= Giorni.oggi() && t != .riposo && palestra.allenamenti(del: scelto).isEmpty && palestra.cardio(del: scelto).isEmpty {
                 Toggle("Saltato", isOn: Binding(

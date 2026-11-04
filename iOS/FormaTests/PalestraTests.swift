@@ -87,4 +87,40 @@ struct PalestraTests {
         s.allenamenti.append(z)
         #expect(s.conteggioRecord()[z.id] == 2)                // 60 e 55 battono entrambi il 40 di prima
     }
+
+    // Record per esercizio: la serie con più kg (a parità, più ripetizioni), dal più recente
+    @Test func recordPerEsercizio() {
+        var s = stato([])
+        var a = allenamento("2026-10-01", kg: 60, rip: 8)
+        a.esercizi.append(EsercizioFatto(esercizio: "Leg press", serie: [SerieFatta(kg: 100, rip: 10, fatta: true)]))
+        var b = allenamento("2026-10-10", kg: 70, rip: 5)
+        b.esercizi[0].serie.append(SerieFatta(kg: 70, rip: 6, fatta: true))
+        b.esercizi[0].serie.append(SerieFatta(kg: 90, rip: 5, fatta: true, riscaldamento: true))   // non conta
+        s.allenamenti = [a, b]
+        let r = s.recordPerEsercizio()
+        #expect(r.map(\.esercizio) == ["Panca piana", "Leg press"])
+        #expect(r[0].kg == 70 && r[0].rip == 6 && r[0].giorno == "2026-10-10")
+        #expect(r[1].kg == 100 && r[1].rip == 10)
+        #expect(stato([]).recordPerEsercizio().isEmpty)
+    }
+
+    // Il cardio (anche quello dal Watch) si elimina per identificativo; gli altri restano
+    @Test func eliminaCardio() {
+        var s = stato([])
+        let a = SessioneCardio(data: "2026-11-02", tipo: "Corsa", minuti: 30, km: 5)
+        let b = SessioneCardio(data: "2026-11-03", tipo: "Camminata", minuti: 40, km: 3, watch: DatiWatch(uuid: "x", calorie: 100, battito: 90))
+        s.cardio = [a, b]
+        s.eliminaCardio(b.id)
+        #expect(s.cardio.map(\.id) == [a.id])
+    }
+
+    // Allenamenti e cardio in un'unica lista, dal più recente
+    @Test func attivitaRecenti() {
+        var s = stato([])
+        s.allenamenti = [allenamento("2026-11-02"), allenamento("2026-11-05")]
+        s.cardio = [SessioneCardio(data: "2026-11-04", tipo: "Corsa", minuti: 30, km: 5)]
+        let r = s.attivitaRecenti(2)
+        #expect(r.count == 2)
+        #expect(r.map(\.giorno) == ["2026-11-05", "2026-11-04"])
+    }
 }

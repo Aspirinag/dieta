@@ -80,7 +80,7 @@ struct StoricoAllenamenti: View {
 
     var body: some View {
         let lista = palestra.stato.allenamenti.sorted { $0.inizio > $1.inizio }
-        if lista.isEmpty {
+        if lista.isEmpty && palestra.stato.cardio.isEmpty {
             ContentUnavailableView("Nessun allenamento", systemImage: "dumbbell",
                                    description: Text("Gli allenamenti finiti compaiono qui."))
         } else {
@@ -93,11 +93,14 @@ struct StoricoAllenamenti: View {
                 }
             }
             let record = palestra.stato.conteggioRecord()
-            let mesi = Dictionary(grouping: lista) { String($0.giorno.prefix(7)) }
+            let mesi = Dictionary(grouping: palestra.stato.attivitaRecenti()) { String($0.giorno.prefix(7)) }
             ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
                 Section(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "it_IT"))).capitalized) {
-                    ForEach(mesi[m] ?? []) { a in
-                        NavigationLink(value: a.id) { RigaAllenamento(allenamento: a, record: record[a.id]) }
+                    ForEach(mesi[m] ?? []) { voce in
+                        switch voce {
+                        case .pesi(let a): NavigationLink(value: a.id) { RigaAllenamento(allenamento: a, record: record[a.id]) }
+                        case .cardio(let c): RigaCardio(cardio: c, conData: true)
+                        }
                     }
                 }
             }
@@ -271,5 +274,52 @@ struct RiepilogoView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Fine") { chiudi() } }
             }
         }
+    }
+}
+
+// Una sessione di cardio (anche dal Watch). Non ha un dettaglio: si elimina con un tocco prolungato, dopo una conferma
+struct RigaCardio: View {
+    @Environment(Palestra.self) private var palestra
+    let cardio: SessioneCardio
+    var conData = false
+    @State private var chiediElimina = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: Libreria.simboloCardio(cardio.tipo))
+                .foregroundStyle(Colori.acqua)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(cardio.tipo).font(.headline)
+                Text(dettaglio).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            if cardio.km > 0 {
+                Text("\(num(cardio.km)) km").font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+            }
+        }
+        .frame(minHeight: 44)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("cardio-\(cardio.id.uuidString)")
+        .accessibilityHint("Tocco prolungato per eliminare")
+        .accessibilityAction(named: "Elimina") { chiediElimina = true }
+        .contextMenu {
+            Button("Elimina", systemImage: "trash", role: .destructive) { chiediElimina = true }
+        }
+        .confirmationDialog("Eliminare questo cardio?", isPresented: $chiediElimina, titleVisibility: .visible) {
+            Button("Elimina", role: .destructive) { palestra.stato.eliminaCardio(cardio.id) }
+        }
+    }
+
+    private var dettaglio: String {
+        var parti: [String] = []
+        if conData { parti.append(Giorni.data(cardio.data).formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(Locale(identifier: "it_IT")))) }
+        parti.append("\(cardio.minuti) min")
+        if let w = cardio.watch {
+            parti.append("Watch")
+            if let kcal = w.calorie { parti.append("\(Int(kcal.rounded())) kcal") }
+        }
+        return parti.joined(separator: " · ")
     }
 }

@@ -29,14 +29,18 @@ struct CorpoView: View {
 
     var body: some View {
         let bia = archivio.profilo.bia.sorted { $0.data < $1.data }
-        if bia.contains(where: { $0.peso != nil }) {
+        if Self.senzaMisurazioni(bia) {
+            vuoto
+        } else {
             grafico(bia)
             riquadriBia(bia)
             misurazioni(bia)
-        } else {
-            vuoto
         }
     }
+
+    // L'invito «Aggiungi il primo peso» compare solo senza alcuna misurazione:
+    // quelle con la sola vita o la sola BIA (dal sito) si vedono comunque
+    static func senzaMisurazioni(_ bia: [Misura]) -> Bool { bia.isEmpty }
 
     // ---------- Stato vuoto ----------
 
@@ -130,7 +134,7 @@ struct CorpoView: View {
                 }
             }
             if punti.count < 2 {
-                Text("Servono due misurazioni in questo periodo.")
+                Text(punti.isEmpty ? "Nessun valore in questo periodo." : "Servono due misurazioni in questo periodo.")
                     .font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 120)
             } else {
@@ -294,6 +298,7 @@ struct RigheMisure: View {
 // Progressi → Corpo → Tutte: l'elenco completo. Si tocca per modificare; si elimina con un tocco prolungato
 struct MisurazioniView: View {
     @Environment(Archivio.self) private var archivio
+    @Environment(\.dismiss) private var chiudi
     @State private var daEliminare: Misura?
 
     var body: some View {
@@ -302,7 +307,9 @@ struct MisurazioniView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(bia.count == 1 ? "1 misurazione" : "\(bia.count) misurazioni")
                     .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)
-                if !bia.isEmpty {
+                if bia.isEmpty {
+                    Text("Nessuna misurazione.").font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)
+                } else {
                     Riquadro { RigheMisure(misure: bia, elimina: { daEliminare = $0 }) }
                 }
             }
@@ -317,6 +324,7 @@ struct MisurazioniView: View {
         ), titleVisibility: .visible, presenting: daEliminare) { m in
             Button("Elimina quella del \(dataMisura(m.data))", role: .destructive) {
                 archivio.profilo.bia.removeAll { $0.data == m.data }
+                if archivio.profilo.bia.isEmpty { chiudi() }
             }
         }
     }

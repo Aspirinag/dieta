@@ -70,7 +70,7 @@ final class ProgressiCorpoTests: XCTestCase {
         let app = avvia()
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
         app.segmentedControls.buttons["Palestra"].tap()
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Storico e record'")).firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Kg sollevati per settimana"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Calendario"].exists)
         XCTAssertFalse(app.navigationBars["Progressi"].buttons["Aggiungi"].exists, "Il + è solo di Corpo")
     }

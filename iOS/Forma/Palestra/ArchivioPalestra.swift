@@ -493,3 +493,65 @@ extension StatoPalestra {
         }
     }
 }
+
+// Progressi → Palestra: record per esercizio e attività recenti
+struct RecordEsercizio: Identifiable, Hashable {
+    let esercizio: String
+    let kg: Double
+    let rip: Int
+    let giorno: String
+    var id: String { esercizio }
+}
+
+// Un allenamento con i pesi o una sessione di cardio (anche dal Watch)
+enum Attivita: Identifiable {
+    case pesi(Allenamento)
+    case cardio(SessioneCardio)
+
+    var id: UUID {
+        switch self {
+        case .pesi(let a): a.id
+        case .cardio(let c): c.id
+        }
+    }
+    var giorno: String {
+        switch self {
+        case .pesi(let a): a.giorno
+        case .cardio(let c): c.data
+        }
+    }
+    // Per l'ordine: l'ora d'inizio dei pesi; a mezzogiorno per il cardio, che ha solo il giorno
+    var quando: Date {
+        switch self {
+        case .pesi(let a): a.inizio
+        case .cardio(let c): Giorni.data(c.data).addingTimeInterval(12 * 3600)
+        }
+    }
+}
+
+extension StatoPalestra {
+    // Per ogni esercizio la serie migliore (più kg, a parità più ripetizioni), dai più recenti
+    func recordPerEsercizio() -> [RecordEsercizio] {
+        var migliori: [String: RecordEsercizio] = [:]
+        for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
+            for e in a.esercizi {
+                for s in e.serie where s.valida {
+                    let kg = s.kg ?? 0, rip = s.rip ?? 0
+                    if let m = migliori[e.esercizio], (kg, rip) <= (m.kg, m.rip) { continue }
+                    migliori[e.esercizio] = RecordEsercizio(esercizio: e.esercizio, kg: kg, rip: rip, giorno: a.giorno)
+                }
+            }
+        }
+        return migliori.values.sorted { ($1.giorno, $0.esercizio) < ($0.giorno, $1.esercizio) }
+    }
+
+    // Allenamenti e cardio insieme, dal più recente
+    func attivitaRecenti(_ n: Int? = nil) -> [Attivita] {
+        let tutte = (allenamenti.map(Attivita.pesi) + cardio.map(Attivita.cardio)).sorted { $0.quando > $1.quando }
+        return n.map { Array(tutte.prefix($0)) } ?? tutte
+    }
+
+    mutating func eliminaCardio(_ id: UUID) {
+        cardio.removeAll { $0.id == id }
+    }
+}

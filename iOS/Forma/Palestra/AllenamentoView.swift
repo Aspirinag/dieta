@@ -45,8 +45,6 @@ struct AllenamentoView: View {
                 switch pagina {
                 case .libreria: LibreriaView(modo: .sfoglia)
                 case .modelli: ModelliView(percorso: $percorso)
-                case .storico: PaginaPalestra(titolo: "Storico") { StoricoAllenamenti() }
-                case .calendario: PaginaPalestra(titolo: "Calendario") { CalendarioContenuto() }
                 case .pianoSettimanale: PianoSettimanaleView()
                 }
             }
@@ -441,7 +439,7 @@ struct NuovoCardioView: View {
 // Pagine della Palestra aperte per valore: le destinazioni stanno sulla radice della scheda.
 // Con collegamenti diretti, il primo collegamento per valore (allenamento, esercizio) le chiudeva
 enum PaginaPalestraDest: Hashable {
-    case libreria, modelli, storico, calendario, pianoSettimanale
+    case libreria, modelli, pianoSettimanale
 }
 
 struct PaginaPalestra<Contenuto: View>: View {
