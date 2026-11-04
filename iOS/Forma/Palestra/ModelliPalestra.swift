@@ -209,7 +209,7 @@ struct Allenamento: Codable, Hashable, Identifiable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = c.valore(.id, UUID())
-        nome = c.valore(.nome, "Allenamento")
+        nome = c.valore(.nome, Self.nomeLibero)
         inizio = c.valore(.inizio, Date())
         fine = c.valore(.fine, nil)
         esercizi = c.valore(.esercizi, [])
@@ -221,8 +221,13 @@ struct Allenamento: Codable, Hashable, Identifiable {
     // Nomi dati dall'app (salvati in italiano, mostrati nella lingua del telefono)
     static let nomeLibero = "Allenamento libero"
     static let nomeWatch = "Palestra · dal Watch"
+    // I nomi dati dall'app: i due di oggi più «Pesi» e «Allenamento», che salvavano i backup e le versioni vecchie.
+    // Un altro nome scritto dall'utente resta com'è
     static let nomiDiSistema: Set<String> = [nomeLibero, nomeWatch, "Pesi", "Allenamento"]
-    var titolo: String { Self.nomiDiSistema.contains(nome) ? String(localized: String.LocalizationValue(nome)) : nome }
+    var titolo: String { titolo(in: .main) }
+    func titolo(in bundle: Bundle) -> String {
+        Self.nomiDiSistema.contains(nome) ? String(localized: String.LocalizationValue(nome), bundle: bundle) : nome
+    }
 
     var giorno: String { Giorni.iso(inizio) }
     var soloWatch: Bool { esercizi.isEmpty && watch != nil }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Controlla il catalogo delle stringhe: ogni voce deve avere l'inglese, non vuoto e non «da rivedere».
+"""Controlla il catalogo delle stringhe: ogni voce deve avere en e en-GB, non vuoti e non «da rivedere»;
+en-GB deve essere uguale a en, salvo le voci in DIVERSE_IN_GB.
 
 Uso: python3 scripts/controlla-traduzioni.py [catalogo ...]
 Senza argomenti controlla iOS/Forma/Localizable.xcstrings e iOS/Forma/InfoPlist.xcstrings.
@@ -12,6 +13,8 @@ import sys
 RADICE = pathlib.Path(__file__).resolve().parent.parent
 PREDEFINITI = [RADICE / "iOS/Forma/Localizable.xcstrings", RADICE / "iOS/Forma/InfoPlist.xcstrings"]
 STATI_NON_FINITI = {"new", "needs_review", "stale"}
+# Voci in cui l'inglese britannico è davvero diverso da quello americano (le altre devono essere uguali)
+DIVERSE_IN_GB = {"Salto della corda", "Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato."}
 
 
 def valori(loc):
@@ -37,8 +40,7 @@ def controlla(percorso):
         loc = voce.get("localizations", {})
         for lingua in ("en", "en-GB"):
             if lingua not in loc:
-                if lingua == "en":
-                    problemi.append(f"{chiave!r}: manca l'inglese")
+                problemi.append(f"{chiave!r}: manca {'l’inglese' if lingua == 'en' else 'en-GB'}")
                 continue
             unita = list(valori(loc[lingua]))
             if not unita:
@@ -50,6 +52,8 @@ def controlla(percorso):
                     problemi.append(f"{chiave!r}: {lingua} in stato {u['state']}")
         if "en-GB" in loc:
             gb += 1
+            if "en" in loc and loc["en"] != loc["en-GB"] and chiave not in DIVERSE_IN_GB:
+                problemi.append(f"{chiave!r}: en-GB diverso da en (se voluto, aggiungila a DIVERSE_IN_GB)")
     print(f"{percorso.name}: {totale} voci da tradurre, {saltate} senza traduzione (numeri e simboli), {gb} con variante britannica")
     return problemi
 

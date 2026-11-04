@@ -88,6 +88,8 @@ struct Radice: View {
             if f != .active {
                 archivio.salvaOra()
                 palestra.salvaOra()
+            } else {
+                Task { await riprogrammaSeCambiataLingua() }
             }
         }
         .alert("Dati non letti", isPresented: Binding(
@@ -126,6 +128,13 @@ struct Radice: View {
 }
 
 extension Radice {
+    // Lingua cambiata dall'ultima programmazione: i promemoria si riprogrammano nella lingua nuova
+    func riprogrammaSeCambiataLingua() async {
+        guard !palestra.demo, !benvenuto, Notifiche.riprogrammazioneNecessaria(), await Notifiche.consentite() else { return }
+        await palestra.programmaPagamento()
+        await archivio.programmaPromemoria()
+    }
+
     // Nomi delle copie dei file dati illeggibili trovate all'avvio
     var copieIlleggibili: String? {
         let nomi = [archivio.fileIlleggibile, palestra.fileIlleggibile].compactMap { $0?.lastPathComponent }
@@ -195,6 +204,13 @@ struct FileBackup: Transferable {
 func durataTesto(_ secondi: TimeInterval) -> String {
     let m = Int(secondi / 60)
     return m >= 60 ? "\(m / 60) h \(String(format: "%02d", m % 60)) min" : "\(m) min"
+}
+
+// «3 allenamenti · 1 h 05 min»; sotto il minuto «meno di 1 min» (non «0 min»)
+func riepilogoAllenamenti(_ n: Int, durata: TimeInterval, bundle: Bundle = .main) -> String {
+    guard n > 0 else { return String(localized: "Nessun allenamento", bundle: bundle) }
+    let tempo = durata < 60 ? String(localized: "meno di 1 min", bundle: bundle) : durataTesto(durata)
+    return "\(AllenamentoView.conteggio(n, bundle: bundle)) · \(tempo)"
 }
 
 // 8.565 e 17.130 (in inglese 8,565 e 17,130): le migliaia sempre, anche sotto le 10.000 (l'italiano di sistema le toglie)

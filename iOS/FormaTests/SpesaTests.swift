@@ -149,4 +149,53 @@ struct SpesaTests {
         #expect(p.spesaProssima?.extra == ["Latte"])
         #expect(p.spesa?.extra == ["Biscotti"])
     }
+
+    // Nessun piano e un solo extra: la lista mostra l'extra, il conteggio lo include
+    @Test func soloExtraSenzaPiano() {
+        var p = Profilo(nome: "Io")
+        p.aggiungiExtra("Caffè", lunedi: "2026-11-02")
+        let voci = p.vociSpesa(lunedi: "2026-11-02")
+        #expect(voci.map(\.nome) == ["Caffè"])
+        #expect(Profilo.senzaPiano(voci))
+        #expect(!Profilo.senzaPiano(profilo(cibo: "Riso", quantita: "80 g").vociSpesa(lunedi: "2026-11-02")))
+        #expect(Profilo.senzaPiano([]))
+    }
+
+    // Un extra con il nome di un prodotto del piano non si aggiunge, e lo si dice
+    @Test func extraGiaNelPianoNonSiAggiunge() {
+        var p = profilo(cibo: "Riso", quantita: "80 g")
+        #expect(p.aggiungiExtra("riso", lunedi: "2026-11-02") == false)
+        #expect(p.settimaneSpesa.first { $0.settimana == "2026-11-02" }?.extra.isEmpty ?? true)
+        #expect(p.aggiungiExtra("Biscotti", lunedi: "2026-11-02") == true)
+        #expect(p.aggiungiExtra(" BISCOTTI ", lunedi: "2026-11-02") == false)
+        #expect(p.aggiungiExtra("   ", lunedi: "2026-11-02") == false)
+    }
+
+    // Maiuscole e accenti non contano: «caffe» è già «Caffè» del piano
+    @Test func extraGiaNelPianoSenzaAccentiNeMaiuscole() {
+        var p = profilo(cibo: "Caffè", quantita: "1 tazza")
+        #expect(p.aggiungiExtra("caffe", lunedi: "2026-11-02") == false)
+        #expect(p.aggiungiExtra("CAFFÈ", lunedi: "2026-11-02") == false)
+        #expect(p.aggiungiExtra("Tè", lunedi: "2026-11-02") == true)
+        #expect(p.aggiungiExtra("te", lunedi: "2026-11-02") == false)
+    }
+
+    // Se l'app resta aperta, al cambio di giorno la lista passa alla settimana giusta
+    @Test func settimanaSpesaAlCambioDiGiorno() {
+        // Stesso giorno: resta dov'è (anche se si guarda la prossima)
+        #expect(Profilo.settimanaSpesaAggiornata(corrente: "2026-11-09", ultimoOggi: "2026-11-05", oggi: "2026-11-05") == "2026-11-09")
+        // Giovedì → venerdì: si propone la prossima
+        #expect(Profilo.settimanaSpesaAggiornata(corrente: "2026-11-02", ultimoOggi: "2026-11-05", oggi: "2026-11-06") == "2026-11-09")
+        // Domenica → lunedì: la «prossima» di ieri è ora la questa
+        #expect(Profilo.settimanaSpesaAggiornata(corrente: "2026-11-09", ultimoOggi: "2026-11-08", oggi: "2026-11-09") == "2026-11-09")
+        // Dopo molti giorni
+        #expect(Profilo.settimanaSpesaAggiornata(corrente: "2026-11-02", ultimoOggi: "2026-11-03", oggi: "2026-11-17") == "2026-11-16")
+    }
+
+    @Test func riepilogoSettimanaSottoIlMinuto() {
+        let it = Bundle(path: Bundle.main.path(forResource: "it", ofType: "lproj")!)!
+        #expect(riepilogoAllenamenti(1, durata: 20, bundle: it) == "1 allenamento · meno di 1 min")
+        #expect(riepilogoAllenamenti(2, durata: 2700, bundle: it) == "2 allenamenti · 45 min")
+        #expect(riepilogoAllenamenti(0, durata: 0, bundle: it) == "Nessun allenamento")
+    }
 }

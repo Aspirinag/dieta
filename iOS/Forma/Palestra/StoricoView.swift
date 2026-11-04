@@ -290,7 +290,7 @@ struct RigaCardio: View {
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("cardio-\(cardio.id.uuidString)")
-        .accessibilityHint("Tocco prolungato per eliminare")
+        .accessibilityHint("Tieni premuto per eliminare")
         .accessibilityAction(named: "Elimina") { chiediElimina = true }
         .contextMenu {
             Button("Elimina", systemImage: "trash", role: .destructive) { chiediElimina = true }

@@ -62,4 +62,17 @@ final class OggiPastiTests: XCTestCase {
         XCTAssertTrue(fuori.staticTexts["1 di 4"].waitForExistence(timeout: 8))
         XCTAssertFalse(fuori.descendants(matching: .any)["riquadro-pagamento"].exists, "Fuori dalla finestra il riquadro non compare")
     }
+
+    // Giorno di cardio senza cardio fatto: titolo e pulsante per registrarlo
+    func testOggiCardioHaIlPulsante() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-tab", "oggi", "-oggi-cardio"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Oggi cardio"].waitForExistence(timeout: 8), "Manca «Oggi cardio»")
+        let registra = app.buttons["Registra cardio"]
+        XCTAssertTrue(registra.exists, "Manca il pulsante «Registra cardio»")
+        registra.tap()
+        XCTAssertTrue(app.navigationBars["Cardio"].waitForExistence(timeout: 5), "Non si apre il foglio del cardio")
+    }
 }

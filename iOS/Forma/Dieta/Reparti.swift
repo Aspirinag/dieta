@@ -42,13 +42,22 @@ enum Reparto: String, CaseIterable, Codable {
                      "olive", "capperi", "hummus", "tahini", "crema", "cioccolato", "cioccolata", "proteine", "integratore", "lievito"]),
     ]
 
+    // Parole che valgono solo se intere (come prefisso darebbero «semi» → «semintegrale»)
+    private static let soloEsatte: Set<String> = ["semi"]
+    // Espressioni di più parole, controllate prima delle singole parole («frutta secca» non è frutta fresca)
+    private static let espressioni: [(Reparto, [String])] = [
+        (.dispensa, ["frutta secca", "frutta a guscio", "frutta oleosa", "frutta disidratata"]),
+    ]
+
     // Il primo termine del nome che corrisponde decide il reparto; senza corrispondenze è "altro"
     static func indovina(_ nome: String) -> Reparto {
         let pulito = nome.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil).lowercased()
+        let spaziato = " " + pulito.split(whereSeparator: { !$0.isLetter }).joined(separator: " ") + " "
+        for (reparto, frasi) in espressioni where frasi.contains(where: { spaziato.contains(" \($0) ") }) { return reparto }
         let parole = pulito.split(whereSeparator: { !$0.isLetter }).map(String.init)
         for parola in parole {
             for (reparto, chiavi) in paroleChiave {
-                for k in chiavi where parola == k || (k.count >= 4 && parola.hasPrefix(k)) {
+                for k in chiavi where parola == k || (k.count >= 4 && !soloEsatte.contains(k) && parola.hasPrefix(k)) {
                     return reparto
                 }
             }

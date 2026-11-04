@@ -60,7 +60,7 @@ final class ProgressiCorpoTests: XCTestCase {
         let app = avvia()
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
         app.navigationBars["Progressi"].buttons["Aggiungi"].tap()
-        XCTAssertTrue(app.buttons["Carica la BIA (PDF)"].waitForExistence(timeout: 3), "Manca il caricamento del referto")
+        XCTAssertTrue(app.buttons["Carica la BIA (PDF)"].waitForExistence(timeout: 3), "Manca il caricamento della BIA")
         app.buttons["Aggiungi misurazione"].tap()
         XCTAssertTrue(app.navigationBars["Nuova misurazione"].waitForExistence(timeout: 5), "Si apre l'editor")
     }

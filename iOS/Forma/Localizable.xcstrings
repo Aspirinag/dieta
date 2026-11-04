@@ -1059,13 +1059,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add to my workouts"
+            "value": "Add to my routines"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add to my workouts"
+            "value": "Add to my routines"
           }
         }
       }
@@ -1263,7 +1263,7 @@
       }
     },
     "Alle": {
-      "comment": "Fine della fascia oraria dei promemoria dell'acqua: «alle» (fino a)",
+      "comment": "Fine della fascia oraria dei promemoria dell'acqua: «alle» (fino a). In coppia con «Dalle» (From)",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1280,7 +1280,7 @@
       }
     },
     "alle-pasti": {
-      "comment": "Orario del promemoria dei pasti: «Alle» (ore)",
+      "comment": "Etichetta dell'orario del promemoria dei pasti: «alle» (a una certa ora), non un intervallo",
       "extractionState": "manual",
       "localizations": {
         "it": {
@@ -1337,7 +1337,7 @@
     },
     "Allenamento": {
       "extractionState": "manual",
-      "comment": "Nome dato dall'app e salvato in italiano: si mostra nella lingua del telefono",
+      "comment": "Una singola seduta di allenamento (workout)",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -1445,6 +1445,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Option %lld"
+          }
+        }
+      }
+    },
+    "Altre azioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
           }
         }
       }
@@ -1591,18 +1607,18 @@
         }
       }
     },
-    "Ancora nessun peso sollevato nelle ultime %lld settimane.": {
+    "Ancora nessun allenamento con i pesi nelle ultime %lld settimane.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No weight lifted in the last %lld weeks yet."
+            "value": "No weight training in the last %lld weeks yet."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "No weight lifted in the last %lld weeks yet."
+            "value": "No weight training in the last %lld weeks yet."
           }
         }
       }
@@ -2694,13 +2710,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create your first workout"
+            "value": "Create your first routine"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create your first workout"
+            "value": "Create your first routine"
           }
         }
       }
@@ -2710,13 +2726,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create your own or start from a ready-made workout."
+            "value": "Create your own or start from a ready-made routine."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create your own or start from a ready-made workout."
+            "value": "Create your own or start from a ready-made routine."
           }
         }
       }
@@ -3254,7 +3270,7 @@
       }
     },
     "Dalle": {
-      "comment": "Inizio della fascia oraria dei promemoria dell'acqua",
+      "comment": "Inizio della fascia oraria dei promemoria dell'acqua: «dalle» (a partire da). In coppia con «Alle» (To)",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -3598,7 +3614,8 @@
             "value": "Delete"
           }
         }
-      }
+      },
+      "comment": "Azione generica di eliminazione"
     },
     "Elimina %@": {
       "localizations": {
@@ -3630,7 +3647,8 @@
             "value": "Delete workout"
           }
         }
-      }
+      },
+      "comment": "Elimina una seduta già fatta (workout), non la scheda"
     },
     "Elimina alternativa": {
       "localizations": {
@@ -3701,16 +3719,17 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete workout"
+            "value": "Delete routine"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete workout"
+            "value": "Delete routine"
           }
         }
-      }
+      },
+      "comment": "Elimina la scheda (routine), non una seduta già fatta"
     },
     "Eliminare %@?": {
       "localizations": {
@@ -3797,13 +3816,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete the workout?"
+            "value": "Delete the routine?"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delete the workout?"
+            "value": "Delete the routine?"
           }
         }
       }
@@ -5838,16 +5857,17 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Km (optional)"
+            "value": "km (optional)"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Km (optional)"
+            "value": "km (optional)"
           }
         }
-      }
+      },
+      "comment": "Unità di misura: chilometri, minuscolo in inglese"
     },
     "L": {
       "localizations": {
@@ -6924,13 +6944,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No workouts"
+            "value": "No routines"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "No workouts"
+            "value": "No routines"
           }
         }
       }
@@ -6988,13 +7008,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout name"
+            "value": "Routine name"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout name"
+            "value": "Routine name"
           }
         }
       }
@@ -7150,13 +7170,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New workout"
+            "value": "New routine"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "New workout"
+            "value": "New routine"
           }
         }
       }
@@ -8372,13 +8392,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Next workout"
+            "value": "Next routine"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Next workout"
+            "value": "Next routine"
           }
         }
       }
@@ -8769,13 +8789,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recorded by Apple Watch: choose the workout and correct the weights."
+            "value": "Recorded by Apple Watch: choose the routine and correct the weights."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recorded by Apple Watch: choose the workout and correct the weights."
+            "value": "Recorded by Apple Watch: choose the routine and correct the weights."
           }
         }
       }
@@ -9251,18 +9271,18 @@
     },
     "Routine": {
       "extractionState": "manual",
-      "comment": "Nome dato dall'app e salvato in italiano: si mostra nella lingua del telefono",
+      "comment": "«Scheda» di allenamento: l'elenco di esercizi da ripetere (routine), non la singola seduta",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout"
+            "value": "Routine"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workout"
+            "value": "Routine"
           }
         }
       }
@@ -9438,13 +9458,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose the workout you did: the sets fill in with your weights from last time, then you correct and check them off."
+            "value": "Choose the routine you did: the sets fill in with your weights from last time, then you correct and check them off."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose the workout you did: the sets fill in with your weights from last time, then you correct and check them off."
+            "value": "Choose the routine you did: the sets fill in with your weights from last time, then you correct and check them off."
           }
         }
       }
@@ -9454,13 +9474,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose from ready-made workouts"
+            "value": "Choose from ready-made routines"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose from ready-made workouts"
+            "value": "Choose from ready-made routines"
           }
         }
       }
@@ -9470,13 +9490,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weights workout"
+            "value": "Weights routine"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Weights workout"
+            "value": "Weights routine"
           }
         }
       }
@@ -9486,29 +9506,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workouts"
+            "value": "Routines"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Workouts"
+            "value": "Routines"
           }
         }
-      }
+      },
+      "comment": "Elenco delle schede di allenamento (routine)"
     },
     "Schede pronte": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ready-made workouts"
+            "value": "Ready-made routines"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ready-made workouts"
+            "value": "Ready-made routines"
           }
         }
       }
@@ -10391,7 +10412,8 @@
             "value": "Shoulders"
           }
         }
-      }
+      },
+      "comment": "Gruppo muscolare (shoulders), non la parte dell'abbigliamento"
     },
     "Spesa": {
       "localizations": {
@@ -10839,7 +10861,7 @@
         }
       }
     },
-    "Tocco prolungato per eliminare": {
+    "Tieni premuto per eliminare": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -11543,6 +11565,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "No meals for this day"
+          }
+        }
+      }
+    },
+    "meno di 1 min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less than 1 min"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "less than 1 min"
+          }
+        }
+      }
+    },
+    "È già nella lista": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already on the list"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already on the list"
+          }
+        }
+      }
+    },
+    "Apre la misurazione per modificarla. Tieni premuto per eliminarla.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the measurement to edit it. Touch and hold to delete it."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the measurement to edit it. Touch and hold to delete it."
+          }
+        }
+      }
+    },
+    "Tieni premuto per duplicare o eliminare la scheda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch and hold to duplicate or delete the routine"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch and hold to duplicate or delete the routine"
           }
         }
       }

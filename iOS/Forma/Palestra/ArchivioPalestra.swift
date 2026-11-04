@@ -406,7 +406,7 @@ final class Palestra {
         let perGiorno = Dictionary(grouping: v.sets ?? [], by: \.date)
         let giaImportati = Set(s.allenamenti.map(\.giorno))
         for (giorno, serie) in perGiorno where !giaImportati.contains(giorno) {
-            var a = Allenamento(nome: "Pesi", inizio: Giorni.data(giorno).addingTimeInterval(18 * 3600))
+            var a = Allenamento(nome: Allenamento.nomeLibero, inizio: Giorni.data(giorno).addingTimeInterval(18 * 3600))
             a.fine = a.inizio.addingTimeInterval(3600)
             var ordine: [String] = []
             for x in serie where !ordine.contains(x.exercise) { ordine.append(x.exercise) }

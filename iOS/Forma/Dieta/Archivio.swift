@@ -185,6 +185,7 @@ final class Archivio {
         for n in (stato.promemoria ?? Promemoria()).notifiche {
             await Notifiche.giornaliera(id: n.id, titolo: n.titolo, testo: n.testo, minuti: n.minuti)
         }
+        Notifiche.registraLingua()
     }
 }
 
@@ -300,23 +301,37 @@ extension Profilo {
 
     // Reparto scelto a mano, altrimenti stimato dal nome
     func reparto(di chiave: String) -> Reparto {
-        repartiSpesa?[chiave].flatMap(Reparto.init(rawValue:)) ?? Reparto.indovina(chiave)
+        let k = chiave.lowercased()
+        return repartiSpesa?[k].flatMap(Reparto.init(rawValue:)) ?? Reparto.indovina(k)
     }
 
     mutating func sposta(_ chiave: String, in r: Reparto) {
         var m = repartiSpesa ?? [:]
-        m[chiave] = r.rawValue
+        m[chiave.lowercased()] = r.rawValue
         repartiSpesa = m
     }
 
-    mutating func aggiungiExtra(_ nome: String, lunedi lun: String) {
+    // Falso se il nome è vuoto o è già nella lista (tra i prodotti del piano o tra gli extra)
+    @discardableResult
+    mutating func aggiungiExtra(_ nome: String, lunedi lun: String) -> Bool {
         let pulito = nome.trimmingCharacters(in: .whitespaces)
+        // Maiuscole e accenti non contano («caffe» è già «Caffè»), come in Reparto.indovina
+        let piega: (String) -> String = { $0.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil) }
+        guard !pulito.isEmpty, !vociSpesa(lunedi: lun).contains(where: { piega($0.chiave) == piega(pulito) }) else { return false }
         var settimane = settimaneSpesa
         if !settimane.contains(where: { $0.settimana == lun }) { settimane.append(Spesa(settimana: lun)) }
-        guard !pulito.isEmpty, let i = settimane.firstIndex(where: { $0.settimana == lun }),
-              !settimane[i].extra.contains(where: { $0.lowercased() == pulito.lowercased() }) else { return }
+        guard let i = settimane.firstIndex(where: { $0.settimana == lun }) else { return false }
         settimane[i].extra.append(pulito)
         salvaSettimane(settimane)
+        return true
+    }
+
+    // Senza prodotti dal piano (la lista è vuota o ha solo le voci aggiunte a mano)
+    static func senzaPiano(_ voci: [VoceSpesa]) -> Bool { voci.allSatisfy(\.aggiunta) }
+
+    // Se l'app resta aperta oltre la mezzanotte la settimana proposta si aggiorna; in uno stesso giorno resta quella scelta
+    static func settimanaSpesaAggiornata(corrente: String, ultimoOggi: String, oggi: String) -> String {
+        oggi == ultimoOggi ? corrente : lunediSpesa(oggi: oggi)
     }
 
     // Toglie le spunte di tutte le settimane e tiene le settimane e le voci aggiunte a mano
@@ -389,7 +404,7 @@ extension Profilo {
                           aggiunta: false)
             }
         if let sett = settimaneSpesa.first(where: { $0.settimana == lun }) {
-            for nome in sett.extra {
+            for nome in sett.extra.sorted(by: { $0.localizedStandardCompare($1) == .orderedAscending }) {
                 let k = nome.lowercased()
                 guard !risultato.contains(where: { $0.chiave == k }) else { continue }
                 risultato.append(VoceSpesa(chiave: k, nome: nome, quanto: "", reparto: repartiSpesa?[k].flatMap(Reparto.init(rawValue:)) ?? .altro, giorni: [], aggiunta: true))
