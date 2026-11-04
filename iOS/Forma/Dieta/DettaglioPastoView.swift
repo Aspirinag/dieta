@@ -13,13 +13,14 @@ struct DettaglioPastoView: View {
     }
 
     var body: some View {
-        List {
-            Group {
+        ScrollView {
+            VStack(spacing: 12) {
                 if let pasto {
                     contenuto(pasto)
                 }
             }
-            .righeTema()
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
         .sfondoTema()
         .navigationTitle(pasto?.nome ?? "Pasto")
@@ -29,8 +30,12 @@ struct DettaglioPastoView: View {
     @ViewBuilder private func contenuto(_ pasto: Pasto) -> some View {
         let s = archivio.slot(giorno, indice)
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
-        if pasto.opzioni.count > 1 {
-            Section {
+        Riquadro {
+            Text("\(Giorni.nomi[Giorni.indice(giorno)]) \(Giorni.calendario.component(.day, from: Giorni.data(giorno)))")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 6)
+            if pasto.opzioni.count > 1 {
                 let scelte = Picker("Alternativa", selection: Binding(
                     get: { scelta },
                     set: { nuova in archivio.cambiaSlot(giorno, indice) { $0.opt = nuova } }
@@ -39,29 +44,32 @@ struct DettaglioPastoView: View {
                         Text(pasto.opzioni[j].titolo ?? "Opzione \(j + 1)").tag(j)
                     }
                 }
-                if pasto.opzioni.count <= 3 {
-                    scelte.segmentiOMenu()
-                } else {
-                    scelte.pickerStyle(.menu)
+                Group {
+                    if pasto.opzioni.count <= 3 {
+                        scelte.segmentiOMenu()
+                    } else {
+                        scelte.pickerStyle(.menu)
+                    }
                 }
+                .padding(.bottom, 4)
             }
-        }
-        Section {
             if pasto.opzioni.indices.contains(scelta) {
-                ForEach(Array(pasto.opzioni[scelta].alimenti.enumerated()), id: \.offset) { _, a in
-                    RigaAlimento(nome: a.nome, quantita: a.quantita)
+                let alimenti = pasto.opzioni[scelta].alimenti
+                ForEach(alimenti.indices, id: \.self) { i in
+                    if i > 0 { Divider() }
+                    RigaAlimento(nome: alimenti[i].nome, quantita: alimenti[i].quantita)
+                        .padding(.vertical, 8)
                         .opacity(s.fatto ? 0.5 : 1)
                 }
             }
-        } header: {
-            Text("\(Giorni.nomi[Giorni.indice(giorno)]) \(Giorni.calendario.component(.day, from: Giorni.data(giorno)))")
         }
-        Section {
+        Riquadro {
             RigaSpunta(fatto: s.fatto, azione: {
                 archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() }
             }) {
                 Text(s.fatto ? "Fatto" : "Segna come fatto")
             }
+            .frame(minHeight: 44)
             // VoiceOver: «Colazione, fatto» invece di «Fatto, fatto»
             .accessibilityLabel(pasto.nome)
         }
