@@ -92,13 +92,24 @@ enum Giorni {
 // Numeri nel formato del telefono, senza decimali inutili: 81,1 · 80 · 0,25 (in inglese 81.1)
 func num(_ v: Double?, locale: Locale = .current) -> String {
     guard let v else { return "–" }
-    let f = NumberFormatter()
-    f.locale = locale
-    f.numberStyle = .decimal
-    f.usesGroupingSeparator = false
-    f.minimumFractionDigits = 0
-    f.maximumFractionDigits = 2
-    return f.string(from: NSNumber(value: (v * 100).rounded() / 100)) ?? String(v)
+    return FormatoNumeri.formatter(locale).string(from: NSNumber(value: (v * 100).rounded() / 100)) ?? String(v)
+}
+
+// Un formatter per lingua, creato una volta sola
+enum FormatoNumeri {
+    private static var cache: [String: NumberFormatter] = [:]
+
+    static func formatter(_ locale: Locale) -> NumberFormatter {
+        if let f = cache[locale.identifier] { return f }
+        let f = NumberFormatter()
+        f.locale = locale
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = false
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        cache[locale.identifier] = f
+        return f
+    }
 }
 
 // Peso in chili: sempre metrico, anche con il telefono in inglese americano
@@ -106,9 +117,19 @@ func kgTesto(_ v: Double?, locale: Locale = .current) -> String {
     "\(num(v, locale: locale)) kg"
 }
 
-// Legge un numero scritto con la virgola o con il punto
+// Legge un numero scritto con la virgola o con il punto, anche con cifre non latine (arabo-indiche, devanagari...)
 func leggiNumero(_ testo: String) -> Double? {
-    Double(testo.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
+    var latino = ""
+    for c in testo.trimmingCharacters(in: .whitespaces) {
+        if let d = c.wholeNumberValue, c.isNumber, c.unicodeScalars.allSatisfy({ $0.properties.numericType == .decimal }) {
+            latino += String(d)
+        } else if c == "," || c == "٫" {
+            latino += "."
+        } else {
+            latino.append(c)
+        }
+    }
+    return Double(latino)
 }
 
 // Argomenti di avvio usati per le schermate di prova nel simulatore (es. -tab andamento -demo)

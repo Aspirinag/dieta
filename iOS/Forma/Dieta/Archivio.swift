@@ -185,6 +185,7 @@ final class Archivio {
         for n in (stato.promemoria ?? Promemoria()).notifiche {
             await Notifiche.giornaliera(id: n.id, titolo: n.titolo, testo: n.testo, minuti: n.minuti)
         }
+        Notifiche.registraLingua()
     }
 }
 
@@ -300,12 +301,13 @@ extension Profilo {
 
     // Reparto scelto a mano, altrimenti stimato dal nome
     func reparto(di chiave: String) -> Reparto {
-        repartiSpesa?[chiave].flatMap(Reparto.init(rawValue:)) ?? Reparto.indovina(chiave)
+        let k = chiave.lowercased()
+        return repartiSpesa?[k].flatMap(Reparto.init(rawValue:)) ?? Reparto.indovina(k)
     }
 
     mutating func sposta(_ chiave: String, in r: Reparto) {
         var m = repartiSpesa ?? [:]
-        m[chiave] = r.rawValue
+        m[chiave.lowercased()] = r.rawValue
         repartiSpesa = m
     }
 
@@ -389,7 +391,7 @@ extension Profilo {
                           aggiunta: false)
             }
         if let sett = settimaneSpesa.first(where: { $0.settimana == lun }) {
-            for nome in sett.extra {
+            for nome in sett.extra.sorted(by: { $0.localizedStandardCompare($1) == .orderedAscending }) {
                 let k = nome.lowercased()
                 guard !risultato.contains(where: { $0.chiave == k }) else { continue }
                 risultato.append(VoceSpesa(chiave: k, nome: nome, quanto: "", reparto: repartiSpesa?[k].flatMap(Reparto.init(rawValue:)) ?? .altro, giorni: [], aggiunta: true))

@@ -17,7 +17,13 @@ extension Color {
     }
 
     init(chiaro: UInt32, scuro: UInt32) {
-        self.init(UIColor { $0.userInterfaceStyle == .dark ? UIColor(Color(esa: scuro)) : UIColor(Color(esa: chiaro)) })
+        self.init(UIColor { $0.userInterfaceStyle == .dark ? UIColor(esa: scuro) : UIColor(esa: chiaro) })
+    }
+}
+
+extension UIColor {
+    convenience init(esa: UInt32) {
+        self.init(red: CGFloat((esa >> 16) & 0xFF) / 255, green: CGFloat((esa >> 8) & 0xFF) / 255, blue: CGFloat(esa & 0xFF) / 255, alpha: 1)
     }
 }
 

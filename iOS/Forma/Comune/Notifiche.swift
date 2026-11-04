@@ -38,6 +38,20 @@ enum Notifiche {
         try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "watch-\(id.uuidString)", content: c, trigger: nil))
     }
 
+    // I promemoria che si ripetono restano nella lingua in cui sono stati programmati:
+    // se la lingua preferita è cambiata, vanno programmati di nuovo
+    private static let chiaveLingua = "linguaPromemoria"
+
+    static var linguaAttuale: String { Locale.preferredLanguages.first ?? "" }
+
+    static func serveRiprogrammare(salvata: String?, attuale: String) -> Bool { salvata != attuale }
+
+    static func riprogrammazioneNecessaria() -> Bool {
+        serveRiprogrammare(salvata: UserDefaults.standard.string(forKey: chiaveLingua), attuale: linguaAttuale)
+    }
+
+    static func registraLingua() { UserDefaults.standard.set(linguaAttuale, forKey: chiaveLingua) }
+
     static func cancella(_ ids: [String]) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }

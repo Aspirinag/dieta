@@ -88,6 +88,8 @@ struct Radice: View {
             if f != .active {
                 archivio.salvaOra()
                 palestra.salvaOra()
+            } else {
+                Task { await riprogrammaSeCambiataLingua() }
             }
         }
         .alert("Dati non letti", isPresented: Binding(
@@ -126,6 +128,13 @@ struct Radice: View {
 }
 
 extension Radice {
+    // Lingua cambiata dall'ultima programmazione: i promemoria si riprogrammano nella lingua nuova
+    func riprogrammaSeCambiataLingua() async {
+        guard !palestra.demo, !benvenuto, Notifiche.riprogrammazioneNecessaria(), await Notifiche.consentite() else { return }
+        await palestra.programmaPagamento()
+        await archivio.programmaPromemoria()
+    }
+
     // Nomi delle copie dei file dati illeggibili trovate all'avvio
     var copieIlleggibili: String? {
         let nomi = [archivio.fileIlleggibile, palestra.fileIlleggibile].compactMap { $0?.lastPathComponent }
