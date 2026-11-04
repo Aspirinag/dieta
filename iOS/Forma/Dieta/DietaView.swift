@@ -25,6 +25,9 @@ struct DietaView: View {
                     StrisciaGiorni(lunedi: Giorni.lunedi(ultimoOggi), selezionato: $giorno)
                     if let piano = archivio.profilo.piano(per: giorno) {
                         let pasti = piano.giorni[Giorni.indice(giorno)].pasti
+                        if pasti.isEmpty {
+                            Riquadro { Text("Nessun pasto per questo giorno").font(.headline) }
+                        }
                         ForEach(pasti.indices, id: \.self) { i in
                             RiquadroPasto(giorno: giorno, indice: i, pasto: pasti[i])
                         }
@@ -47,7 +50,7 @@ struct DietaView: View {
         .onChange(of: fase) { _, nuova in
             guard nuova == .active else { return }
             let oggi = Giorni.oggi()
-            if giorno == ultimoOggi { giorno = oggi }
+            giorno = Giorni.giornoScelto(giorno, ultimoOggi: ultimoOggi, oggi: oggi)
             ultimoOggi = oggi
         }
     }

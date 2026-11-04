@@ -76,6 +76,12 @@ enum Giorni {
 
     static func lunedi(_ iso: String) -> String { aggiungi(iso, -indice(iso)) }
 
+    // Giorno da tenere scelto in Dieta quando l'app si riapre: oggi se si guardava il vecchio «oggi»
+    // o un giorno di un'altra settimana, altrimenti resta quello scelto
+    static func giornoScelto(_ scelto: String, ultimoOggi: String, oggi: String) -> String {
+        scelto == ultimoOggi || lunedi(scelto) != lunedi(oggi) ? oggi : scelto
+    }
+
     // Data breve nel formato del telefono: 04/11/2026 in Italia, 11/4/2026 negli Stati Uniti
     static func breve(_ iso: String) -> String {
         guard iso.split(separator: "-").count == 3 else { return iso }

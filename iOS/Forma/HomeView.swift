@@ -25,6 +25,7 @@ struct HomeView: View {
                         olioEAcqua
                     }
                     peso
+                    note
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
@@ -45,6 +46,21 @@ struct HomeView: View {
             .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
             .navigationDestination(for: Esercizio.self) { DettaglioEsercizioView(idEsercizio: $0.id) }
             .destinazioniDieta()
+        }
+    }
+
+    // ---------- Note ----------
+
+    // Le note del profilo (Impostazioni → Olio e acqua) stanno in fondo, piccole
+    @ViewBuilder private var note: some View {
+        let testo = archivio.profilo.testoNote
+        if !testo.isEmpty {
+            Riquadro {
+                Text(testo)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityIdentifier("riquadro-note")
         }
     }
 
@@ -73,17 +89,25 @@ struct HomeView: View {
             let elenco = piano.giorni[Giorni.indice(oggi)].pasti
             let fatti = elenco.indices.filter { archivio.slot(oggi, $0).fatto }.count
             Riquadro {
-                HStack(alignment: .firstTextBaseline) {
+                if elenco.isEmpty {
                     Text("Pasti").font(.headline)
-                    Spacer()
-                    Text("\(fatti) di \(elenco.count)")
+                    Text("Nessun pasto per questo giorno")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .monospacedDigit()
+                        .padding(.top, 2)
+                } else {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Pasti").font(.headline)
+                        Spacer()
+                        Text("\(fatti) di \(elenco.count)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                    .padding(.bottom, 10)
+                    BarraSegmenti(fatti: fatti, totale: elenco.count)
+                        .padding(.bottom, 4)
                 }
-                .padding(.bottom, 10)
-                BarraSegmenti(fatti: fatti, totale: elenco.count)
-                    .padding(.bottom, 4)
                 ForEach(elenco.indices, id: \.self) { i in
                     if i > 0 { Divider() }
                     let fatto = archivio.slot(oggi, i).fatto
@@ -127,7 +151,7 @@ struct HomeView: View {
         Riquadro {
             if let a = palestra.stato.inCorso {
                 disposizione {
-                    sottotitolato(a.nome, Text("In corso"))
+                    sottotitolato(a.titolo, Text("In corso"))
                     Spacer(minLength: 8)
                     Button("Riprendi") { navigazione.allenamentoAperto = true }
                         .buttonStyle(PulsanteAccento())
@@ -166,7 +190,7 @@ struct HomeView: View {
             ForEach(fatti) { a in
                 NavigationLink(value: a.id) {
                     HStack(spacing: 12) {
-                        sottotitolato(a.nome, Text(durataTesto(a.durata)))
+                        sottotitolato(a.titolo, Text(durataTesto(a.durata)))
                         Spacer(minLength: 8)
                         Spunta(fatta: true)
                     }

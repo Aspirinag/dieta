@@ -153,7 +153,7 @@ struct AllenamentoView: View {
         let oggi = Giorni.oggi()
         let fatti = palestra.stato.giorniAllenati(settimanaDi: oggi)
         let durata = palestra.stato.durataSettimana(oggi)
-        let n = fatti.count
+        let n = palestra.stato.allenamentiSettimana(oggi)
         let riepilogo = n == 0 ? String(localized: "Nessun allenamento") : "\(String(localized: "\(n) allenamenti")) · \(durataTesto(durata))"
         return Riquadro {
             Text("Questa settimana").font(.headline)

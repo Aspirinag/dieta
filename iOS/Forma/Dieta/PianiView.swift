@@ -81,7 +81,7 @@ struct ImportaPDF: ViewModifier {
         case .schema:
             let g = giorni ?? []
             guard g.count == 7, g.allSatisfy({ !$0.pasti.isEmpty }) else {
-                return .errore(String(localized: "Non riesco a leggere il piano da questo PDF (\(String(localized: "trovati \(g.count) giorni")) su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Dieta → Piani e misure."))
+                return .errore(String(localized: "Non riesco a leggere il piano da questo PDF (\(String(localized: "trovati \(g.count) giorni")) su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Impostazioni → Piani alimentari."))
             }
             return .piano(g)
         case .bia:
@@ -119,7 +119,7 @@ extension View {
     }
 }
 
-// Dieta → Piani e misure: piani alimentari dai PDF e misurazioni BIA
+// Impostazioni → Piani alimentari: piani alimentari dai PDF e misurazioni BIA
 struct PianiDietaView: View {
     @Environment(Archivio.self) private var archivio
     @State private var richiesta: TipoPDF?
@@ -166,7 +166,7 @@ struct PianiDietaView: View {
             .righeTema()
         }
         .sfondoTema()
-        .navigationTitle("Piani e misure")
+        .navigationTitle("Piani alimentari")
         .navigationBarTitleDisplayMode(.inline)
         .importaPDF($richiesta)
         .sheet(item: $pianoDaModificare) { EditorPianoView(originale: $0) }

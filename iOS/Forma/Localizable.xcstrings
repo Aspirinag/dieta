@@ -2395,22 +2395,6 @@
         }
       }
     },
-    "Carica il piano alimentare da Dieta → Piani e misure.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Upload the meal plan from Diet → Plans and measurements."
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Upload the meal plan from Diet → Plans and measurements."
-          }
-        }
-      }
-    },
     "Carica la BIA (PDF)": {
       "localizations": {
         "en": {
@@ -7063,22 +7047,6 @@
         }
       }
     },
-    "Non riesco a leggere il piano da questo PDF (%@ su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Dieta → Piani e misure.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "I can't read the plan from this PDF (%@ out of 7). Check that it's your nutritionist's meal plan, or create it by hand from Diet → Plans and measurements."
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "I can't read the plan from this PDF (%@ out of 7). Check that it's your nutritionist's meal plan, or create it by hand from Diet → Plans and measurements."
-          }
-        }
-      }
-    },
     "Non riesco ad aprire il file. Riprova o scegline un altro.": {
       "localizations": {
         "en": {
@@ -8077,22 +8045,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Meal plans"
-          }
-        }
-      }
-    },
-    "Piani e misure": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plans and measurements"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Plans and measurements"
           }
         }
       }
@@ -11546,6 +11498,54 @@
     },
     "−15": {
       "shouldTranslate": false
+    },
+    "Carica un piano alimentare da Impostazioni → Piani alimentari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upload a meal plan from Settings → Meal plans."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upload a meal plan from Settings → Meal plans."
+          }
+        }
+      }
+    },
+    "Non riesco a leggere il piano da questo PDF (%@ su 7). Controlla che sia il piano alimentare del nutrizionista, oppure crealo a mano da Impostazioni → Piani alimentari.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I can't read the plan from this PDF (%@ out of 7). Check that it's your nutritionist's meal plan, or create it by hand from Settings → Meal plans."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I can't read the plan from this PDF (%@ out of 7). Check that it's your nutritionist's meal plan, or create it by hand from Settings → Meal plans."
+          }
+        }
+      }
+    },
+    "Nessun pasto per questo giorno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meals for this day"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meals for this day"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -36,6 +36,15 @@ extension StatoPalestra {
         w.fine = w.inizio.addingTimeInterval(55 * 60)
         w.watch = DatiWatch(uuid: "demo-palestra", calorie: 318, battito: 118)
         s.allenamenti.append(w)
+        // `-allenato-oggi`: oggi un allenamento libero e uno registrato dal Watch (per i nomi di sistema)
+        if Avvio.argomenti.contains("-allenato-oggi") {
+            for (nome, watch) in [(Allenamento.nomeLibero, nil), (Allenamento.nomeWatch, DatiWatch(uuid: "demo-oggi", calorie: 200, battito: 110))] {
+                var a = Allenamento(nome: nome, inizio: Giorni.data(Giorni.oggi()).addingTimeInterval(3600))
+                a.fine = a.inizio.addingTimeInterval(40 * 60)
+                a.watch = watch
+                s.allenamenti.append(a)
+            }
+        }
         if Avvio.valore("-tab") == "inCorso" {
             var a = Allenamento(nome: scheda.nome, inizio: Date().addingTimeInterval(-1460), routine: scheda.id)
             a.esercizi = scheda.voci.prefix(3).enumerated().map { i, v in

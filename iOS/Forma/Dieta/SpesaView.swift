@@ -231,10 +231,12 @@ struct SpesaView: View {
         .padding(.top, 4)
     }
 
+    static var indicazioneVuoto: String { String(localized: "Carica un piano alimentare da Impostazioni → Piani alimentari.") }
+
     private var vuoto: some View {
         Riquadro {
             Text("Nessun piano in questa settimana").font(.headline)
-            Text("Carica il piano alimentare da Dieta → Piani e misure.")
+            Text(Self.indicazioneVuoto)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)

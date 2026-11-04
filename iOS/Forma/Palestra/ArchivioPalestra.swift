@@ -476,6 +476,13 @@ extension StatoPalestra {
         return Set((0..<7).filter { giorni.contains(Giorni.aggiungi(lun, $0)) })
     }
 
+    // Quanti allenamenti (pesi più cardio) nella settimana di una data
+    func allenamentiSettimana(_ iso: String) -> Int {
+        let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
+        return allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }.count
+            + cardio.filter { $0.data >= lun && $0.data <= dom }.count
+    }
+
     // Tempo totale di pesi e cardio nella settimana di una data
     func durataSettimana(_ iso: String) -> TimeInterval {
         let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
