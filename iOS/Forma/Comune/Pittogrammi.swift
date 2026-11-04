@@ -50,3 +50,33 @@ struct Pittogramma: View {
         .accessibilityHidden(true)
     }
 }
+
+// Cucchiaino e goccia per le dosi di olio e acqua (stessi disegni del mockup)
+struct Cucchiaino: Shape {
+    func path(in r: CGRect) -> Path {
+        let kx = r.width / 12, ky = r.height / 22
+        var p = Path()
+        p.addEllipse(in: CGRect(x: r.minX, y: r.minY, width: 12 * kx, height: 10 * ky))
+        p.addRoundedRect(in: CGRect(x: r.minX + 4.6 * kx, y: r.minY + 9 * ky, width: 2.8 * kx, height: 12.5 * ky),
+                         cornerSize: CGSize(width: 1.4 * kx, height: 1.4 * kx))
+        return p
+    }
+}
+
+struct Goccia: Shape {
+    func path(in r: CGRect) -> Path {
+        let kx = r.width / 16, ky = r.height / 18
+        func q(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: r.minX + x * kx, y: r.minY + y * ky) }
+        var p = Path()
+        p.move(to: q(8, 0))
+        p.addCurve(to: q(1, 11.5), control1: q(8, 0), control2: q(1, 7.5))
+        p.addArc(center: q(8, 11.5), radius: 7 * kx, startAngle: .degrees(180), endAngle: .degrees(0), clockwise: true)
+        p.addCurve(to: q(8, 0), control1: q(15, 7.5), control2: q(8, 0))
+        p.closeSubpath()
+        return p
+    }
+}
+
+enum SimboloDose {
+    case cucchiaino, goccia
+}

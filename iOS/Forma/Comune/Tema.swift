@@ -5,6 +5,8 @@ import SwiftUI
 enum Colori {
     // Verde salvia: #2F6B4F in chiaro, #7FB89A in scuro
     static let accento = Color(chiaro: 0x2F6B4F, scuro: 0x7FB89A)
+    // Testo e segni sopra l'accento: bianco in chiaro, verde molto scuro in scuro (il bianco sul verde chiaro si legge male)
+    static let sulAccento = Color(chiaro: 0xFFFFFF, scuro: 0x0F2218)
     static let olio = Color(esa: 0xD6A21E)
     static let acqua = Color(esa: 0x3D7FA6)
 }
@@ -45,6 +47,19 @@ struct SfondoTema: ViewModifier {
 struct RigheTema: ViewModifier {
     func body(content: Content) -> some View {
         content.listRowBackground(Color(.secondarySystemGroupedBackground))
+    }
+}
+
+// Pulsante pieno con l'accento (Inizia, Riprendi)
+struct PulsanteAccento: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Colori.sulAccento)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Colori.accento, in: .capsule)
+            .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
 
