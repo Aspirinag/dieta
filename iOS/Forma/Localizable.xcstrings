@@ -643,6 +643,64 @@
         }
       }
     },
+    "%lld serie ✓": {
+      "localizations": {
+        "it": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie ✓"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie ✓"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set ✓"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets ✓"
+                }
+              }
+            }
+          }
+        },
+        "en-GB": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set ✓"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets ✓"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "+15": {
       "shouldTranslate": false
     },
@@ -11343,6 +11401,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Upper body"
+          }
+        }
+      }
+    },
+    "Usa i valori dell'ultima volta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use last time's values"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use last time's values"
           }
         }
       }

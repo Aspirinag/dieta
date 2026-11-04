@@ -10,17 +10,19 @@ struct AllenamentoInCorsoView: View {
     @State private var aggiungi = false
     @State private var chiediFine = false
     @State private var chiediAnnulla = false
+    @State private var riaperti: Set<UUID> = []   // esercizi finiti che l'utente ha riaperto a mano
     @FocusState private var campo: PuntoDiFocus?
 
     var body: some View {
         NavigationStack {
             if let a = palestra.stato.inCorso {
+                ScrollViewReader { scorri in
                 List {
                     Group {
                         statistiche(a)
                         SezioneRiscaldamento()
                         ForEach(a.esercizi) { e in
-                            SezioneEsercizioInCorso(idEsercizio: e.id, campo: $campo)
+                            SezioneEsercizioInCorso(idEsercizio: e.id, campo: $campo, riaperti: $riaperti)
                         }
                         Section {
                             Button {
@@ -40,6 +42,16 @@ struct AllenamentoInCorsoView: View {
                     .righeTema()
                 }
                 .sfondoTema()
+                .onChange(of: a.esercizi.filter(PercorsoAllenamento.completo).map(\.id)) { prima, ora in
+                    // Un esercizio tornato incompleto si riapre da solo; uno appena finito porta al prossimo da fare
+                    riaperti.formIntersection(ora)
+                    guard let finito = ora.last(where: { !prima.contains($0) }),
+                          let prossimo = PercorsoAllenamento.prossimoAperto(dopo: finito, in: a.esercizi) else { return }
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(250))
+                        withAnimation(.smooth) { scorri.scrollTo(prossimo, anchor: .top) }
+                    }
+                }
                 .navigationTitle(a.titolo)
                 .navigationBarTitleDisplayMode(.inline)
                 .scrollDismissesKeyboard(.interactively)
@@ -61,6 +73,7 @@ struct AllenamentoInCorsoView: View {
                     }
                 } message: {
                     Text("Le serie di questo allenamento non vengono salvate.")
+                }
                 }
             }
         }
@@ -155,6 +168,7 @@ struct SezioneEsercizioInCorso: View {
     @Environment(Palestra.self) private var palestra
     let idEsercizio: UUID
     var campo: FocusState<PuntoDiFocus?>.Binding
+    @Binding var riaperti: Set<UUID>
     @State private var chiediRimuovi = false
 
     private var indice: Int? { palestra.stato.inCorso?.esercizi.firstIndex { $0.id == idEsercizio } }
@@ -162,8 +176,29 @@ struct SezioneEsercizioInCorso: View {
     var body: some View {
         if let i = indice, let e = palestra.stato.inCorso?.esercizi[i] {
             let ex = palestra.esercizio(e.esercizio)
+            let inModifica = e.serie.first { $0.id == campo.wrappedValue?.serie }?.id != nil ? e.id : nil
+            if PercorsoAllenamento.compresso(e, riaperti: riaperti, inModifica: inModifica) {
+                Section {
+                    Button {
+                        withAnimation(.smooth) { _ = riaperti.insert(e.id) }
+                    } label: {
+                        HStack(spacing: 12) {
+                            IconaEsercizio(esercizio: ex, lato: 32)
+                            Text(verbatim: "\(ex.titolo) · " + String(localized: "\(e.serie.count) serie ✓"))
+                                .font(.headline)
+                            Spacer()
+                            Image(systemName: "chevron.down").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        }
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.green.opacity(0.14))
+                    .id(idEsercizio)
+                }
+            } else {
             Section {
                 intestazione(ex, e, i)
+                    .id(idEsercizio)
                 HStack(spacing: 8) {
                     Text("Serie").frame(width: 36)
                     Text("Ultima volta").frame(maxWidth: .infinity)
@@ -183,6 +218,7 @@ struct SezioneEsercizioInCorso: View {
                     palestra.stato.inCorso?.esercizi[i].serie.append(SerieFatta(kg: ultima?.kg, rip: ultima?.rip))
                 }
                 .font(.subheadline.weight(.semibold))
+            }
             }
         }
     }
@@ -257,12 +293,7 @@ struct RigaSerie: View {
                         .foregroundStyle(s.riscaldamento ? AnyShapeStyle(.orange) : AnyShapeStyle(.primary))
                         .frame(width: 36)
                 }
-                Text(prec.map { "\(num($0.kg ?? 0)) kg × \($0.rip ?? 0)" } ?? "–")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                ultimaVolta(prec, fatta: s.fatta)
                 cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? "kg", tastiera: .decimalPad, larghezza: 64, quale: .kg)
                     .onChange(of: kg) { _, v in modifica { $0.kg = leggiNumero(v) } }
                 cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, larghezza: 52, quale: .rip)
@@ -295,6 +326,29 @@ struct RigaSerie: View {
                 kg = s.kg.map { num($0) } ?? ""
                 rip = s.rip.map(String.init) ?? ""
             }
+        }
+    }
+
+    // Il testo della serie precedente è un pulsante: copia kg e ripetizioni nei campi, senza spuntare
+    @ViewBuilder
+    private func ultimaVolta(_ prec: SerieFatta?, fatta: Bool) -> some View {
+        let testo = prec.map { "\(num($0.kg ?? 0)) kg × \($0.rip ?? 0)" } ?? "–"
+        let etichetta = Text(verbatim: testo)
+            .font(.caption)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(maxWidth: .infinity)
+        if let v = UltimaVolta.valori(da: prec), !fatta {
+            Button {
+                if let k = v.kg { kg = num(k) }
+                if let r = v.rip { rip = String(r) }
+            } label: { etichetta.contentShape(.rect) }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+            .accessibilityLabel(Text("Usa i valori dell'ultima volta"))
+            .accessibilityValue(Text(verbatim: testo))
+        } else {
+            etichetta.foregroundStyle(.secondary)
         }
     }
 
