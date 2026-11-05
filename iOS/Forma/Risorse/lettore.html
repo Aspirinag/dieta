@@ -10,6 +10,7 @@
   const daBase64 = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const comeFile = (b64) => ({ arrayBuffer: async () => daBase64(b64).buffer });
 
+  // --- lettore: inizio ---
   const GIORNI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 // Nomi dei pasti riconosciuti (senza badare alle maiuscole): ogni schema ha i suoi
 const PASTI = ['colazione', 'spuntino', 'spuntino mattina', 'spuntino del mattino', 'spuntino pomeriggio',
@@ -138,6 +139,7 @@ function parseSchema(righe) {
   }
 
 
+  // --- lettore: fine ---
   // Chiamate dall'app (Swift): ricevono il PDF in base64 e restituiscono JSON
   async function schema(b64) { return JSON.stringify(await leggiSchemaPdf(comeFile(b64))); }
   async function bia(b64) { return JSON.stringify(await leggiBiaPdf(comeFile(b64))); }

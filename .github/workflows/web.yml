@@ -1,0 +1,32 @@
+name: Web app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - iOS/Forma/Risorse/lettore.html
+      - scripts/controlla-lettore.mjs
+      - scripts/prova-dati-web.mjs
+      - .github/workflows/web.yml
+  pull_request:
+    paths:
+      - index.html
+      - iOS/Forma/Risorse/lettore.html
+      - scripts/controlla-lettore.mjs
+      - scripts/prova-dati-web.mjs
+      - .github/workflows/web.yml
+
+jobs:
+  controlli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lettore dei PDF uguale a Forma
+        run: node scripts/controlla-lettore.mjs
+      - name: Dati salvati e backup di Forma conservati
+        run: node scripts/prova-dati-web.mjs
