@@ -848,7 +848,15 @@ struct SfondoVetro: ViewModifier {
 // Icona di un esercizio: pittogramma se c'è, altrimenti il simbolo del muscolo
 struct IconaEsercizio: View {
     let esercizio: Esercizio
-    var lato: CGFloat = 40
+    // Il cerchio e il simbolo crescono con il testo grande
+    @ScaledMetric(relativeTo: .body) private var lato: CGFloat
+    @ScaledMetric(relativeTo: .body) private var simbolo: CGFloat
+
+    init(esercizio: Esercizio, lato: CGFloat = 40) {
+        self.esercizio = esercizio
+        _lato = ScaledMetric(wrappedValue: lato, relativeTo: .body)
+        _simbolo = ScaledMetric(wrappedValue: lato * 0.45, relativeTo: .body)
+    }
 
     var body: some View {
         Group {
@@ -856,11 +864,11 @@ struct IconaEsercizio: View {
                 Pittogramma(figura: f, lato: lato * 0.85)
             } else {
                 Image(systemName: esercizio.muscolo.simbolo)
-                    .font(.system(size: lato * 0.45))
-                    .foregroundStyle(.tint)
+                    .font(.system(size: simbolo))
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(width: lato, height: lato)
-        .background(.tint.opacity(0.12), in: .circle)
+        .background(Color.secondary.opacity(0.12), in: .circle)
     }
 }

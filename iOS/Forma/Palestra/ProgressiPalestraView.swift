@@ -32,8 +32,6 @@ struct ProgressiPalestraView: View {
                 record(stato)
                 allenamenti(stato)
             }
-            // Una sola registrazione per tipo nella pila di Progressi (UUID ed Esercizio stanno in destinazioniArchivioPalestra)
-            .navigationDestination(for: ApriCardio.self) { DettaglioCardioView(id: $0.id) }
         }
     }
 

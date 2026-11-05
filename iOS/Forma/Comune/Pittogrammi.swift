@@ -41,10 +41,10 @@ struct Pittogramma: View {
             let stileBase = StrokeStyle(lineWidth: 4 * k, lineCap: .round, lineJoin: .round)
             let stile = StrokeStyle(lineWidth: 6 * k, lineCap: .round, lineJoin: .round)
             for l in figura.base { ctx.stroke(tratto(l), with: .style(.secondary.opacity(0.6)), style: stileBase) }
-            for l in figura.linee { ctx.stroke(tratto(l), with: .style(.tint), style: stile) }
+            for l in figura.linee { ctx.stroke(tratto(l), with: .style(.secondary), style: stile) }
             let t = figura.testa
             ctx.stroke(Path(ellipseIn: CGRect(x: (t.x - 7) * k, y: (t.y - 7) * k, width: 14 * k, height: 14 * k)),
-                       with: .style(.tint), style: stile)
+                       with: .style(.secondary), style: stile)
         }
         .frame(width: lato, height: lato)
         .accessibilityHidden(true)

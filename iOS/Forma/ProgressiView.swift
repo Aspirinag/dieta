@@ -57,6 +57,8 @@ struct ProgressiView: View {
             }
             .destinazioniDieta()
             .destinazioniArchivioPalestra()
+            // Registrata una volta sola sulla radice (non su ogni figlio di un Group)
+            .navigationDestination(for: ApriCardio.self) { DettaglioCardioView(id: $0.id) }
             .navigationDestination(for: PaginaProgressi.self) { pagina in
                 switch pagina {
                 case .allenamenti: StoricoAllenamenti()

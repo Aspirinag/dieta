@@ -401,6 +401,7 @@ struct DettaglioCardioView: View {
                     }
                     Section {
                         Button("Elimina cardio", systemImage: "trash", role: .destructive) { chiediElimina = true }
+                            .tint(.red)
                     }
                 }
                 .righeTema()
