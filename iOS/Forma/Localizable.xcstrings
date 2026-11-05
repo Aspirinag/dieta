@@ -1599,6 +1599,22 @@
         }
       }
     },
+    "Altre schede": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other workouts"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other workouts"
+          }
+        }
+      }
+    },
     "Altri dati": {
       "localizations": {
         "en": {
@@ -4412,6 +4428,22 @@
         }
       }
     },
+    "Gambe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legs"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legs"
+          }
+        }
+      }
+    },
     "Gatto-cammello (8 lenti)": {
       "localizations": {
         "en": {
@@ -6371,22 +6403,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Horizontal leg press"
-          }
-        }
-      }
-    },
-    "Legs (gambe)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Legs"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Legs"
           }
         }
       }
@@ -8601,22 +8617,6 @@
         }
       }
     },
-    "Pull (tirata)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pull"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pull"
-          }
-        }
-      }
-    },
     "Pulley basso": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -8701,22 +8701,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Time for your next set."
-          }
-        }
-      }
-    },
-    "Push (spinta)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push"
           }
         }
       }
@@ -8849,6 +8833,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "This week"
+          }
+        }
+      }
+    },
+    "Questa settimana: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week: %@"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week: %@"
           }
         }
       }
@@ -10613,6 +10613,22 @@
       },
       "comment": "Gruppo muscolare (shoulders), non la parte dell'abbigliamento"
     },
+    "Spinta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push"
+          }
+        }
+      }
+    },
     "Spesa": {
       "localizations": {
         "en": {
@@ -11003,6 +11019,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Type"
+          }
+        }
+      }
+    },
+    "Tirata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull"
           }
         }
       }

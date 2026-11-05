@@ -1,6 +1,6 @@
 import XCTest
 
-// Palestra serve a iniziare: prossima scheda, settimana, schede con ▶, menu +
+// Palestra serve a iniziare: prossima scheda, settimana, schede con ▶, sezione «Altro»
 final class PalestraUITests: XCTestCase {
     private func avvia() -> XCUIApplication {
         let app = XCUIApplication()
@@ -13,16 +13,20 @@ final class PalestraUITests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
         XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8), "Manca il riquadro Prossima scheda")
-        XCTAssertTrue(app.otherElements["settimana"].exists, "Manca la riga della settimana")
+        XCTAssertTrue(app.staticTexts["settimana"].exists, "Manca il riepilogo della settimana")
 
-        // Il menu + contiene le quattro voci
-        app.buttons["Aggiungi"].tap()
-        for voce in ["Nuova scheda", "Schede pronte", "Libreria esercizi", "Programma della settimana"] {
-            XCTAssertTrue(app.buttons[voce].waitForExistence(timeout: 3), "Manca «\(voce)» nel menu +")
+        // Le funzioni stanno in una sezione «Altro» con il loro nome, non dietro un «+» senza testo
+        XCTAssertTrue(app.buttons["Nuova scheda"].exists, "Manca «Nuova scheda» in barra")
+        XCTAssertTrue(app.buttons["Impostazioni"].exists, "Manca l'ingranaggio delle Impostazioni")
+        for voce in ["Registra cardio", "Programma della settimana", "Libreria esercizi", "Schede pronte", "Allenamento libero"] {
+            for _ in 0..<5 where !app.buttons[voce].exists { app.swipeUp() }
+            XCTAssertTrue(app.buttons[voce].exists, "Manca «\(voce)» in «Altro»")
         }
+        for _ in 0..<5 where !app.buttons["Libreria esercizi"].isHittable { app.swipeDown() }
         app.buttons["Libreria esercizi"].tap()
         XCTAssertTrue(app.navigationBars["Libreria esercizi"].waitForExistence(timeout: 5), "Non si apre la Libreria")
         app.navigationBars.firstMatch.buttons.firstMatch.tap()
+        for _ in 0..<4 where !app.buttons["Inizia"].firstMatch.isHittable { app.swipeDown() }
 
         // Inizia apre l'allenamento in corso
         let inizia = app.buttons["Inizia"].firstMatch
@@ -40,24 +44,45 @@ final class PalestraUITests: XCTestCase {
         XCTAssertTrue(play.exists, "Manca il ▶ di una scheda")
         XCTAssertTrue(app.buttons["Allenamento libero"].exists || { app.swipeUp(); return app.buttons["Allenamento libero"].exists }(), "Manca Allenamento libero")
         for (voce, barra) in [("Schede pronte", "Schede pronte"), ("Programma della settimana", "Programma della settimana")] {
-            app.swipeDown(); app.swipeDown()
-            app.buttons["Aggiungi"].tap()
+            for _ in 0..<4 where !app.buttons[voce].isHittable { app.swipeUp() }
             app.buttons[voce].tap()
             XCTAssertTrue(app.navigationBars[barra].waitForExistence(timeout: 5), "Non si apre \(voce)")
             app.navigationBars.firstMatch.buttons.firstMatch.tap()
         }
     }
 
+    // La prossima scheda compare una volta sola
+    func testProssimaSchedaNonRipetuta() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Spinta"].exists, "Manca il nome della prossima scheda")
+        XCTAssertEqual(app.staticTexts.matching(identifier: "Spinta").count, 1, "«Spinta» compare più di una volta")
+        XCTAssertFalse(app.buttons["Inizia Spinta"].exists, "La prossima scheda è anche nella lista")
+    }
+
+    // Cardio: i minuti sono un valore vero e il ✓ è acceso
+    func testCardioMinutiPrecompilati() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        for _ in 0..<4 where !app.buttons["Registra cardio"].isHittable { app.swipeUp() }
+        app.buttons["Registra cardio"].tap()
+        XCTAssertTrue(app.navigationBars["Cardio"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Salva"].isEnabled, "Il ✓ deve essere acceso: i minuti sono già un valore")
+        XCTAssertTrue(app.steppers.firstMatch.exists, "Mancano i ± dei minuti")
+    }
+
     func testNomeApreEditorEPlayAvvia() {
         continueAfterFailure = false
         let app = avvia()
         XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
-        let nome = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Pull'")).firstMatch
+        let nome = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tirata' AND NOT label BEGINSWITH 'Inizia'")).firstMatch
         for _ in 0..<4 where !nome.isHittable { app.swipeUp() }
         nome.tap()
-        XCTAssertTrue(app.textFields["Nome della scheda"].waitForExistence(timeout: 5), "Toccando il nome deve aprirsi l'editor")
+        XCTAssertTrue(app.buttons["Inizia"].waitForExistence(timeout: 5), "Toccando il nome deve aprirsi l'editor")
         app.navigationBars.firstMatch.buttons.firstMatch.tap()
-        let play = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Inizia ' AND label CONTAINS 'Pull'")).firstMatch
+        let play = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Inizia ' AND label CONTAINS 'Tirata'")).firstMatch
         for _ in 0..<4 where !play.isHittable { app.swipeUp() }
         play.tap()
         XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5), "Il ▶ deve avviare la scheda")
@@ -100,19 +125,18 @@ final class RecuperoVisibileUITests: XCTestCase {
     }
 }
 
-// Palestra compatta: la settimana è una riga sola e le schede si vedono subito
+// La settimana è una riga di testo sotto la prossima scheda e le altre schede si vedono subito
 final class PalestraCompattaUITests: XCTestCase {
     func testSettimanaCompattaESchedeInPrimaSchermata() {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-tab", "allenamento"]
         app.launch()
-        let riga = app.otherElements["settimana"]
-        XCTAssertTrue(riga.waitForExistence(timeout: 8), "Manca la riga della settimana")
-        XCTAssertLessThan(riga.frame.height, 70, "La settimana deve essere una riga compatta")
-        XCTAssertNotEqual(riga.label, "", "La riga della settimana deve avere un testo per VoiceOver")
-        let schede = app.staticTexts["Schede"]
+        let riga = app.staticTexts["settimana"]
+        XCTAssertTrue(riga.waitForExistence(timeout: 8), "Manca il riepilogo della settimana")
+        XCTAssertTrue(riga.label.hasPrefix("Questa settimana"), "Il riepilogo deve dire «Questa settimana»")
+        let schede = app.staticTexts["intestazioneSchede"]
         XCTAssertTrue(schede.exists)
-        XCTAssertLessThan(schede.frame.maxY, app.frame.height * 0.62, "Le schede devono vedersi nella prima schermata")
+        XCTAssertLessThan(schede.frame.maxY, app.frame.height * 0.75, "Le altre schede devono vedersi nella prima schermata")
     }
 }
