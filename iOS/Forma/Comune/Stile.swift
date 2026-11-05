@@ -43,13 +43,6 @@ enum Misure {
     static let contorno: CGFloat = 1.5
 }
 
-extension Font {
-    // Numero importante: arrotondato, semibold, cifre a larghezza fissa, sullo stile di sistema (Dynamic Type)
-    static func numero(_ stile: Font.TextStyle = .body) -> Font {
-        .system(stile, design: .rounded, weight: .semibold).monospacedDigit()
-    }
-}
-
 extension View {
     // Vedi Font.numero: `Text(num(kg)).numero(.largeTitle)`
     func numero(_ stile: Font.TextStyle = .body) -> some View {

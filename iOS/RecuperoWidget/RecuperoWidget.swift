@@ -43,7 +43,7 @@ struct RecuperoLiveActivity: Widget {
                     .padding(.horizontal, 4)
                 }
             } compactLeading: {
-                Image(systemName: "timer").foregroundStyle(Colore.arancio)
+                Image(systemName: "timer").foregroundStyle(Colori.accento)
             } compactTrailing: {
                 if finito {
                     Image(systemName: "checkmark")
@@ -63,10 +63,10 @@ struct RecuperoLiveActivity: Widget {
                         Image(systemName: "timer")
                     }
                     .progressViewStyle(.circular)
-                    .tint(Colore.arancio)
+                    .tint(Colori.accento)
                 }
             }
-            .keylineTint(Colore.arancio)
+            .keylineTint(Colori.accento)
         }
     }
 }
@@ -140,24 +140,12 @@ struct BarraRecupero: View {
             }
         }
         .progressViewStyle(.linear)
-        .tint(Colore.arancio)
+        .tint(Colori.accento)
         .accessibilityHidden(true)
     }
-}
-
-enum Colore {
-    // Lo stesso arancio dell'app (AccentColor), chiaro e scuro
-    static let arancio = Color("Arancio")
 }
 
 extension StatoRecupero {
     // Mai un intervallo rovesciato, anche se la fine fosse prima dell'inizio
     var intervallo: ClosedRange<Date> { inizio...max(inizio, fine) }
-}
-
-extension Font {
-    // Come `Font.numero` dell'app: SF Rounded semibold, cifre fisse
-    static func numero(_ stile: Font.TextStyle) -> Font {
-        .system(stile, design: .rounded, weight: .semibold).monospacedDigit()
-    }
 }
