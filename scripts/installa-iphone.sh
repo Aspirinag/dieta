@@ -16,12 +16,12 @@ if ! xcode-select -p 2>/dev/null | grep -q "Xcode.app"; then
   echo "Imposto Xcode come strumento predefinito (ti chiede la password del Mac)"
   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 fi
-xcodebuild -version | head -1
+xcodebuild -version | sed -n 1p
 xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1 || {
   echo "Completo la prima configurazione di Xcode (ti chiede la password del Mac)"
   sudo xcodebuild -runFirstLaunch
 }
-VERSIONE=$(xcodebuild -version | head -1 | grep -oE '[0-9]+' | head -1)
+VERSIONE=$(xcodebuild -version | sed -n 1p | grep -oE '[0-9]+' | sed -n 1p)
 [ "$VERSIONE" -ge 26 ] || errore "Serve Xcode 26 o successivo (hai Xcode $VERSIONE): aggiornalo dall'App Store."
 
 # ---------- Apple ID (team) ----------
@@ -47,10 +47,16 @@ try:
     devices = json.load(open(sys.argv[1]))["result"]["devices"]
 except Exception:
     devices = []
+# Prima l'iPhone raggiungibile adesso, poi gli altri (un iPad spento non deve passare davanti)
+candidati = []
 for d in devices:
     hw = d.get("hardwareProperties", {})
-    if hw.get("platform") == "iOS" and hw.get("udid") and d.get("connectionProperties", {}).get("pairingState") == "paired":
-        print(hw["udid"]); break
+    conn = d.get("connectionProperties", {})
+    if hw.get("platform") == "iOS" and hw.get("udid") and conn.get("pairingState") == "paired":
+        raggiungibile = conn.get("tunnelState") not in ("unavailable", None)
+        candidati.append((not raggiungibile, hw.get("deviceType") != "iPhone", hw["udid"]))
+if candidati:
+    print(sorted(candidati)[0][2])
 PY
 )
 rm -f "$JSON"
