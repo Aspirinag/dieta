@@ -55,7 +55,7 @@
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
   main { padding: 16px; max-width: 720px; margin: 0 auto; }
-  h1 { font-size: 30px; line-height: 1.15; font-weight: 700; margin: 8px 0 12px; }
+  h1 { font-size: clamp(22px, 7vw, 30px); line-height: 1.15; font-weight: 700; margin: 8px 0 12px; }
   h2 { font-size: 15px; font-weight: 600; color: var(--secondario); margin: 24px 4px 8px; }
   p { margin: 8px 0; }
   .muted { color: var(--secondario); font-size: 14px; margin: 4px 0; }
@@ -71,7 +71,7 @@
   label.muted input { margin-top: 4px; }
   button { font: inherit; color: inherit; border: none; cursor: pointer; }
   .primary { display: block; width: 100%; min-height: 48px; background: var(--accento); color: var(--sul-accento); font-weight: 600; font-size: 17px; border-radius: 12px; padding: 12px; margin: 12px 0; }
-  .small { background: var(--riempimento); color: var(--accento); font-weight: 600; border-radius: 10px; padding: 10px 14px; min-height: 44px; }
+  .small { background: var(--riempimento); color: var(--accento); font-weight: 600; border-radius: 10px; padding: 10px 14px; min-height: 44px; min-width: 44px; }
   .small.mini { min-width: 44px; padding: 4px 8px; font-size: 16px; }
   .small[disabled] { opacity: 0.4; }
   .chip { background: var(--riempimento); color: var(--testo); font-weight: 600; border-radius: 999px; padding: 10px 16px; min-height: 44px; }
@@ -377,6 +377,13 @@ function parseSchema(righe) {
 
   // --- lettore: fine ---
 
+  // Aggiunge un piano letto dal PDF: il piano precedente ancora aperto si chiude il giorno prima
+  function addPiano(p) {
+    prof().piani = prof().piani.filter((x) => !(x.nome === p.nome && x.dal === p.dal));
+    prof().piani.forEach((old) => { if (old.dal < p.dal && (!old.al || old.al >= p.dal)) old.al = addDays(p.dal, -1); });
+    prof().piani.push(p);
+  }
+
   // ---------- OGGI ----------
   // Intestazione di Oggi con le frecce per andare ai giorni passati (non oltre oggi)
   function testaGiorno(iso) {
@@ -531,6 +538,10 @@ function parseSchema(righe) {
     });
   }
   // Spunte della lista: valgono per la settimana in corso, poi ripartono da zero
+  // Toglie le spunte della spesa e tiene il resto (es. le voci aggiunte a mano in Forma)
+  function azzeraSpesa() {
+    if (prof().spesa) prof().spesa.presi = {};
+  }
   function spuntaSpesa() {
     const lun = lunediDi(todayISO());
     if (!prof().spesa || prof().spesa.settimana !== lun) prof().spesa = { settimana: lun, presi: {} };
@@ -945,7 +956,7 @@ function parseSchema(righe) {
     }
     if (d.vistasett) { vistaSett = d.vistasett; return render(true); }
     if (d.preso) { const pr = spuntaSpesa(); pr[d.preso] = !pr[d.preso]; save(); return render(); }
-    if (d.azzeraspesa) { prof().spesa = null; save(); return render(); }
+    if (d.azzeraspesa) { azzeraSpesa(); save(); return render(); }
     if (d.condividispesa) return condividiSpesa();
     if (d.confermapiano) {
       const dal = document.getElementById('dalPiano').value;
