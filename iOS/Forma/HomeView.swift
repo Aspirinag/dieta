@@ -69,7 +69,7 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     MenuProfilo()
-                    Button("Impostazioni", systemImage: "gearshape") { navigazione.impostazioniAperte = true }
+                    PulsanteImpostazioni()
                 }
             }
             .navigationDestination(for: UUID.self) { DettaglioAllenamentoView(id: $0) }
@@ -163,9 +163,7 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("pasto-\(elenco[i].nome)")
                         Button { archivio.cambiaSlot(oggi, i) { $0.fatto.toggle() } } label: {
-                            Spunta(fatta: fatto)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
+                            CerchioSpunta(fatta: fatto)
                         }
                         .buttonStyle(.plain)
                         .sensoryFeedback(.selection, trigger: fatto)
@@ -244,7 +242,7 @@ struct HomeView: View {
                     HStack(spacing: 12) {
                         sottotitolato(a.titolo, Text(durataTesto(a.durata)))
                         Spacer(minLength: 8)
-                        Spunta(fatta: true)
+                        CerchioSpunta(fatta: true)
                     }
                     .padding(.vertical, 2)
                     .contentShape(Rectangle())
@@ -255,7 +253,7 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     Text("\(Libreria.nomeCardio(c.tipo)) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""))
                     Spacer(minLength: 8)
-                    Spunta(fatta: true)
+                    CerchioSpunta(fatta: true)
                 }
                 .padding(.vertical, 2)
                 .accessibilityElement(children: .combine)
@@ -383,26 +381,6 @@ struct HomeView: View {
             Text(verbatim: titolo).font(.headline)
             sotto.font(.footnote).foregroundStyle(.secondary)
         }
-    }
-}
-
-// Cerchio dei pasti: pieno con il segno quando è fatto
-private struct Spunta: View {
-    let fatta: Bool
-
-    var body: some View {
-        ZStack {
-            if fatta {
-                Circle().fill(Colori.accento)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Colori.sulAccento)
-            } else {
-                Circle().strokeBorder(Color(.systemGray3), lineWidth: 2)
-            }
-        }
-        .frame(width: 24, height: 24)
-        .accessibilityHidden(true)
     }
 }
 

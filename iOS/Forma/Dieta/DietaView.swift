@@ -244,19 +244,7 @@ private struct RiquadroPasto: View {
         .accessibilityAddTraits(.isButton)
         // Il cerchio segna il pasto del giorno scelto, anche se non è oggi; il resto del riquadro apre il dettaglio
         Button { archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() } } label: {
-            ZStack {
-                if s.fatto {
-                    Circle().fill(Colori.accento)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Colori.sulAccento)
-                } else {
-                    Circle().strokeBorder(Color(.systemGray3), lineWidth: 2)
-                }
-            }
-            .frame(width: 24, height: 24)
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
+            CerchioSpunta(fatta: s.fatto)
         }
         .buttonStyle(.plain)
         .disabled(giorno > Giorni.oggi())   // un pasto futuro non si segna; il riquadro apre comunque il dettaglio

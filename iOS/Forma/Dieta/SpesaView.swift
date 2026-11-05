@@ -159,11 +159,7 @@ struct SpesaView: View {
             Button {
                 withAnimation(.snappy) { archivio.spunta(v.chiave, lunedi: lunSpesa) }
             } label: {
-                Image(systemName: preso ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(preso ? Colori.accento : Color(.secondaryLabel))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                CerchioSpunta(fatta: preso)
             }
             .buttonStyle(.plain)
             .sensoryFeedback(.selection, trigger: preso)

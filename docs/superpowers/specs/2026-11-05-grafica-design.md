@@ -189,3 +189,123 @@ Note sui confini:
 - O4 («Allenati lo stesso» avvia una scheda) è in P2 ma usa `SceltaSchedaView` di P4: P2 la usa così com'è oggi; se P4 ne cambia la firma, l'adeguamento si fa al momento dell'unione.
 - PP1 (settimana da lunedì) tocca il modello: solo P6 modifica `ModelliPalestra.swift`; P4 legge il riepilogo settimanale attuale, che già conta da lunedì.
 - Le stringhe nuove vanno nel catalogo con `en` e `en-GB` da chi le introduce; P9 controlla l'inglese.
+
+---
+
+## API di P1
+
+Fatto nel pacchetto P1 (branch `grafica`). Tutto in `iOS/Forma/Comune/`; ogni file spiega in testa come si usa. I pacchetti P2–P7 usano solo queste API e non modificano questi file: se serve altro, lo chiedono.
+
+### Stile.swift — misure, numeri, date
+
+```swift
+enum Spazio { static let xs = 4, s = 8, m = 12, l = 16, xl = 24 }      // CGFloat
+enum Misure {
+    static let raggio: CGFloat = 16    // riquadri fuori dalle liste (pulsanti a capsula)
+    static let tocco: CGFloat = 44     // area minima di tocco
+    static let riga: CGFloat = 52      // altezza minima di Riga
+    static let spunta: CGFloat = 26    // cerchio di CerchioSpunta
+    static let contorno: CGFloat = 1.5 // contorno degli elementi vuoti
+}
+extension Font { static func numero(_ stile: Font.TextStyle = .body) -> Font }   // SF Rounded semibold, cifre fisse
+extension View { func numero(_ stile: Font.TextStyle = .body) -> some View }
+enum Testi {
+    static func data(_ data: Date, anno: Bool = false, locale: Locale = .current) -> String   // «giovedì 5 novembre»
+    static func data(iso: String, anno: Bool = false, locale: Locale = .current) -> String   // da "2026-11-05"
+    static func periodo(da: Date, a: Date, locale: Locale = .current) -> String              // «2–8 novembre»
+    static func conSegno(_ valore: Double, unita: String, locale: Locale = .current) -> String // «−0,8 kg», «+0,3 kg», «0 kg»
+}
+```
+
+```swift
+Text(num(kg)).numero(.largeTitle)                       // peso in Oggi e Progressi (O8, C-1)
+Text(cronometro).numero(.title2)                         // allenamento in corso
+Text(Testi.data(Date()))                                 // sottotitolo di Oggi (O3)
+Text(Testi.conSegno(-0.8, unita: "kg")).foregroundStyle(.secondary)   // variazione neutra (M1)
+.padding(.horizontal, Spazio.l)
+.frame(minHeight: Misure.tocco)
+```
+
+### Tema.swift — colori
+
+| Token | Chiaro / scuro | Uso |
+|---|---|---|
+| `Colori.accento` | #2F6B4F / #7FB89A (contrasto alto #245A40 / #9FD0B5) | solo pulsante principale pieno e «fatto» |
+| `Colori.sulAccento` | bianco / #0F2218 | segni e testo sopra l'accento |
+| `Colori.sfondoFatto` | accento al 25 % / 35 % | sfondo della riga fatta (serie) |
+| `Colori.olio` | #B07F0C / #D6A21E (alto #8C6508 / #E8BC4A) | solo cucchiaini pieni |
+| `Colori.acqua` | #3D7FA6 / #5A9CC4 (alto #2C6688 / #7DB4D6) | solo gocce piene |
+| `Colori.oltre` | #C4610A / #FF9F0A (alto #A34F06 / #FFB340) | solo oltre la dose, con «+N» |
+| `Colori.vuoto` | grigio secondario di sistema | contorno di cerchi, cucchiaini, gocce vuoti |
+| `Colori.riempimentoVuoto` | riempimento quaternario di sistema | interno degli elementi vuoti |
+
+Tutti ≥ 3:1 sugli sfondi raggruppati (riga, schermata, foglio) in chiaro, scuro e Aumenta contrasto: lo controlla `SistemaVisivoTests`. Scelte rispetto alla bozza: acqua più chiara in scuro (#5A9CC4, perché #3D7FA6 sul grigio dei fogli è 3,2:1) e «oltre» più scuro in chiaro (l'arancione di sistema è 2,2:1 sul bianco).
+
+```swift
+Color(chiaro: 0x…, scuro: 0x…, chiaroContrasto: 0x…, scuroContrasto: 0x…)   // per eventuali token nuovi, solo qui
+Contrasto.rapporto(_ colore: Color, su sfondo: Color, stile: UIUserInterfaceStyle, contrastoAlto: Bool = false) -> Double
+.applicaTema()   .sfondoTema()   .righeTema()
+Button("Inizia") { … }.buttonStyle(PulsanteAccento())   // capsula piena, alta almeno 44 pt; uno per schermata
+```
+
+Nota: `.applicaTema()` mette ancora l'accento come `tint` di tutta l'app (interruttori, link, icone della barra). Ogni pacchetto, nelle sue schermate, toglie il verde da ciò che non è azione principale o «fatto» (es. `.tint(.primary)` sulla barra, `.foregroundStyle(.primary)` sui nomi).
+
+### CerchioSpunta.swift — la spunta unica
+
+```swift
+CerchioSpunta(fatta: Bool)                                  // solo disegno, dentro un pulsante più grande (nascosto a VoiceOver)
+CerchioSpunta(fatta: Bool, etichetta: Text,
+              stati: (fatta: LocalizedStringResource, daFare: LocalizedStringResource) = ("fatto", "da fare"),
+              vibra: Bool = true, azione: @escaping () -> Void)   // pulsante a sé, area 44 × 44
+```
+
+```swift
+CerchioSpunta(fatta: s.fatto, etichetta: Text("Segna \(pasto.nome)")) { archivio.cambiaSlot(giorno, i) { $0.fatto.toggle() } }
+    .disabled(giorno > Giorni.oggi())                       // spenta e schiarita
+CerchioSpunta(fatta: preso, etichetta: Text("Segna \(v.nome)"), stati: ("preso", "da prendere")) { … }
+CerchioSpunta(fatta: s.fatta, etichetta: Text("Serie \(n)"), vibra: false) { segna(…) }   // la vibrazione la fa la riga
+```
+
+Il cerchio cresce con il testo grande (fino a 1,6 volte). Già sostituite in modo meccanico le spunte di Oggi (pasti, allenamento e cardio fatti), Dieta, Spesa, dettaglio pasto e riscaldamento (via `RigaSpunta`) e serie dell'allenamento (con `Colori.sfondoFatto`); il resto delle loro schermate non è cambiato.
+
+### Riga.swift — riga di lista standard
+
+```swift
+Riga(_ titolo: Text, dettaglio: Text? = nil, valore: Text? = nil, evidente: Bool = false, fatta: Bool = false,
+     righeDettaglio: Int? = nil, @ViewBuilder inizio: () -> Inizio, @ViewBuilder fine: () -> Fine)   // tutte e due
+Riga(_ titolo: Text, …, @ViewBuilder fine: () -> Fine)   // solo a destra: `Riga(…) { … }`
+Riga(_ titolo: Text, …, inizio: Inizio)                  // solo a sinistra: la vista come valore, non closure
+Riga(_ titolo: Text, …)                                  // nessuna vista ai lati
+Riga(_ titolo: LocalizedStringKey, dettaglio: LocalizedStringKey? = nil, valore: LocalizedStringKey? = nil,
+     evidente: Bool = false, fatta: Bool = false)        // testi del catalogo
+```
+
+Alta almeno 52 pt; titolo `.body` (`.headline` con `evidente`), dettaglio `.subheadline` grigio che va a capo (`righeDettaglio` limita solo a testo normale), valore a destra a cifre fisse mai troncato; a testo di accessibilità valore e `fine` vanno sotto. `fatta: true` rende grigi titolo e dettaglio. La freccia la mette il `NavigationLink`, non la riga.
+
+```swift
+Riga("Olio", dettaglio: "2 di 3 cucchiaini")
+NavigationLink(value: scheda.id) { Riga(Text(scheda.nome), dettaglio: Text("6 esercizi · circa 55 min"), evidente: true) }
+Riga(Text(pasto.nome), dettaglio: Text(opzione.riassunto), evidente: true, fatta: s.fatto, righeDettaglio: 2,
+     inizio: CerchioSpunta(fatta: s.fatto, etichetta: Text("Segna \(pasto.nome)")) { … })      // spunta a sinistra (Dieta, Spesa)
+Riga(Text(scheda.nome), dettaglio: Text("6 esercizi · circa 55 min"), evidente: true) {
+    Button("Inizia") { … }.buttonStyle(PulsanteAccento())                                    // a destra
+}
+```
+
+### Altri
+
+```swift
+PulsanteImpostazioni()   // ingranaggio: .toolbar { ToolbarItem(placement: .topBarTrailing) { PulsanteImpostazioni() } }
+Riquadro { … }           // solo numero con andamento o azione principale; Spazio.l / Spazio.m, Misure.raggio
+Dosaggio(…)              // stessa firma; vuoti con Colori.vuoto, oltre con Colori.oltre
+RigaSpunta(fatto:azione:etichetta:)   // riga intera toccabile con CerchioSpunta a sinistra e testo grigio se fatta
+RigaAlimento(nome:quantita:)          // nome che va a capo, quantità intera a destra a cifre fisse
+```
+
+### Cosa resta ai pacchetti
+
+- **P2 Oggi:** usare `Riga`, `.numero(.largeTitle)` per il peso (oggi ancora `.system(size: 34)`), `Testi.data`, `Testi.conSegno` in `.secondary`; togliere `lineLimit(1)` dagli alimenti.
+- **P3 Dieta/Spesa:** `PulsanteImpostazioni` in barra; `Riga` con `CerchioSpunta` a sinistra; date con `Testi.periodo`.
+- **P4 Palestra:** `PulsanteImpostazioni`; via `.font(.system(size: 14))`.
+- **P5 Allenamento in corso:** etichette della spunta della serie se si passa al pulsante `CerchioSpunta(…, vibra: false)`; cronometro con `.numero(.title2)`; via `.system(size:)` del recupero.
+- **P6/P7 Progressi:** `.numero(.largeTitle)` al posto di `.system(size: 34)`; `Testi.data` al posto di `Giorni.breve` dove si mostra una data; `PulsanteImpostazioni` in Progressi; medaglia del riepilogo e `xmark` del calendario sono da togliere (R1, PP5).

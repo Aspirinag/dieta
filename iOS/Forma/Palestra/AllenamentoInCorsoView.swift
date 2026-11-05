@@ -437,12 +437,7 @@ struct RigaSerie: View {
                 Button {
                     segna(s, prec, e.recupero, corpoLibero: palestra.esercizio(e.esercizio).attrezzo == .corpoLibero)
                 } label: {
-                    Image(systemName: s.fatta ? "checkmark.square.fill" : "square")
-                        .font(.title3)
-                        .foregroundStyle(s.fatta ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                        .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 44, height: 44)
-                        .contentShape(.rect)
+                    CerchioSpunta(fatta: s.fatta)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(s.riscaldamento ? Text("Serie di riscaldamento") : Text("Serie \(numero + 1)"))
@@ -453,7 +448,7 @@ struct RigaSerie: View {
             .padding(.horizontal, 6)
             .frame(minHeight: 44)
             // Serie fatta: tutta la riga prende l'accento, dentro i margini del contenuto
-            .background(s.fatta ? Colori.accento.opacity(0.2) : .clear, in: .rect(cornerRadius: 8))
+            .background(s.fatta ? Colori.sfondoFatto : .clear, in: .rect(cornerRadius: 8))
             .animation(.smooth(duration: 0.2), value: s.fatta)
             .sensoryFeedback(.success, trigger: s.fatta) { _, nuovo in nuovo }
             .sensoryFeedback(.error, trigger: errore)
