@@ -76,14 +76,14 @@ struct CorpoView: View {
     }
 
     // Variazione tra l'ultima misura di quel campo e quella più vicina a 30 giorni prima
-    // (accettata tra 20 e 45 giorni prima). Senza una misura così vecchia: nil, non si inventa un confronto.
+    // (accettata tra 23 e 37 giorni prima, come in PesoVeloce.variazione). Senza una misura così vecchia: nil, non si inventa un confronto.
     static func variazioneTrentaGiorni(_ misure: [Misura], _ campo: CampoMisura) -> Double? {
         let con = misure.filter { $0[campo] != nil }.sorted { $0.data < $1.data }
         guard let ultima = con.last, let fine = ultima[campo] else { return nil }
         let giorniFa: (Misura) -> Int = {
             Giorni.calendario.dateComponents([.day], from: Giorni.data($0.data), to: Giorni.data(ultima.data)).day ?? 0
         }
-        let candidate = con.dropLast().filter { (20...45).contains(giorniFa($0)) }
+        let candidate = con.dropLast().filter { (23...37).contains(giorniFa($0)) }
         guard let inizio = candidate.min(by: { abs(giorniFa($0) - 30) < abs(giorniFa($1) - 30) }),
               let a = inizio[campo] else { return nil }
         return ((fine - a) * 10).rounded() / 10
