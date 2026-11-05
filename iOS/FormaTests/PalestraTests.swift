@@ -64,6 +64,32 @@ struct PalestraTests {
         #expect(s.volumiSettimanali(ultime: 1, oggi: "2026-11-06") == [500])
     }
 
+    // Una sola definizione di «questa settimana»: da lunedì a domenica. Progressi e Allenamenti usano questa
+    @Test func totaleDellaSettimanaDaLunedi() {
+        var s = stato([])
+        // Giovedì 5 novembre: lunedì 2 e mercoledì 4 sono della settimana; domenica 1 e martedì 27 ottobre no,
+        // anche se cadono negli ultimi 7 giorni (mercoledì 28 ottobre è a 8 giorni, domenica 1 a 4)
+        s.allenamenti = [allenamento("2026-10-31", kg: 10, rip: 10), allenamento("2026-11-01", kg: 10, rip: 10),
+                         allenamento("2026-11-02", kg: 20, rip: 10), allenamento("2026-11-04", kg: 30, rip: 10)]
+        let r = s.riepilogoSettimana(oggi: "2026-11-05")
+        #expect(r.inizio == "2026-11-02")
+        #expect(r.fine == "2026-11-08")
+        #expect(r.allenamenti == 2)
+        #expect(r.kg == 500)
+        // Lo stesso numero del grafico di Progressi
+        #expect(s.volumiSettimanali(ultime: 1, oggi: "2026-11-05") == [r.kg])
+        // La domenica è ancora la stessa settimana; il lunedì dopo si riparte da zero
+        #expect(s.riepilogoSettimana(oggi: "2026-11-08").kg == 500)
+        #expect(s.riepilogoSettimana(oggi: "2026-11-09").kg == 0)
+        #expect(s.riepilogoSettimana(oggi: "2026-11-09").allenamenti == 0)
+    }
+
+    @Test func etichettaDellaSettimana() {
+        let it = Locale(identifier: "it_IT")
+        let e = StatoPalestra().riepilogoSettimana(oggi: "2026-11-05").etichetta(locale: it)
+        #expect(e.contains("2") && e.contains("8") && e.contains("novembre"))
+    }
+
     @Test func durataDellaSettimana() {
         var s = stato([])
         s.allenamenti = [allenamento("2026-11-02", ore: 1), allenamento("2026-11-04", ore: 0.5), allenamento("2026-11-09", ore: 2)]

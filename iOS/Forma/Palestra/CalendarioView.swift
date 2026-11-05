@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Calendario del mese: allenamenti, cardio, giorni programmati e saltati
+// Calendario del mese: allenamenti e cardio fatti (pallino pieno), giorni in programma (contorno)
 struct CalendarioContenuto: View {
     @Environment(Palestra.self) private var palestra
     @State private var mese = Giorni.data(String(Giorni.oggi().prefix(8)) + "01")
@@ -14,7 +14,7 @@ struct CalendarioContenuto: View {
                         Button("Mese precedente", systemImage: "chevron.left") { cambia(-1) }
                             .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
                         Spacer()
-                        Text(mese.formatted(.dateTime.month(.wide).year()).capitalized)
+                        Text(mese.formatted(.dateTime.month(.wide).year()))
                             .font(.headline)
                         Spacer()
                         Button("Mese successivo", systemImage: "chevron.right") { cambia(1) }
@@ -22,7 +22,7 @@ struct CalendarioContenuto: View {
                     }
                     .buttonStyle(.borderless)
                     GrigliaMese(mese: mese, scelto: $scelto)
-                    Text("Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato.")
+                    Text("Pallino pieno: pesi o cardio fatti. Pallino vuoto: in programma.")
                         .font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                 }
                 giorno
@@ -41,15 +41,14 @@ struct CalendarioContenuto: View {
 
     @ViewBuilder private var giorno: some View {
         let t = palestra.programmato(scelto)
-        let saltato = palestra.stato.saltati.contains(scelto)
         let pesi = palestra.allenamenti(del: scelto), cardio = palestra.cardio(del: scelto)
         VStack(alignment: .leading, spacing: 4) {
-            Text(Giorni.nomeGiorno(Giorni.indice(scelto)) + " " + Giorni.breve(scelto)).font(.headline).padding(.horizontal, 4)
+            Text(Testi.data(Giorni.data(scelto))).font(.headline).padding(.horizontal, 4)
             Riquadro {
                 HStack {
                     Text("In programma")
                     Spacer()
-                    Image(systemName: t.simbolo).foregroundStyle(Colori.accento)
+                    Image(systemName: t.simbolo).foregroundStyle(.secondary)
                     Text(t.nome).foregroundStyle(.secondary)
                 }
                 .frame(minHeight: 44)
@@ -60,17 +59,6 @@ struct CalendarioContenuto: View {
                 ForEach(cardio) { c in
                     Divider()
                     RigaCardio(cardio: c)
-                }
-                if scelto <= Giorni.oggi() && t != .riposo && pesi.isEmpty && cardio.isEmpty {
-                    Divider()
-                    Toggle("Saltato", isOn: Binding(
-                        get: { saltato },
-                        set: { v in
-                            palestra.stato.saltati.removeAll { $0 == scelto }
-                            if v { palestra.stato.saltati.append(scelto) }
-                        }
-                    ))
-                    .frame(minHeight: 44)
                 }
             }
         }
@@ -102,7 +90,7 @@ struct GrigliaMese: View {
                         if i < settimane[w].count, let d = settimane[w][i] {
                             cella(Giorni.aggiungi(primo, d), numero: d + 1, oggi: oggi)
                         } else {
-                            Color.clear.frame(maxWidth: .infinity, minHeight: 42)
+                            Color.clear.frame(maxWidth: .infinity, minHeight: 44)
                         }
                     }
                 }
@@ -116,12 +104,12 @@ struct GrigliaMese: View {
             VStack(spacing: 3) {
                 Text("\(numero)")
                     .font(.callout.weight(iso == oggi ? .bold : .regular))
-                    .foregroundStyle(iso == oggi ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                    .foregroundStyle(.primary)
                 segno(iso)
             }
-            .frame(maxWidth: .infinity, minHeight: 42)
+            .frame(maxWidth: .infinity, minHeight: 44)
             .background {
-                if iso == scelto { RoundedRectangle(cornerRadius: 10).fill(.tint.opacity(0.18)) }
+                if iso == scelto { RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.18)) }
             }
         }
         .buttonStyle(.plain)
@@ -131,30 +119,24 @@ struct GrigliaMese: View {
 
     // Per VoiceOver: data e cosa è successo (o cosa era previsto) quel giorno
     private func etichetta(_ iso: String) -> String {
-        let data = Giorni.data(iso).formatted(.dateTime.weekday(.wide).day().month(.wide))
-        var parti = [data]
+        var parti = [Testi.data(Giorni.data(iso))]
         if !palestra.allenamenti(del: iso).isEmpty { parti.append(String(localized: "pesi fatti")) }
         if !palestra.cardio(del: iso).isEmpty { parti.append(String(localized: "cardio fatto")) }
         if parti.count == 1 {
-            if palestra.stato.saltati.contains(iso) { parti.append(String(localized: "saltato")) }
-            else if palestra.programmato(iso) != .riposo { parti.append(String(localized: "in programma: \(palestra.programmato(iso).nome.lowercased())")) }
+            if palestra.programmato(iso) != .riposo { parti.append(String(localized: "in programma: \(palestra.programmato(iso).nome.lowercased())")) }
         }
         return parti.joined(separator: ", ")
     }
 
+    // Pieno = fatto (pesi o cardio), contorno = in programma. Oggi è in grassetto: non solo il colore
     @ViewBuilder private func segno(_ iso: String) -> some View {
-        let pesi = !palestra.allenamenti(del: iso).isEmpty
-        let cardio = !palestra.cardio(del: iso).isEmpty
-        if pesi || cardio {
-            HStack(spacing: 2) {
-                if pesi { Circle().fill(.tint).frame(width: 6, height: 6) }
-                if cardio { Circle().fill(Colori.accento.opacity(0.45)).frame(width: 6, height: 6) }
-            }
-        } else if palestra.stato.saltati.contains(iso) {
-            Image(systemName: "xmark").font(.system(size: 8, weight: .heavy)).foregroundStyle(.red).frame(height: 6)
+        let fatto = !palestra.allenamenti(del: iso).isEmpty || !palestra.cardio(del: iso).isEmpty
+        if fatto {
+            Circle().fill(Colori.accento).frame(width: 8, height: 8)
+        } else if palestra.programmato(iso) != .riposo {
+            Circle().strokeBorder(Colori.vuoto, lineWidth: Misure.contorno).frame(width: 8, height: 8)
         } else {
-            Circle().fill(palestra.programmato(iso) != .riposo ? AnyShapeStyle(.secondary.opacity(0.5)) : AnyShapeStyle(.clear))
-                .frame(width: 6, height: 6)
+            Color.clear.frame(width: 8, height: 8)
         }
     }
 }
