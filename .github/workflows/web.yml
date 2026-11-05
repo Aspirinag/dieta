@@ -3,14 +3,19 @@ name: Web app
 on:
   push:
     branches: [main]
-    paths: &percorsi
+    paths:
       - index.html
       - iOS/Forma/Risorse/lettore.html
       - scripts/controlla-lettore.mjs
       - scripts/prova-dati-web.mjs
       - .github/workflows/web.yml
   pull_request:
-    paths: *percorsi
+    paths:
+      - index.html
+      - iOS/Forma/Risorse/lettore.html
+      - scripts/controlla-lettore.mjs
+      - scripts/prova-dati-web.mjs
+      - .github/workflows/web.yml
 
 jobs:
   controlli:
