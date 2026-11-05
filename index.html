@@ -6,122 +6,141 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dieta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#f4fff8">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Dieta</title>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; color: #fff; font-family: -apple-system, system-ui, sans-serif; }
-  html { background: #2c2c36; }
+  /* Aspetto di Forma: elenchi iOS «a gruppi», chiaro e scuro automatici */
+  :root {
+    color-scheme: light dark;
+    --sfondo: #F2F2F7;
+    --riquadro: #FFFFFF;
+    --testo: #000000;
+    --secondario: #8A8A8E;
+    --separatore: rgba(60, 60, 67, 0.29);
+    --riempimento: rgba(120, 120, 128, 0.12);
+    --vuoto: #B4B4B9;
+    --accento: #2F6B4F;
+    --accento-tenue: rgba(47, 107, 79, 0.10);
+    --sul-accento: #FFFFFF;
+    --rosso: #D70015;
+    --verde: #248A3D;
+    --barra: rgba(249, 249, 249, 0.86);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sfondo: #000000;
+      --riquadro: #1C1C1E;
+      --testo: #FFFFFF;
+      --secondario: #98989F;
+      --separatore: rgba(84, 84, 88, 0.65);
+      --riempimento: rgba(120, 120, 128, 0.24);
+      --vuoto: #7A7A80;
+      --accento: #7FB89A;
+      --accento-tenue: rgba(127, 184, 154, 0.16);
+      --sul-accento: #000000;
+      --rosso: #FF453A;
+      --verde: #30D158;
+      --barra: rgba(29, 29, 31, 0.86);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; color: var(--testo); background: var(--sfondo); font-family: -apple-system, system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
   body {
     min-height: 100vh;
-    background: radial-gradient(circle at 85% 0%, rgba(212, 255, 63, 0.18), transparent 42%), linear-gradient(180deg, #3d3d4a 0%, #2a2a34 100%);
-    background-attachment: fixed;
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
     padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
-  main { padding: 20px; }
-  h1 { font-size: 28px; margin: 8px 0 12px; }
-  h2 { font-size: 20px; margin: 24px 0 8px; }
-  .muted { color: #d4d4dc; font-size: 14px; margin: 4px 0; }
-  .card { background: rgba(255, 255, 255, 0.14); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); border: 1px solid rgba(255, 255, 255, 0.22); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 32px rgba(0, 0, 0, 0.3); border-radius: 20px; padding: 16px; margin-bottom: 12px; }
+  main { padding: 16px; max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 30px; line-height: 1.15; font-weight: 700; margin: 8px 0 12px; }
+  h2 { font-size: 15px; font-weight: 600; color: var(--secondario); margin: 24px 4px 8px; }
+  p { margin: 8px 0; }
+  .muted { color: var(--secondario); font-size: 14px; margin: 4px 0; }
+  .card { background: var(--riquadro); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
   .between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
-  input { background: rgba(255, 255, 255, 0.18); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; padding: 10px 12px; font-size: 16px; min-width: 0; width: 100%; }
-  input::placeholder { color: #b0b0bb; }
-  button { font: inherit; border: none; cursor: pointer; }
-  .primary { display: block; width: 100%; background: linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 55%), #d4ff3f; color: #0a0a0a; font-weight: 700; font-size: 16px; border-radius: 16px; padding: 14px; margin: 12px 0; }
-  .small.mini { padding: 4px 8px; font-size: 13px; border-radius: 8px; }
-  .small { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-weight: 600; border-radius: 12px; padding: 10px 14px; }
-  .chip { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-weight: 600; border-radius: 999px; padding: 8px 14px; }
-  .chip.on { background: #d4ff3f; color: #0a0a0a; border-color: #d4ff3f; }
-  .link { background: none; color: #f87171; font-size: 14px; padding: 0; }
-  .badge { display: inline-block; background: #d4ff3f; color: #0a0a0a; font-weight: 700; border-radius: 999px; padding: 6px 14px; margin-bottom: 12px; font-size: 13px; }
-  .alimenti { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; }
-  .check { display: flex; align-items: center; gap: 12px; width: 100%; background: none; color: #fff; text-align: left; font-size: 16px; padding: 8px 0; }
-  .box { width: 24px; height: 24px; flex: none; border-radius: 7px; border: 2px solid rgba(255, 255, 255, 0.5); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
-  .check.on .box { background: #d4ff3f; border-color: #d4ff3f; color: #0a0a0a; }
-  .stepper { display: flex; align-items: center; gap: 12px; }
-  .stepper .val { font-size: 22px; font-weight: 700; min-width: 80px; text-align: center; }
+  input, textarea { background: var(--riempimento); color: var(--testo); border: none; border-radius: 10px; padding: 11px 12px; font: inherit; font-size: 16px; min-width: 0; width: 100%; }
+  input::placeholder { color: var(--secondario); }
+  input[type=date] { -webkit-appearance: none; appearance: none; min-height: 44px; max-width: 100%; text-align: left; }
+  input[type=date]::-webkit-date-and-time-value { text-align: left; }
+  textarea { margin-top: 4px; }
+  label.muted { display: block; margin: 6px 0; }
+  label.muted input { margin-top: 4px; }
+  button { font: inherit; color: inherit; border: none; cursor: pointer; }
+  .primary { display: block; width: 100%; min-height: 48px; background: var(--accento); color: var(--sul-accento); font-weight: 600; font-size: 17px; border-radius: 12px; padding: 12px; margin: 12px 0; }
+  .small { background: var(--riempimento); color: var(--accento); font-weight: 600; border-radius: 10px; padding: 10px 14px; min-height: 44px; }
+  .small.mini { min-width: 44px; padding: 4px 8px; font-size: 16px; }
+  .small[disabled] { opacity: 0.4; }
+  .chip { background: var(--riempimento); color: var(--testo); font-weight: 600; border-radius: 999px; padding: 10px 16px; min-height: 44px; }
+  .chip.on { background: var(--accento); color: var(--sul-accento); }
+  .link { background: none; color: var(--rosso); font-size: 16px; padding: 12px 0 12px 12px; min-height: 44px; }
+  .link.verde { color: var(--accento); }
+  .badge { display: inline-block; background: var(--accento-tenue); color: var(--accento); font-weight: 600; border-radius: 999px; padding: 6px 14px; margin-bottom: 12px; font-size: 13px; }
+  .check { display: flex; align-items: center; gap: 4px; width: 100%; min-height: 44px; background: none; text-align: left; font-size: 17px; padding: 0; border-bottom: 0.5px solid var(--separatore); }
+  .check:last-child { border-bottom: none; }
+  .check.on .nome { color: var(--secondario); }
+  /* Spunta come in Forma: cerchio vuoto grigio, pieno con l'accento e il segno di spunta; area di tocco 44 x 44 */
+  .spunta { flex: none; width: 44px; height: 44px; padding: 0; background: none; display: flex; align-items: center; justify-content: center; }
+  .cerchio { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--vuoto); display: flex; align-items: center; justify-content: center; }
+  .cerchio svg { width: 14px; height: 14px; display: none; }
+  .on > .cerchio, .on .cerchio, .cerchio.on { background: var(--accento); border-color: var(--accento); }
+  .on > .cerchio svg, .on .cerchio svg, .cerchio.on svg { display: block; }
+  .cerchio svg path { stroke: var(--sul-accento); }
+  .pasto-testa { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -6px -8px 0 0; }
+  .pasto-testa strong { font-size: 17px; }
+  .pasto-testa.fatto strong { color: var(--secondario); }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper .val { font-size: 17px; font-weight: 600; min-width: 80px; text-align: center; font-variant-numeric: tabular-nums; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
-  th { color: #d4d4dc; font-weight: 600; }
-  .delta-up { color: #f87171; font-weight: 700; }
-  .delta-down { color: #d4ff3f; font-weight: 700; }
+  th, td { text-align: left; padding: 8px 6px 8px 0; border-bottom: 0.5px solid var(--separatore); }
+  tr:last-child th, tr:last-child td { border-bottom: none; }
+  th { color: var(--secondario); font-weight: 500; }
+  .delta-up { color: var(--rosso); font-weight: 600; }
+  .delta-down { color: var(--verde); font-weight: 600; }
   svg.chart { width: 100%; height: auto; display: block; }
-  nav { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; background: rgba(255, 255, 255, 0.18); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 26px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 10px 30px rgba(0, 0, 0, 0.4); overflow: hidden; }
-  nav button { flex: 1; background: none; color: rgba(255, 255, 255, 0.75); font-weight: 700; font-size: 10px; padding: 9px 0 10px; }
-  nav .ic { display: block; font-size: 20px; line-height: 1.2; margin-bottom: 2px; }
-  nav button.active { color: #d4ff3f; }
-  .profili { display: flex; gap: 8px; margin-bottom: 4px; }
-  .profili button.on { background: #d4ff3f; color: #0a0a0a; }
-  /* Tema chiaro e allegro */
-  html { background: #f4fff8; }
-  body {
-    color: #2d2a3e;
-    background:
-      radial-gradient(circle at 8% 2%, #cdf5df 0%, transparent 38%),
-      radial-gradient(circle at 92% 30%, #cdf5e6 0%, transparent 40%),
-      radial-gradient(circle at 40% 100%, #e5dcff 0%, transparent 45%),
-      #f4fff8;
-    background-attachment: fixed;
-  }
-  .muted { color: #6b6880; }
-  .card {
-    background: rgba(255, 255, 255, 0.82);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow: 0 6px 22px rgba(120, 90, 150, 0.12);
-    border-radius: 22px;
-  }
-  input { background: #ffffff; color: #2d2a3e; border: 1px solid #e6dff0; }
-  input::placeholder { color: #a7a3b8; }
-  label.muted { display: block; margin: 6px 0; }
-  label.muted input, textarea { margin-top: 4px; }
-  textarea { width: 100%; font: inherit; font-size: 16px; color: #2d2a3e; background: #fff; border: 1px solid #e6dff0; border-radius: 12px; padding: 10px 12px; box-sizing: border-box; }
-  .primary { background: #22a86a; color: #ffffff; box-shadow: 0 8px 20px rgba(34, 168, 106, 0.3); }
-  .small, .chip { background: #ffffff; color: #2d2a3e; border: 1px solid #efe6f5; box-shadow: 0 2px 8px rgba(120, 90, 150, 0.08); }
-  .chip.on { background: #5fd3b0; color: #1e3b33; border-color: #5fd3b0; }
-  .profili button.on { background: #22a86a; color: #ffffff; }
-  .badge { background: #9b8cff; color: #ffffff; }
-  .check { color: #2d2a3e; }
-  .check .box { border-color: rgba(45, 42, 62, 0.35); }
-  .check.on .box { background: #5fd3b0; border-color: #5fd3b0; color: #1e3b33; }
-  .link { color: #e5484d; }
-  th { color: #6b6880; }
-  th, td { border-bottom: 1px solid rgba(45, 42, 62, 0.08); }
-  .delta-up { color: #e5484d; }
-  .delta-down { color: #2bb6c9; }
-  nav {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #efe6f5;
-    box-shadow: 0 10px 30px rgba(120, 90, 150, 0.18);
-  }
-  nav button { color: #8a86a0; }
-  nav button.active { color: #22a86a; }
-  .giorni { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 8px 0 16px; }
+  /* Barra delle schede come la tab bar iOS */
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); background: var(--barra); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); border-top: 0.5px solid var(--separatore); }
+  nav button { flex: 1; min-height: 49px; background: none; color: var(--secondario); font-size: 10px; font-weight: 500; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  nav button svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  nav button svg .pieno { fill: currentColor; stroke: none; }
+  nav button.active { color: var(--accento); }
+  .profili { display: flex; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .giorni { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 8px 0 16px; }
   .giorni .chip { padding: 10px 0; font-size: 13px; text-align: center; position: relative; }
-  .giorni .chip.oggi::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #22a86a; }
-  .giorni .chip.on.oggi::after { background: #1e3b33; }
-  .opzione + .opzione { border-top: 1px dashed rgba(45, 42, 62, 0.15); margin-top: 10px; padding-top: 10px; }
-  .opzione .titolo { font-size: 14px; font-weight: 700; color: #6b6880; }
+  .giorni .chip.oggi::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accento); }
+  .giorni .chip.on.oggi::after { background: var(--sul-accento); }
+  /* Alimenti: nome a sinistra, quantità a destra */
+  .alimento { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 0.5px solid var(--separatore); }
+  .alimento:last-child { border-bottom: none; padding-bottom: 0; }
+  .alimento .q { color: var(--secondario); text-align: right; flex: none; max-width: 45%; }
+  /* Alternative: ognuna in un riquadro separato, la scelta evidenziata con l'accento */
+  .alt { display: block; width: 100%; text-align: left; background: var(--sfondo); border: 2px solid transparent; border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+  .alt.on { border-color: var(--accento); background: var(--accento-tenue); }
+  .alt .titolo { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--secondario); margin-bottom: 2px; }
+  .alt.on .titolo { color: var(--accento); }
+  .alt .titolo .cerchio { width: 20px; height: 20px; border-width: 2px; }
+  .alt .titolo .cerchio svg { width: 11px; height: 11px; }
+  .alt-fissa { cursor: default; }
+  .alt .alimento:first-of-type { padding-top: 4px; }
 </style>
 </head>
 <body>
 <main id="app"></main>
 <nav>
-  <button data-tab="oggi"><span class="ic">🥗</span>OGGI</button>
-  <button data-tab="settimana"><span class="ic">📅</span>SETTIMANA</button>
-  <button data-tab="andamento"><span class="ic">📈</span>ANDAMENTO</button>
-  <button data-tab="dati"><span class="ic">⚙️</span>DATI</button>
+  <button data-tab="oggi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5.5h-6V20H5a1 1 0 0 1-1-1z"/></svg>Oggi</button>
+  <button data-tab="settimana"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Settimana</button>
+  <button data-tab="andamento"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V4.5M4 19.5h16M7.5 15l4-4.5 3 3L20 7.5"/></svg>Andamento</button>
+  <button data-tab="dati"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/><circle class="pieno" cx="15" cy="7" r="2.6"/><circle class="pieno" cx="8.5" cy="12" r="2.6"/><circle class="pieno" cx="13" cy="17" r="2.6"/></svg>Impostazioni</button>
 </nav>
 <script src="vendor/pdf.min.js"></script>
 <script>
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
   const DAYS =['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-  // Valori iniziali di ogni profilo, modificabili in DATI → Impostazioni
+  // Valori iniziali di ogni profilo, modificabili in Impostazioni
   const OLIO_DEF = 6;   // cucchiaini al giorno
   const ACQUA_DEF = 2;  // litri al giorno
   const NOTE_DEF = 'Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti.';
@@ -137,12 +156,12 @@
 
   let state = load();
   let tab = 'oggi';
-  let giornoSel = (new Date().getDay() + 6) % 7; // giorno scelto in SETTIMANA (Lunedì = 0)
-  let giornoVisto = null; // giorno mostrato in OGGI (null = oggi), per segnare anche i giorni passati
-  let biaEdit = null;     // data della BIA che si sta modificando in DATI
+  let giornoSel = (new Date().getDay() + 6) % 7; // giorno scelto in Settimana (Lunedì = 0)
+  let giornoVisto = null; // giorno mostrato in Oggi (null = oggi), per segnare anche i giorni passati
+  let biaEdit = null;     // data della BIA che si sta modificando in Impostazioni
   const visto = () => giornoVisto || todayISO();
-  let vistaSett = 'giorni'; // SETTIMANA: 'giorni' oppure 'spesa'
-  let pianoInAttesa = null; // schema letto dal PDF, in attesa della data di inizio
+  let vistaSett = 'giorni'; // Settimana: 'giorni' oppure 'spesa'
+  let pianoInAttesa = null; // piano letto dal PDF, in attesa della data di inizio
 
   function load() {
     try {
@@ -188,6 +207,12 @@
     const { uri } = await Plugin('Filesystem').writeFile({ path: nome, data: testo, directory: 'CACHE', encoding: 'utf8' });
     try { await Plugin('Share').share({ title: nome, files: [uri] }); } catch (e) { /* condivisione annullata */ }
   }
+
+  // Cerchio di spunta come in Forma: vuoto grigio, pieno con l'accento e il segno di spunta
+  const cerchio = (on) => `<span class="cerchio ${on ? 'on' : ''}"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.5l2.8 2.8L11 4.5" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  // Elenco degli alimenti: nome a sinistra, quantità a destra
+  const alimentiHtml = (lista) => lista.map((a) => `<div class="alimento"><span>${esc(a.nome)}</span>${a.quantita ? `<span class="q">${esc(a.quantita)}</span>` : ''}</div>`).join('');
+  const titoloAlt = (o, j) => o.titolo || 'Alternativa ' + (j + 1);
 
   const prof = () => state.profili[state.attivo];
   const olioTot = () => prof().olio_tot ?? OLIO_DEF;
@@ -353,7 +378,7 @@ function parseSchema(righe) {
   // --- lettore: fine ---
 
   // ---------- OGGI ----------
-  // Intestazione di OGGI con le frecce per andare ai giorni passati (non oltre oggi)
+  // Intestazione di Oggi con le frecce per andare ai giorni passati (non oltre oggi)
   function testaGiorno(iso) {
     const oggiIso = todayISO();
     const titolo = iso === oggiIso ? `Oggi, ${DAYS[dayIdx(iso)]}` : iso === addDays(oggiIso, -1) ? `Ieri, ${DAYS[dayIdx(iso)]}` : DAYS[dayIdx(iso)];
@@ -363,7 +388,7 @@ function parseSchema(righe) {
         <h1 style="margin: 0; text-align: center">${titolo}</h1>
         <button class="small" data-sposta="1" aria-label="Giorno successivo" ${iso >= oggiIso ? 'disabled style="visibility: hidden"' : ''}>›</button>
       </div>
-      ${iso !== oggiIso ? '<button class="link" data-sposta="0" style="color: #22a86a; display: block; margin: 8px auto 0">Torna a oggi</button>' : ''}`;
+      ${iso !== oggiIso ? '<button class="link verde" data-sposta="0" style="display: block; margin: 0 auto">Torna a oggi</button>' : ''}`;
   }
 
   function oggi() {
@@ -374,64 +399,65 @@ function parseSchema(righe) {
         ${testaGiorno(iso)}
         <p class="muted">${fmtDate(iso)}</p>
         <div class="card">
-          <strong>Nessun piano attivo per questo giorno.</strong>
-          <p class="muted">Carica lo schema PDF dalla scheda Dati.</p>
-          <button class="small" data-tab="dati">Vai a Dati</button>
+          <strong>Nessun piano per questo giorno</strong>
+          <p class="muted">Carica il PDF del piano alimentare che ti ha dato il nutrizionista, da Impostazioni → Piani e misure.</p>
+          <button class="small" data-tab="dati">Vai a Impostazioni</button>
         </div>`;
     }
     const giorno = piano.giorni[dayIdx(iso)];
     const r = recFor(iso);
     const pasti = giorno.pasti.map((pasto, i) => {
       const st = slotState(iso, i);
-      const opt = pasto.opzioni[st.opt] || pasto.opzioni[0];
-      const alternative = pasto.opzioni.length > 1
-        ? `<div class="row">${pasto.opzioni.map((o, j) => `
-            <button class="chip ${j === st.opt ? 'on' : ''}" data-opt="${i}:${j}">${esc(o.titolo || 'Opzione ' + (j + 1))}</button>
-`).join('')}</div>`
-        : '';
+      const scelta = pasto.opzioni[st.opt] ? st.opt : 0;
+      const contenuto = pasto.opzioni.length > 1
+        ? pasto.opzioni.map((o, j) => `
+            <button class="alt ${j === scelta ? 'on' : ''}" data-opt="${i}:${j}" aria-pressed="${j === scelta}">
+              <span class="titolo">${cerchio(j === scelta)}${esc(titoloAlt(o, j))}</span>
+              ${alimentiHtml(o.alimenti)}
+            </button>`).join('')
+        : alimentiHtml(pasto.opzioni[0].alimenti);
       return `
         <div class="card">
-          <div class="between">
+          <div class="pasto-testa ${st.fatto ? 'fatto' : ''}">
             <strong>${esc(pasto.nome)}</strong>
-            <button class="chip ${st.fatto ? 'on' : ''}" data-fatto="${i}">${st.fatto ? '✓ Fatto' : 'Segna'}</button>
+            <button class="spunta ${st.fatto ? 'on' : ''}" data-fatto="${i}" aria-label="Segna ${esc(pasto.nome)}" aria-pressed="${!!st.fatto}">${cerchio(st.fatto)}</button>
           </div>
-          ${alternative}
-          <ul class="alimenti">${opt.alimenti.map((a) => `<li>${esc(a.nome)} <span class="muted">${esc(a.quantita)}</span></li>`).join('')}</ul>
+          ${contenuto}
         </div>`;
     }).join('');
     return `
       ${testaGiorno(iso)}
       <p class="muted">${fmtDate(iso)} · ${esc(piano.nome)}</p>
       ${giorno.palestra ? '<span class="badge">Giorno di palestra</span>' : ''}
+      <h2>Pasti · ${giorno.pasti.filter((_, i) => slotState(iso, i).fatto).length} di ${giorno.pasti.length}</h2>
       ${pasti}
       <h2>Olio e acqua</h2>
       <div class="card">
         <div class="between">
-          <strong>Olio extra vergine</strong>
+          <strong>Olio (cucchiaini)</strong>
           <div class="stepper">
             <button class="small" data-olio="-1">−</button>
             <span class="val">${r.olio} / ${olioTot()}</span>
             <button class="small" data-olio="1">+</button>
           </div>
         </div>
-        <p class="muted">cucchiaini, da distribuire nella giornata</p>
       </div>
       <div class="card">
         <div class="between">
           <strong>Acqua</strong>
           <div class="stepper">
             <button class="small" data-acqua="-0.25">−</button>
-            <span class="val">${r.acqua.toFixed(2)} / ${acquaTot()} L</span>
+            <span class="val">${r.acqua.toFixed(2).replace(".", ",")} / ${String(acquaTot()).replace(".", ",")} L</span>
             <button class="small" data-acqua="0.25">+</button>
           </div>
         </div>
-        <p class="muted">Un bicchiere è circa 0,25 L</p>
+        <p class="muted">Un bicchiere d'acqua è circa 0,25 L.</p>
       </div>
       ${(prof().note ?? NOTE_DEF) ? `<p class="muted">${esc(prof().note ?? NOTE_DEF)}</p>` : ''}`;
   }
 
   // ---------- SETTIMANA ----------
-  // Lo schema è fisso: mostra i pasti di ogni giorno del piano attivo oggi, con tutte le alternative
+  // Il piano è fisso: mostra i pasti di ogni giorno del piano attivo oggi, con tutte le alternative
   function settimana() {
     const oggiIdx = dayIdx(todayISO());
     const piano = planFor(todayISO());
@@ -439,15 +465,15 @@ function parseSchema(righe) {
       return `
         <h1>Settimana</h1>
         <div class="card">
-          <strong>Nessun piano attivo.</strong>
-          <p class="muted">Carica lo schema PDF dalla scheda Dati.</p>
-          <button class="small" data-tab="dati">Vai a Dati</button>
+          <strong>Nessun piano alimentare attivo</strong>
+          <p class="muted">Carica il piano alimentare da Impostazioni → Piani e misure.</p>
+          <button class="small" data-tab="dati">Vai a Impostazioni</button>
         </div>`;
     }
     const viste = `
       <div class="row">
         <button class="chip ${vistaSett === 'giorni' ? 'on' : ''}" data-vistasett="giorni">Giorni</button>
-        <button class="chip ${vistaSett === 'spesa' ? 'on' : ''}" data-vistasett="spesa">🛒 Lista della spesa</button>
+        <button class="chip ${vistaSett === 'spesa' ? 'on' : ''}" data-vistasett="spesa">Spesa</button>
       </div>`;
     if (vistaSett === 'spesa') return `<h1>Settimana</h1>${viste}${listaSpesa()}`;
     const giorno = piano.giorni[giornoSel];
@@ -456,11 +482,13 @@ function parseSchema(righe) {
     const pasti = giorno.pasti.map((pasto) => `
       <div class="card">
         <strong>${esc(pasto.nome)}</strong>
-        ${pasto.opzioni.map((o, j) => `
-          <div class="opzione">
-            ${pasto.opzioni.length > 1 ? `<div class="titolo">${esc(o.titolo || 'Opzione ' + (j + 1))}</div>` : ''}
-            <ul class="alimenti">${o.alimenti.map((a) => `<li>${esc(a.nome)} <span class="muted">${esc(a.quantita)}</span></li>`).join('')}</ul>
-          </div>`).join('')}
+        ${pasto.opzioni.length > 1
+          ? pasto.opzioni.map((o, j) => `
+            <div class="alt alt-fissa">
+              <div class="titolo">${esc(titoloAlt(o, j))}</div>
+              ${alimentiHtml(o.alimenti)}
+            </div>`).join('')
+          : alimentiHtml(pasto.opzioni[0].alimenti)}
       </div>`).join('');
     return `
       <h1>Settimana</h1>
@@ -474,7 +502,7 @@ function parseSchema(righe) {
 
   // ---------- LISTA DELLA SPESA ----------
   // Somma gli alimenti della settimana in corso (da lunedì a domenica): per ogni pasto vale l'alternativa
-  // scelta in OGGI, altrimenti la prima. Le quantità in g, ml, kg o l si sommano, le altre si contano
+  // scelta in Oggi, altrimenti la prima. Le quantità in g, ml, kg o l si sommano, le altre si contano
   const lunediDi = (iso) => addDays(iso, -dayIdx(iso));
   function vociSpesa() {
     const lun = lunediDi(todayISO());
@@ -510,29 +538,29 @@ function parseSchema(righe) {
   }
   function listaSpesa() {
     const voci = vociSpesa();
-    if (!voci.length) return '<div class="card"><p class="muted">Nessun piano attivo questa settimana.</p></div>';
+    if (!voci.length) return '<div class="card"><p class="muted">Nessun piano alimentare in questa settimana.</p></div>';
     const presi = spuntaSpesa();
     const lun = lunediDi(todayISO());
     return `
-      <p class="muted">Settimana dal ${fmtDate(lun)} al ${fmtDate(addDays(lun, 6))}. Per ogni pasto conta l'alternativa scelta in OGGI, altrimenti la prima.</p>
+      <p class="muted">Settimana dal ${fmtDate(lun)} al ${fmtDate(addDays(lun, 6))}. Per ogni pasto conta l'alternativa scelta in Oggi, altrimenti la prima. Le spunte valgono per la settimana in corso.</p>
       <div class="card">
         ${voci.map((v) => `
           <button class="check ${presi[v.k] ? 'on' : ''}" data-preso="${esc(v.k)}">
-            <span class="box">${presi[v.k] ? '✓' : ''}</span>
-            <span>${esc(v.nome)}<br><span class="muted">${esc(v.quanto)}</span></span>
+            <span class="spunta">${cerchio(presi[v.k])}</span>
+            <span class="nome">${esc(v.nome)}<br><span class="muted">${esc(v.quanto)}</span></span>
           </button>`).join('')}
       </div>
       <div class="row">
-        <button class="small" data-condividispesa="1">Condividi lista</button>
+        <button class="small" data-condividispesa="1">Condividi</button>
         <button class="small" data-azzeraspesa="1">Togli le spunte</button>
       </div>`;
   }
   async function condividiSpesa() {
     const presi = spuntaSpesa();
-    const testo = 'Lista della spesa\n' + vociSpesa().filter((v) => !presi[v.k]).map((v) => `- ${v.nome}: ${v.quanto}`).join('\n');
+    const testo = 'Spesa\n' + vociSpesa().filter((v) => !presi[v.k]).map((v) => `- ${v.nome}: ${v.quanto}`).join('\n');
     try {
-      if (NATIVO) await Plugin('Share').share({ title: 'Lista della spesa', text: testo });
-      else if (navigator.share) await navigator.share({ title: 'Lista della spesa', text: testo });
+      if (NATIVO) await Plugin('Share').share({ title: 'Spesa', text: testo });
+      else if (navigator.share) await navigator.share({ title: 'Spesa', text: testo });
       else { await navigator.clipboard.writeText(testo); alert('Lista copiata: incollala dove vuoi.'); }
     } catch (e) { /* condivisione annullata */ }
   }
@@ -597,13 +625,13 @@ function parseSchema(righe) {
     const bia = [...prof().bia].sort((a, b) => a.data.localeCompare(b.data));
     const ad = aderenza();
     const adHtml = ad == null
-      ? '<p class="muted">Nessun piano attivo negli ultimi 7 giorni.</p>'
+      ? '<p class="muted">Nessun piano alimentare negli ultimi 7 giorni.</p>'
       : `<p>Hai segnato il <strong>${ad}%</strong> dei pasti negli ultimi 7 giorni (oggi escluso).</p>`;
     if (!bia.length) {
       return `
         <h1>Andamento</h1>
         <div class="card">${adHtml}</div>
-        <div class="card"><strong>Nessuna misurazione.</strong><p class="muted">Carica la BIA in PDF dalla scheda Dati.</p></div>`;
+        <div class="card"><strong>Nessuna misurazione</strong><p class="muted">Carica la BIA in PDF o aggiungila a mano da Impostazioni → Piani e misure.</p></div>`;
     }
     const primo = bia[0], ultimo = bia[bia.length - 1];
     const prec = bia.length > 1 ? bia[bia.length - 2] : null;
@@ -678,17 +706,17 @@ function parseSchema(righe) {
       <h2>Peso e composizione</h2>
       <div class="card">
         ${multiChart([
-          { nome: 'Peso', color: '#9b8cff', values: bia.map((m) => m.peso) },
-          { nome: 'Massa grassa', color: '#22a86a', values: bia.map((m) => m.grasso_kg) },
-          { nome: 'Massa magra', color: '#2bb6c9', values: bia.map((m) => m.magra_kg) },
+          { nome: 'Peso', color: '#0A7AFF', values: bia.map((m) => m.peso) },
+          { nome: 'Massa grassa', color: '#2F9E5B', values: bia.map((m) => m.grasso_kg) },
+          { nome: 'Massa magra', color: '#E58A00', values: bia.map((m) => m.magra_kg) },
         ], bia.map((m) => m.data))}
       </div>
       <h2>Centimetri</h2>
       <div class="card">
         ${multiChart([
-          { nome: 'Vita', color: '#22a86a', values: bia.map((m) => m.vita_cm) },
-          { nome: 'Addome', color: '#9b8cff', values: bia.map((m) => m.addome_cm) },
-          { nome: 'Fianchi', color: '#2bb6c9', values: bia.map((m) => m.fianchi_cm) },
+          { nome: 'Vita', color: '#2F9E5B', values: bia.map((m) => m.vita_cm) },
+          { nome: 'Addome', color: '#0A7AFF', values: bia.map((m) => m.addome_cm) },
+          { nome: 'Fianchi', color: '#E58A00', values: bia.map((m) => m.fianchi_cm) },
         ], bia.map((m) => m.data))}
       </div>
       <h2>Storico misurazioni</h2>
@@ -719,7 +747,7 @@ function parseSchema(righe) {
       <h2>Profili</h2>
       <div class="card">
         ${profili}
-        <p class="muted">★ = profilo che si apre all'avvio.</p>
+        <p class="muted">Il profilo con ★ si apre all'avvio. Per cambiare profilo usa i pulsanti in alto.</p>
         <button class="small" data-nuovoprofilo="1">Aggiungi profilo</button>
       </div>
       <h2>Impostazioni di ${esc(prof().nome)}</h2>
@@ -728,15 +756,15 @@ function parseSchema(righe) {
           <label class="muted">Olio (cucchiaini al giorno)<input inputmode="numeric" id="s_olio" value="${olioTot()}"></label>
           <label class="muted">Acqua (litri al giorno)<input inputmode="decimal" id="s_acqua" value="${String(acquaTot()).replace('.', ',')}"></label>
         </div>
-        <label class="muted">Note in fondo a OGGI<textarea id="s_note" rows="4">${esc(prof().note ?? NOTE_DEF)}</textarea></label>
+        <label class="muted">Note (in fondo a Oggi)<textarea id="s_note" rows="4">${esc(prof().note ?? NOTE_DEF)}</textarea></label>
         <button class="primary" data-salvaimpost="1">Salva impostazioni</button>
       </div>
       <h2>Promemoria</h2>
       <div class="card">
         ${NATIVO ? `
-          <button class="check ${pr.acqua ? 'on' : ''}" data-promemoria="acqua"><span class="box">${pr.acqua ? '✓' : ''}</span><span>Bevi acqua<br><span class="muted">alle ${ORE_ACQUA.join(', ')}</span></span></button>
-          <button class="check ${pr.pasti ? 'on' : ''}" data-promemoria="pasti"><span class="box">${pr.pasti ? '✓' : ''}</span><span>Segna i pasti<br><span class="muted">ogni sera alle 21</span></span></button>`
-        : '<p class="muted">I promemoria sono disponibili nell\'app per iPhone.</p>'}
+          <button class="check ${pr.acqua ? 'on' : ''}" data-promemoria="acqua"><span class="spunta">${cerchio(pr.acqua)}</span><span class="nome">Ricordami di bere<br><span class="muted">alle ${ORE_ACQUA.join(', ')}</span></span></button>
+          <button class="check ${pr.pasti ? 'on' : ''}" data-promemoria="pasti"><span class="spunta">${cerchio(pr.pasti)}</span><span class="nome">Ricordami di segnare i pasti<br><span class="muted">alle 21, ogni sera</span></span></button>`
+        : '<p class="muted" style="margin: 0">I promemoria sono disponibili nell\'app per iPhone.</p>'}
       </div>`;
   }
   // Riprogramma le notifiche giornaliere secondo le impostazioni (solo nell'app)
@@ -751,7 +779,7 @@ function parseSchema(righe) {
     if (n.length) await LN.schedule({ notifications: n });
   }
 
-  // ---------- DATI ----------
+  // ---------- IMPOSTAZIONI E PIANI ----------
   // Campi della misurazione a mano: id del campo, chiave salvata, etichetta, tastiera
   const CAMPI_BIA = [
     ['b_peso', 'peso', 'Peso (kg)', 'decimal'],
@@ -770,16 +798,16 @@ function parseSchema(righe) {
       ? prof().piani.map((p, i) => ({ p, i })).sort((a, b) => a.p.dal.localeCompare(b.p.dal)).map(({ p, i }) => `
           <div class="card">
             <div class="between">
-              <div><strong>${esc(p.nome)}</strong><p class="muted">${fmtDate(p.dal)} → ${p.al ? fmtDate(p.al) : 'aperto'}</p></div>
+              <div><strong>${esc(p.nome)}</strong><p class="muted">${fmtDate(p.dal)} → ${p.al ? fmtDate(p.al) : 'in corso'}</p></div>
               <button class="link" data-delpiano="${i}">Elimina</button>
             </div>
           </div>`).join('')
-      : '<p class="muted">Nessun piano importato.</p>';
+      : '<div class="card"><p class="muted" style="margin: 0">Nessun piano alimentare.</p></div>';
     const oggiIso = todayISO();
     const ed = biaEdit ? prof().bia.find((x) => x.data === biaEdit) : null;
     const attesa = pianoInAttesa ? `
-      <div class="card" id="attesa" style="border: 2px solid #22a86a">
-        <strong>Schema letto: ${esc(pianoInAttesa.nome)}</strong>
+      <div class="card" id="attesa" style="border: 2px solid var(--accento)">
+        <strong>Piano alimentare letto: ${esc(pianoInAttesa.nome)}</strong>
         <p class="muted">Da quale giorno vale? Il piano precedente si chiude il giorno prima.</p>
         <input type="date" id="dalPiano" value="${oggiIso}">
         <div class="row">
@@ -788,23 +816,21 @@ function parseSchema(righe) {
         </div>
       </div>` : '';
     return `
-      <h1>Dati</h1>
+      <h1>Impostazioni</h1>
       ${attesa}
-      <h2>Piani alimentari</h2>
+      <h2>Piani e misure</h2>
       ${piani}
-      <h2>Schema dietetico</h2>
       <div class="card">
-        <p class="muted">Carica il PDF dello schema: viene letto e diventa una tabella in OGGI, con i pasti del giorno e le alternative.</p>
-        <button class="primary" data-pdfup="1">Carica schema PDF</button>
+        <p class="muted">L'app legge il PDF e ricava i pasti di ogni giorno. Per togliere un piano usa Elimina.</p>
+        <button class="primary" data-pdfup="1">Carica il piano alimentare (PDF)</button>
         <input type="file" id="pdfFile" accept="application/pdf,.pdf" style="display: none">
       </div>
-      <h2>BIA in PDF</h2>
       <div class="card">
-        <p class="muted">Carica il referto BIA in PDF: i valori vengono letti e salvati in ANDAMENTO, dopo la tua conferma.</p>
-        <button class="primary" data-biaup="1">Carica BIA PDF</button>
+        <p class="muted">I valori della BIA vengono letti e salvati in Andamento, dopo la tua conferma.</p>
+        <button class="primary" data-biaup="1">Carica la BIA (PDF)</button>
         <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
       </div>
-      <h2 id="formBia">${biaEdit ? `Modifica misurazione del ${fmtDate(biaEdit)}` : 'Aggiungi misurazione BIA'}</h2>
+      <h2 id="formBia">${biaEdit ? `Modifica la misurazione del ${fmtDate(biaEdit)}` : 'Aggiungi una misurazione (BIA)'}</h2>
       <div class="card">
         <div class="grid2">
           <input type="date" id="b_data" value="${biaEdit || oggiIso}" ${biaEdit ? 'disabled' : ''}>
@@ -826,7 +852,7 @@ function parseSchema(righe) {
   }
 
   // ---------- BIA DAI PDF ----------
-  // Legge i valori dal referto impedenziometrico (testo estratto riga per riga)
+  // (la lettura della BIA dal PDF è nel blocco del lettore, più su)
 
   // ---------- RENDER ----------
   // Ridisegna la pagina; in cima solo al cambio di scheda o profilo, altrimenti resta dove sei
@@ -911,7 +937,7 @@ function parseSchema(righe) {
         const { display } = await Plugin('LocalNotifications').requestPermissions();
         if (display !== 'granted') {
           state.promemoria[d.promemoria] = false;
-          return alert('Per i promemoria consenti le notifiche in Impostazioni → Notifiche → Dieta.');
+          return alert('Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → Dieta.');
         }
       }
       save(); render();
@@ -995,19 +1021,19 @@ function parseSchema(righe) {
     if (!file) return;
     try {
       const m = await leggiBiaPdf(file);
-      if (!m.data || m.peso == null) return alert('Non riesco a leggere i valori da questo PDF. Controlla che sia il referto BIA.');
-      const ok = confirm(`Aggiungo la BIA del ${fmtDate(m.data)}?\nPeso ${String(m.peso).replace('.', ',')} kg · massa grassa ${String(m.grasso_kg).replace('.', ',')} kg · vita ${m.vita_cm ?? '–'} cm`);
+      if (!m.data || m.peso == null) return alert('Non riesco a leggere il PDF. Controlla che sia una BIA.');
+      const ok = confirm(`Aggiungere la BIA del ${fmtDate(m.data)}?\nPeso ${String(m.peso).replace('.', ',')} kg · massa grassa ${String(m.grasso_kg).replace('.', ',')} kg · vita ${m.vita_cm ?? '–'} cm`);
       if (!ok) return;
       mergeBia([m]);
       save();
       render();
-      alert('BIA salvata. La trovi in ANDAMENTO.');
+      alert('BIA salvata. La trovi in Andamento.');
     } catch (err) {
-      alert('Non riesco a leggere questo PDF.');
+      alert('Non riesco a leggere il PDF.');
     }
   });
 
-  // Carica lo schema PDF: dopo la lettura si sceglie da quando vale
+  // Carica il piano alimentare in PDF: dopo la lettura si sceglie da quando vale
   document.addEventListener('change', async (e) => {
     if (e.target.id !== 'pdfFile') return;
     const file = e.target.files[0];
@@ -1016,13 +1042,13 @@ function parseSchema(righe) {
     try {
       const giorni = await leggiSchemaPdf(file);
       if (giorni.length !== 7 || giorni.some((g) => !g.pasti.length)) {
-        return alert('Non riesco a leggere lo schema da questo PDF. Controlla che sia lo schema dietetico.');
+        return alert('Non riesco a leggere il PDF. Controlla che sia il piano alimentare.');
       }
-      // La data di inizio si sceglie nel riquadro in cima a DATI
+      // La data di inizio si sceglie nel riquadro in cima a Impostazioni
       pianoInAttesa = { nome: file.name.replace(/\.pdf$/i, ''), giorni };
       render(true);
     } catch (err) {
-      alert('Non riesco a leggere questo PDF.');
+      alert('Non riesco a leggere il PDF.');
     }
   });
 
@@ -1041,7 +1067,7 @@ function parseSchema(righe) {
       render();
       alert('Backup importato.');
     } catch (err) {
-      alert('File non valido: scegli un backup esportato da questa app.');
+      alert('Backup non importato: scegli un file esportato da questa app.');
     }
   });
 
