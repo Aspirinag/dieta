@@ -13,11 +13,11 @@ final class OggiPastiTests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
 
-        XCTAssertTrue(app.staticTexts["1 di 4"].waitForExistence(timeout: 8), "Il contatore dei pasti parte da 1 di 4")
+        XCTAssertTrue(app.staticTexts["Pasti · 1 di 4"].waitForExistence(timeout: 8), "Il contatore dei pasti parte da 1 di 4")
         let pranzo = app.buttons["Segna Pranzo"]
         XCTAssertTrue(pranzo.exists, "Manca il cerchio di Pranzo")
         pranzo.tap()
-        XCTAssertTrue(app.staticTexts["2 di 4"].waitForExistence(timeout: 3), "Dopo il tocco i pasti segnati sono 2 di 4")
+        XCTAssertTrue(app.staticTexts["Pasti · 2 di 4"].waitForExistence(timeout: 3), "Dopo il tocco i pasti segnati sono 2 di 4")
         XCTAssertTrue(app.buttons.matching(identifier: "riga-pasto").count >= 4, "Manca una riga per pasto")
     }
 
@@ -59,7 +59,7 @@ final class OggiPastiTests: XCTestCase {
         let fuori = XCUIApplication()
         fuori.launchArguments = ["-demo", "-tab", "oggi", "-pagamento-tra", "15"]
         fuori.launch()
-        XCTAssertTrue(fuori.staticTexts["1 di 4"].waitForExistence(timeout: 8))
+        XCTAssertTrue(fuori.staticTexts["Pasti · 1 di 4"].waitForExistence(timeout: 8))
         XCTAssertFalse(fuori.descendants(matching: .any)["riquadro-pagamento"].exists, "Fuori dalla finestra il riquadro non compare")
     }
 

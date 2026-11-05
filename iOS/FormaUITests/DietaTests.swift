@@ -50,7 +50,7 @@ final class DietaTests: XCTestCase {
         segna.tap()
         app.navigationBars.buttons.firstMatch.tap()
         app.tabBars.firstMatch.buttons["Oggi"].tap()
-        XCTAssertTrue(app.staticTexts["2 di 4"].waitForExistence(timeout: 5), "Il pasto segnato in Dieta conta in Oggi")
+        XCTAssertTrue(app.staticTexts["Pasti · 2 di 4"].waitForExistence(timeout: 5), "Il pasto segnato in Dieta conta in Oggi")
     }
 
     func testSpesaHaUnaSolaPorta() {

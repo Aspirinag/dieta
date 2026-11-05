@@ -1,7 +1,8 @@
 import SwiftUI
 
-// Oggi, la panoramica: pasti, allenamento, olio e acqua, peso. Ogni cosa in un riquadro;
-// il dettaglio sta nelle schede Dieta, Palestra e Progressi
+// Oggi, la panoramica: pasti, allenamento, olio e acqua, peso. I pasti e le righe dell'allenamento sono
+// liste (si spuntano o si aprono); il riquadro è solo per l'azione principale e per il numero del peso.
+// Il dettaglio sta nelle schede Dieta, Palestra e Progressi
 struct HomeView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(Palestra.self) private var palestra
@@ -14,6 +15,7 @@ struct HomeView: View {
     // La misura di oggi, letta quando l'editor si apre: salvando non deve passare da «Nuova» a «Modifica» mentre il foglio si chiude
     @State private var misuraDiOggi: String?
     @State private var cardioAperto = false
+    @State private var sceltaScheda = false
     @Environment(\.dynamicTypeSize) private var dimensione
 
     private var titolo: String {
@@ -22,25 +24,22 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 12) {
-                    pagamento
-                    pasti
-                    allenamento
-                    if archivio.profilo.piano(per: Giorni.oggi()) != nil {
-                        olioEAcqua
-                    }
-                    peso
-                    note
+            List {
+                pagamento
+                pasti
+                allenamento
+                if archivio.profilo.piano(per: Giorni.oggi()) != nil {
+                    olioEAcqua
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                peso
+                note
             }
             .sfondoTema()
             .navigationTitle("Oggi")
             .navigationSubtitleSePossibile(titolo)
             .importaPDF($richiesta)
             .sheet(isPresented: $cardioAperto) { NuovoCardioView() }
+            .confirmationDialog("Schede", isPresented: $sceltaScheda, titleVisibility: .visible) { schedeDaScegliere }
             .sheet(isPresented: $pesoVeloce, onDismiss: {
                 if apriModulo {
                     apriModulo = false
@@ -78,18 +77,25 @@ struct HomeView: View {
         }
     }
 
+    // Un riquadro come riga di lista: senza sfondo di riga né margini, il riquadro fa da sé
+    private func rigaRiquadro<C: View>(@ViewBuilder _ contenuto: () -> C) -> some View {
+        contenuto()
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+    }
+
     // ---------- Note ----------
 
     // Le note del profilo (Impostazioni → Olio e acqua) stanno in fondo, piccole
     @ViewBuilder private var note: some View {
         let testo = archivio.profilo.testoNote
         if !testo.isEmpty {
-            Riquadro {
+            Section {
                 Text(testo)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("riquadro-note")
             }
-            .accessibilityIdentifier("riquadro-note")
         }
     }
 
@@ -98,15 +104,16 @@ struct HomeView: View {
     // Solo da una settimana prima del giorno di pagamento al giorno dopo, finché non è segnato pagato
     @ViewBuilder private var pagamento: some View {
         if let p = palestra.promemoriaPagamento() {
-            Riquadro {
-                Text(p.testo).font(.subheadline)
-                Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .tint(.primary)
-                    .padding(.top, 8)
+            Section {
+                Riga(Text(p.testo)) {
+                    Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(.primary)
+                        .buttonBorderShape(.capsule)
+                }
+                .accessibilityIdentifier("riquadro-pagamento")
             }
-            .accessibilityIdentifier("riquadro-pagamento")
         }
     }
 
@@ -116,69 +123,34 @@ struct HomeView: View {
         let oggi = Giorni.oggi()
         if let piano = archivio.profilo.piano(per: oggi) {
             let elenco = piano.giorni[Giorni.indice(oggi)].pasti
-            let fatti = elenco.indices.filter { archivio.slot(oggi, $0).fatto }.count
-            Riquadro {
-                if elenco.isEmpty {
-                    Text("Pasti").font(.headline)
-                    Text("Nessun pasto per questo giorno")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 2)
-                } else {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Pasti").font(.headline)
-                        Spacer()
-                        Text("\(fatti) di \(elenco.count)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                    .padding(.bottom, 10)
+            if elenco.isEmpty {
+                Section {
+                    Riga("Nessun pasto per questo giorno")
+                } header: {
+                    Text("Pasti").textCase(nil)
                 }
-                ForEach(elenco.indices, id: \.self) { i in
-                    if i > 0 { Divider() }
-                    let fatto = archivio.slot(oggi, i).fatto
-                    let opzioni = elenco[i].opzioni
-                    let scelta = opzioni.indices.contains(archivio.slot(oggi, i).opt) ? archivio.slot(oggi, i).opt : 0
-                    let alimenti = opzioni.indices.contains(scelta) ? opzioni[scelta].riassunto : ""
-                    HStack(spacing: 0) {
-                        NavigationLink(value: PaginaDieta.pasto(oggi, i)) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(elenco[i].nome)
-                                    .foregroundStyle(fatto ? Color.secondary : Color.primary)
-                                if !alimenti.isEmpty {
-                                    Text(alimenti)
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                            .padding(.vertical, 4)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("pasto-\(elenco[i].nome)")
-                        Button { archivio.cambiaSlot(oggi, i) { $0.fatto.toggle() } } label: {
-                            CerchioSpunta(fatta: fatto)
-                        }
-                        .buttonStyle(.plain)
-                        .sensoryFeedback(.selection, trigger: fatto)
-                        .accessibilityIdentifier("riga-pasto")
-                        .accessibilityLabel("Segna \(elenco[i].nome)")
-                        .accessibilityValue(fatto ? Text("fatto") : Text("da fare"))
-                        .accessibilityAddTraits(fatto ? .isSelected : [])
+            } else {
+                let fatti = elenco.indices.filter { archivio.slot(oggi, $0).fatto }.count
+                Section {
+                    ForEach(elenco.indices, id: \.self) { i in
+                        RigaPasto(giorno: oggi, indice: i, pasto: elenco[i])
                     }
+                } header: {
+                    Text("Pasti · \(fatti) di \(elenco.count)").textCase(nil)
                 }
             }
         } else {
-            Riquadro {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Nessun piano per oggi").font(.headline)
-                    Button("Carica il piano alimentare (PDF)") { richiesta = .schema }
-                        .buttonStyle(PulsanteAccento())
+            Section {
+                rigaRiquadro {
+                    Riquadro {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Nessun piano per oggi").font(.headline)
+                            Button("Carica il piano alimentare (PDF)") { richiesta = .schema }
+                                .buttonStyle(PulsanteAccento())
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -190,80 +162,102 @@ struct HomeView: View {
         let tipo = palestra.programmato(oggi)
         let fatti = palestra.allenamenti(del: oggi)
         let cardio = palestra.cardio(del: oggi)
-        Riquadro {
-            if let a = palestra.stato.inCorso {
-                disposizione {
-                    sottotitolato(a.titolo, Text("In corso"))
-                    Spacer(minLength: 8)
-                    Button("Riprendi") { navigazione.allenamentoAperto = true }
-                        .buttonStyle(PulsanteAccento())
-                }
-            } else if tipo == .pesi && fatti.isEmpty {
-                if let r = palestra.stato.prossimaRoutine() {
-                    disposizione {
-                        sottotitolato(r.nome, Text("\(Self.esercizi(r.voci.count)) · circa \(minutiStimati(r)) min"))
-                        Spacer(minLength: 8)
-                        Button("Inizia") {
-                            palestra.inizia(r)
-                            navigazione.allenamentoAperto = true
+        let inCorso = palestra.stato.inCorso
+        let proxima = palestra.stato.prossimaRoutine()
+        // L'azione principale (riprendere o iniziare la scheda) è un riquadro
+        if let a = inCorso {
+            Section {
+                rigaRiquadro {
+                    Riquadro {
+                        disposizione {
+                            sottotitolato(a.titolo, Text("In corso"))
+                            Spacer(minLength: 8)
+                            Button("Riprendi") { navigazione.allenamentoAperto = true }
+                                .buttonStyle(PulsanteAccento())
                         }
-                        .buttonStyle(PulsanteAccento())
-                    }
-                } else {
-                    disposizione {
-                        Text("Nessuna scheda").font(.headline)
-                        Spacer(minLength: 8)
-                        Button("Crea la prima scheda") { navigazione.scheda = .allenamento }
-                            .buttonStyle(PulsanteAccento())
-                    }
-                }
-            } else if fatti.isEmpty && cardio.isEmpty {
-                if tipo == .cardio {
-                    disposizione {
-                        Text("Cardio").font(.headline)
-                        Spacer(minLength: 8)
-                        Button("Registra cardio") { cardioAperto = true }
-                            .font(.subheadline)
-                            .tint(.primary)
-                    }
-                } else {
-                    disposizione {
-                        Text("Riposo").font(.headline)
-                        Spacer(minLength: 8)
-                        Button("Allenati lo stesso") { navigazione.scheda = .allenamento }
-                            .font(.subheadline)
-                            .tint(.primary)
                     }
                 }
             }
-            ForEach(fatti) { a in
-                NavigationLink(value: a.id) {
-                    HStack(spacing: 12) {
-                        sottotitolato(a.titolo, Text(durataTesto(a.durata)))
-                        Spacer(minLength: 8)
-                        CerchioSpunta(fatta: true)
+        } else if tipo == .pesi && fatti.isEmpty {
+            Section {
+                rigaRiquadro {
+                    Riquadro {
+                        if let r = proxima {
+                            disposizione {
+                                sottotitolato(r.nome, Text("\(Self.esercizi(r.voci.count)) · circa \(minutiStimati(r)) min"))
+                                Spacer(minLength: 8)
+                                Button("Inizia") {
+                                    palestra.inizia(r)
+                                    navigazione.allenamentoAperto = true
+                                }
+                                .buttonStyle(PulsanteAccento())
+                            }
+                        } else {
+                            disposizione {
+                                Text("Nessuna scheda").font(.headline)
+                                Spacer(minLength: 8)
+                                Button("Crea la prima scheda") { navigazione.scheda = .allenamento }
+                                    .buttonStyle(PulsanteAccento())
+                            }
+                        }
                     }
-                    .padding(.vertical, 2)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-            }
-            ForEach(cardio) { c in
-                HStack(spacing: 12) {
-                    Text("\(Libreria.nomeCardio(c.tipo)) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : ""))
-                    Spacer(minLength: 8)
-                    CerchioSpunta(fatta: true)
-                }
-                .padding(.vertical, 2)
-                .accessibilityElement(children: .combine)
-            }
-            if Self.mostraAltraScheda(inCorso: palestra.stato.inCorso != nil, pesiFatti: fatti.count, cardioFatto: cardio.count) {
-                Button("Un'altra scheda") { navigazione.scheda = .allenamento }
-                    .font(.subheadline)
-                    .tint(.primary)
-                    .frame(minHeight: 44, alignment: .leading)
             }
         }
+        // Il resto sono righe: riposo, cardio, allenamenti fatti
+        let senzaPrincipale = !(inCorso == nil && tipo == .pesi && fatti.isEmpty)
+        let altraScheda = Self.mostraAltraScheda(inCorso: inCorso != nil, pesiFatti: fatti.count, cardioFatto: cardio.count)
+        let giornoLibero = senzaPrincipale && inCorso == nil && fatti.isEmpty && cardio.isEmpty
+        if giornoLibero || !fatti.isEmpty || !cardio.isEmpty || altraScheda {
+            Section {
+                if giornoLibero {
+                    if tipo == .cardio {
+                        Riga(Text("Cardio"), evidente: true) {
+                            Button("Registra cardio") { cardioAperto = true }
+                                .buttonStyle(.bordered)
+                                .buttonBorderShape(.capsule)
+                                .tint(.primary)
+                        }
+                    } else {
+                        Riga(Text("Riposo"), evidente: true) {
+                            Button("Allenati lo stesso") { sceltaScheda = true }
+                                .buttonStyle(.bordered)
+                                .buttonBorderShape(.capsule)
+                                .tint(.primary)
+                                .accessibilityIdentifier("allenati-lo-stesso")
+                        }
+                    }
+                }
+                ForEach(fatti) { a in
+                    NavigationLink(value: a.id) {
+                        Riga(Text(verbatim: a.titolo), dettaglio: Text(durataTesto(a.durata)), evidente: true,
+                             inizio: CerchioSpunta(fatta: true))
+                    }
+                }
+                ForEach(cardio) { c in
+                    Riga(Text("\(Libreria.nomeCardio(c.tipo)) · \(c.minuti) min" + (c.km > 0 ? " · \(num(c.km)) km" : "")),
+                         inizio: CerchioSpunta(fatta: true))
+                }
+                if altraScheda {
+                    Button("Un'altra scheda") { navigazione.scheda = .allenamento }
+                        .tint(.primary)
+                        .frame(minHeight: Misure.tocco, alignment: .leading)
+                }
+            }
+        }
+    }
+
+    // La scelta della scheda per «Allenati lo stesso»: le schede e l'allenamento libero, e si parte
+    @ViewBuilder private var schedeDaScegliere: some View {
+        ForEach(palestra.stato.routine) { r in
+            Button(r.nome) { avvia(r) }
+        }
+        Button("Allenamento libero") { avvia(nil) }
+    }
+
+    private func avvia(_ r: Routine?) {
+        palestra.inizia(r)
+        navigazione.allenamentoAperto = true
     }
 
     // Il link a Palestra compare a fine allenamento (pesi o cardio fatti), mai con un allenamento in corso
@@ -283,7 +277,7 @@ struct HomeView: View {
         let oggi = Giorni.oggi()
         let r = archivio.registro(oggi)
         let p = archivio.profilo
-        Riquadro {
+        Section { rigaRiquadro { Riquadro {
             if p.olio > 0 {
                 Dosaggio(
                     nome: "Olio", unita: "cucchiaini",
@@ -302,7 +296,7 @@ struct HomeView: View {
                     quantitaPerElemento: Dosi.litriPerGoccia, doseTesto: num(p.acqua))
                     .padding(.vertical, 6)
             }
-        }
+        } } }
     }
 
     // ---------- Peso ----------
@@ -313,7 +307,7 @@ struct HomeView: View {
             let quando = PesoVeloce.etichetta(ultimo.data, oggi: Giorni.oggi())
             let variazione = PesoVeloce.variazione(bia, ultimo: ultimo)
             let testoVariazione = variazione.map { String(localized: "\(Testi.conSegno($0, unita: "kg")) in 30 giorni") }
-            Button { pesoVeloce = true } label: {
+            Section { rigaRiquadro { Button { pesoVeloce = true } label: {
                 Riquadro {
                     HStack(alignment: .firstTextBaseline) {
                         Text("Peso").font(.headline)
@@ -345,9 +339,9 @@ struct HomeView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Peso")
             .accessibilityValue(kgTesto(kg) + ", " + quando + (testoVariazione.map { ", " + $0 } ?? ""))
-            .accessibilityHint("Scrivi il peso di oggi")
+            .accessibilityHint("Scrivi il peso di oggi") } }
         } else {
-            Button { pesoVeloce = true } label: {
+            Section { rigaRiquadro { Button { pesoVeloce = true } label: {
                 Riquadro {
                     HStack {
                         Text("Peso").font(.headline)
@@ -358,7 +352,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Peso")
-            .accessibilityValue("Aggiungi il primo peso")
+            .accessibilityValue("Aggiungi il primo peso") } }
         }
     }
 

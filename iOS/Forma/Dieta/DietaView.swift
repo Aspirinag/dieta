@@ -183,7 +183,7 @@ struct StrisciaGiorni: View {
 
 // Una riga per pasto: cerchio a sinistra (segna il pasto), nome, cibi con le quantità, alternativa in grigio.
 // Il resto della riga apre il dettaglio
-private struct RigaPasto: View {
+struct RigaPasto: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dynamicTypeSize) private var dimensione
     let giorno: String
@@ -202,6 +202,7 @@ private struct RigaPasto: View {
             // Segna il pasto del giorno scelto, anche se non è oggi
             archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() }
         }
+        .accessibilityIdentifier("riga-pasto")
         .disabled(giorno > Giorni.oggi())   // un pasto futuro non si segna; la riga apre comunque il dettaglio
         let titolo = Text(pasto.nome)
         let testo = dettaglio.isEmpty ? nil : Text(verbatim: dettaglio)
@@ -216,6 +217,7 @@ private struct RigaPasto: View {
                 Riga(titolo, dettaglio: testo, evidente: true, fatta: s.fatto, inizio: spunta)
             }
         }
+        .accessibilityIdentifier("pasto-\(pasto.nome)")
         .righeTema()
     }
 }

@@ -50,6 +50,22 @@ final class OggiVeloceTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Colazione"].waitForExistence(timeout: 5), "Non si apre il dettaglio del pasto")
     }
 
+    // Giorno di riposo: «Allenati lo stesso» apre la scelta della scheda e avvia quella scelta
+    func testAllenatiLoStessoApreLaSceltaEAvvia() {
+        continueAfterFailure = false
+        let app = avvia(["-oggi-riposo"])
+        XCTAssertTrue(app.staticTexts["Riposo"].waitForExistence(timeout: 8), "Manca «Riposo»")
+        let pulsante = app.buttons["allenati-lo-stesso"]
+        XCTAssertTrue(pulsante.exists, "Manca «Allenati lo stesso»")
+        pulsante.tap()
+        let libero = app.buttons["Allenamento libero"]
+        XCTAssertTrue(libero.waitForExistence(timeout: 5), "Non si apre la scelta della scheda")
+        XCTAssertFalse(app.tabBars.firstMatch.buttons["Palestra"].isSelected, "Non deve portare alla scheda Palestra")
+        libero.tap()
+        XCTAssertTrue(app.navigationBars["Allenamento libero"].waitForExistence(timeout: 8), "Non parte l'allenamento scelto")
+        XCTAssertTrue(app.buttons["Fine"].exists, "Manca «Fine»: l'allenamento non è in corso")
+    }
+
     func testAltraSchedaDopoAllenamentoFatto() {
         continueAfterFailure = false
         let app = avvia(["-allenato-oggi"])
