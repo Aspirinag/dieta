@@ -19,6 +19,7 @@ struct FormaApp: App {
         UNUserNotificationCenter.current().delegate = delegato
         // Subito all'avvio: iOS apre l'app in background quando il Watch salva un allenamento
         Salute.shared.avvia(p)
+        AttivitaDiSistema.chiudiRimaste()
     }
 
     var body: some Scene {
@@ -52,6 +53,7 @@ struct Radice: View {
     @Environment(Palestra.self) private var palestra
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
+    @State private var live = LiveRecupero()
     @State private var avvisoDati = true
     @Environment(\.scenePhase) private var fase
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
@@ -84,6 +86,10 @@ struct Radice: View {
             if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema() }
         }
         .applicaTema()
+        // Live Activity del recupero: solo durante l'allenamento in corso
+        .onChange(of: palestra.stato.inCorso == nil ? nil : timer.stato, initial: true) { _, stato in
+            live.applica(stato)
+        }
         .onChange(of: fase) { _, f in
             if f != .active {
                 archivio.salvaOra()
