@@ -28,3 +28,5 @@ jobs:
           node-version: 20
       - name: Lettore dei PDF uguale a Forma
         run: node scripts/controlla-lettore.mjs
+      - name: Dati salvati e backup di Forma conservati
+        run: node scripts/prova-dati-web.mjs
