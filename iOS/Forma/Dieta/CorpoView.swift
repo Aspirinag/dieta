@@ -189,7 +189,8 @@ struct CorpoView: View {
         let valore = ultima?[campo]
         let delta = Self.variazioneTrentaGiorni(bia, campo)
         let dettaglio: Text? = ultima.map { m in
-            Text(delta.map { String(localized: "\(dataMisura(m.data)) · \(testoInTrentaGiorni($0, campo))") } ?? dataMisura(m.data))
+            // La data e, sotto, la variazione: ognuna sulla sua riga, senza andare a capo a metà
+            Text(verbatim: ([dataMisura(m.data)] + (delta.map { [testoInTrentaGiorni($0, campo)] } ?? [])).joined(separator: "\n"))
         }
         return Button {
             withAnimation { metrica = scelto ? .peso : campo }
@@ -199,6 +200,7 @@ struct CorpoView: View {
                     .foregroundStyle(scelto ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
                     .accessibilityHidden(true)
             }
+            .padding(.vertical, Spazio.s)
             .frame(minHeight: Misure.tocco)
             .contentShape(.rect)
         }
