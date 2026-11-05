@@ -25,6 +25,11 @@ L'app per iPhone Forma nelle ultime settimane è cambiata molto (nuovo aspetto, 
 - **I suoi dati.** Restano nel `localStorage` con la stessa chiave e lo stesso formato: dopo l'aggiornamento riapre la pagina e ritrova piano, spunte e misure. Nessuna rinomina di campi (regola del repo: `dieta.json` compatibile con Forma).
 - **Backup.** Un backup esportato da Forma si importa nella web app e viceversa, senza perdere campi (anche quelli che la web app non usa, es. `spesa_prossima`, promemoria con orari).
 - **Uso da iPhone.** Funziona in Safari e aggiunta alla schermata Home (meta `apple-mobile-web-app-*` restano), con aree sicure e tocchi di almeno 44 pt.
+- **L'«app» sulla schermata Home.** Se lei ha aggiunto la pagina alla Home, deve aprire la nuova versione senza fare niente e ritrovare i dati. Quindi:
+  - indirizzo e percorso uguali (`https://aspirinag.github.io/dieta/`, `index.html` nella radice);
+  - nessun service worker: iOS riscarica la pagina a ogni apertura, e GitHub Pages la tiene in cache al massimo 10 minuti;
+  - i file in `vendor/` e l'icona mantengono gli stessi nomi; se un file cambia, il riferimento ha un parametro di versione (es. `pdf.min.js?v=2`);
+  - i dati dell'app sulla Home sono separati da quelli di Safari e legati all'indirizzo: per questo l'indirizzo non cambia.
 - Nessuna libreria nuova da internet: resta un file `index.html` più `vendor/`.
 
 ## Scelte già fatte
