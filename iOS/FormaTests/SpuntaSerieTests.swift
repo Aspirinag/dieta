@@ -67,4 +67,88 @@ struct SpuntaSerieTests {
         #expect(!timer.attivo)
         timer.ferma()
     }
+    // MARK: Serie attiva (quella con i ± e verso cui si scorre)
+
+    private func esercizio(_ fatte: [Bool]) -> EsercizioFatto {
+        EsercizioFatto(esercizio: "x", serie: fatte.map { SerieFatta(kg: 10, rip: 8, fatta: $0) })
+    }
+
+    @Test func senzaRiferimentoLaPrimaDaFare() {
+        let a = esercizio([true, true]), b = esercizio([true, false, false])
+        #expect(SerieAttiva.trova(in: [a, b], riferimento: nil) == b.serie[1].id)
+    }
+
+    @Test func dopoUnaSpuntaLaSuccessivaDelloStessoEsercizio() {
+        let a = esercizio([false, false]), b = esercizio([true, false, false])
+        // Spuntata la seconda di b (fuori ordine): la prossima è la terza di b, non la prima di a
+        var b2 = b
+        b2.serie[1].fatta = true
+        #expect(SerieAttiva.trova(in: [a, b2], riferimento: b2.serie[1].id) == b2.serie[2].id)
+    }
+
+    @Test func unaSerieDaFareScelta() {
+        let a = esercizio([false, false, false])
+        #expect(SerieAttiva.trova(in: [a], riferimento: a.serie[2].id) == a.serie[2].id)
+    }
+
+    @Test func esercizioFinitoPassaAlProssimoPoiTornaIndietro() {
+        let a = esercizio([false]), b = esercizio([true, true]), c = esercizio([false])
+        #expect(SerieAttiva.trova(in: [a, b, c], riferimento: b.serie[1].id) == c.serie[0].id)
+        #expect(SerieAttiva.trova(in: [a, b], riferimento: b.serie[1].id) == a.serie[0].id)
+        // Una serie prima dell'ultima spuntata, nello stesso esercizio, rimasta indietro
+        let d = esercizio([false, true])
+        #expect(SerieAttiva.trova(in: [d], riferimento: d.serie[1].id) == d.serie[0].id)
+    }
+
+    @Test func tuttoFattoNessunaAttiva() {
+        let a = esercizio([true])
+        #expect(SerieAttiva.trova(in: [a], riferimento: nil) == nil)
+        #expect(SerieAttiva.trova(in: [a], riferimento: UUID()) == nil)
+    }
+
+    // MARK: ± senza tastiera
+
+    @Test func piuKgPartendoDalCampo() {
+        #expect(PassoSerie.kg("40", base: 37.5, delta: 2.5) == 42.5)
+        #expect(PassoSerie.kg("37,5", base: nil, delta: -2.5) == 35)
+    }
+
+    @Test func piuKgCampoVuotoUsaLUltimaVolta() {
+        #expect(PassoSerie.kg("", base: 37.5, delta: 2.5) == 40)
+        #expect(PassoSerie.kg("", base: nil, delta: 2.5) == 2.5)
+    }
+
+    @Test func kgERipetizioniMaiSottoZero() {
+        #expect(PassoSerie.kg("1", base: nil, delta: -2.5) == 0)
+        #expect(PassoSerie.rip("0", base: nil, delta: -1) == 0)
+    }
+
+    @Test func ripetizioni() {
+        #expect(PassoSerie.rip("10", base: 8, delta: 1) == 11)
+        #expect(PassoSerie.rip("", base: 8, delta: -1) == 7)
+    }
+
+    // MARK: Stato del recupero (per la Live Activity)
+
+    @Test func statoDelRecupero() {
+        let timer = TimerRecupero(aggiungiNotifica: { _ in }, cancellaNotifica: {})
+        #expect(timer.stato == nil)
+        timer.avvia(90, serie: UUID(), esercizio: "Chest press")
+        guard let s = timer.stato else { Issue.record("Recupero avviato senza stato"); return }
+        #expect(s.esercizio == "Chest press")
+        #expect(abs(s.fine.timeIntervalSince(s.inizio) - 90) < 1)
+        timer.cambia(15)
+        #expect(timer.stato?.inizio == s.inizio)
+        #expect(abs((timer.stato?.fine.timeIntervalSince(s.inizio) ?? 0) - 105) < 1)
+        timer.ferma()
+        #expect(timer.stato == nil)
+    }
+
+    @Test func avanzamentoDelRecupero() {
+        let i = Date(timeIntervalSince1970: 0)
+        let s = StatoRecupero(inizio: i, fine: i.addingTimeInterval(100), esercizio: nil)
+        #expect(s.trascorso(il: i.addingTimeInterval(25)) == 0.25)
+        #expect(s.trascorso(il: i.addingTimeInterval(-5)) == 0)
+        #expect(s.trascorso(il: i.addingTimeInterval(500)) == 1)
+    }
 }
