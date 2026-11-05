@@ -5,7 +5,6 @@ import SwiftUI
 // il nome apre i giorni in cui serve; in fondo si aggiunge ciò che non è nel piano
 struct SpesaView: View {
     @Environment(Archivio.self) private var archivio
-    @Environment(\.dynamicTypeSize) private var dimensione
     @Environment(\.scenePhase) private var fase
     @State private var ultimoOggi = Giorni.oggi()
     @State private var giaPresente = false
@@ -21,34 +20,32 @@ struct SpesaView: View {
     var body: some View {
         let voci = archivio.profilo.vociSpesa(lunedi: lunSpesa)
         let presi = archivio.spunteSpesa(lunedi: lunSpesa)
-        ScrollView {
-            VStack(spacing: 12) {
+        List {
+            Section {
                 intestazione(voci: voci, presi: presi)
-                if voci.isEmpty {
-                    vuoto
-                } else {
-                    // Solo voci aggiunte a mano: la lista le mostra e un cenno ricorda che manca il piano
-                    if Profilo.senzaPiano(voci) {
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+            if voci.isEmpty {
+                vuoto
+            } else {
+                // Solo voci aggiunte a mano: la lista le mostra e un cenno ricorda che manca il piano
+                if Profilo.senzaPiano(voci) {
+                    Section {
                         Text(Self.indicazioneVuoto)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
-                    }
-                    ForEach(Reparto.allCases, id: \.self) { reparto in
-                        let righe = voci.filter { $0.reparto == reparto }
-                        if !righe.isEmpty { sezione(reparto, righe, presi: presi) }
+                            .listRowBackground(Color.clear)
                     }
                 }
-                aggiungi
-                Text("Le spunte restano per questa settimana e la prossima.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
+                ForEach(Reparto.allCases, id: \.self) { reparto in
+                    let righe = voci.filter { $0.reparto == reparto }
+                    // Quello che manca in alto, i prodotti presi in fondo alla sezione
+                    let ordinate = righe.filter { presi[$0.chiave] != true } + righe.filter { presi[$0.chiave] == true }
+                    if !righe.isEmpty { sezione(reparto, ordinate, presi: presi) }
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            aggiungi
         }
         .scrollDismissesKeyboard(.interactively)
         // Se l'app resta aperta oltre la mezzanotte la lista passa alla settimana giusta
@@ -59,6 +56,7 @@ struct SpesaView: View {
             ultimoOggi = oggi
         }
         .sfondoTema()
+        .tint(.primary)
         .navigationTitle("Spesa")
         .toolbar {
             if !voci.isEmpty {
@@ -85,40 +83,31 @@ struct SpesaView: View {
 
     private func intestazione(voci: [Profilo.VoceSpesa], presi: [String: Bool]) -> some View {
         let quanti = voci.filter { presi[$0.chiave] == true }.count
-        return VStack(spacing: 8) {
-            HStack(spacing: 0) {
-                freccia("chevron.left", "Settimana precedente", attiva: lunSpesa != questa) { lunSpesa = questa }
-                VStack(spacing: 2) {
-                    Text(verbatim: lunSpesa == questa ? periodo : String(localized: "Prossima settimana · \(periodo)"))
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(dimensione.isAccessibilitySize ? nil : 1)
-                        .minimumScaleFactor(dimensione.isAccessibilitySize ? 1 : 0.7)
-                        .multilineTextAlignment(.center)
-                    Text("\(quanti) di \(voci.count) presi")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .accessibilityElement(children: .combine)
-                freccia("chevron.right", "Settimana successiva", attiva: lunSpesa != prossima) { lunSpesa = prossima }
+        return HStack(spacing: 0) {
+            freccia("chevron.left", "Settimana precedente", attiva: lunSpesa != questa) { lunSpesa = questa }
+            VStack(spacing: 2) {
+                Text(verbatim: lunSpesa == questa ? periodo : String(localized: "Prossima settimana · \(periodo)"))
+                    .font(.subheadline.weight(.semibold))
+                    .multilineTextAlignment(.center)
+                Text("\(quanti) di \(voci.count) presi")
+                    .font(.numero(.footnote))
+                    .foregroundStyle(.secondary)
             }
-            ProgressView(value: Double(quanti), total: Double(max(voci.count, 1)))
-                .tint(Colori.accento)
-                .accessibilityLabel("Prodotti presi")
-                .accessibilityValue("\(quanti) di \(voci.count)")
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+            freccia("chevron.right", "Settimana successiva", attiva: lunSpesa != prossima) { lunSpesa = prossima }
         }
-        .padding(.top, 4)
     }
 
     private func freccia(_ simbolo: String, _ nome: LocalizedStringResource, attiva: Bool, azione: @escaping () -> Void) -> some View {
         Button(action: azione) {
             Image(systemName: simbolo)
                 .font(.body.weight(.semibold))
-                .frame(width: 44, height: 44)
+                .frame(width: Misure.tocco, height: Misure.tocco)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(attiva ? Colori.accento : Color(.tertiaryLabel))
+        .foregroundStyle(attiva ? Color.primary : Color(.tertiaryLabel))
         .disabled(!attiva)
         .accessibilityLabel(Text(nome))
     }
@@ -129,113 +118,80 @@ struct SpesaView: View {
     static func periodo(lunedi: String, locale: Locale = .current) -> String {
         let dal = Giorni.data(lunedi)
         let al = Giorni.data(Giorni.aggiungi(lunedi, 6))   // la domenica a mezzanotte, dentro l'intervallo
-        return (dal..<al).formatted(Date.IntervalFormatStyle().day().month(.wide).locale(locale))
+        return Testi.periodo(da: dal, a: al, locale: locale)
     }
 
     // ---------- Reparti ----------
 
     private func sezione(_ reparto: Reparto, _ righe: [Profilo.VoceSpesa], presi: [String: Bool]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(reparto.nome)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.leading, 4)
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("reparto.\(reparto.rawValue)")
-            Riquadro {
-                ForEach(Array(righe.enumerated()), id: \.element.id) { i, voce in
-                    if i > 0 { Divider() }
-                    riga(voce, preso: presi[voce.chiave] == true)
-                }
+        Section {
+            ForEach(righe, id: \.id) { voce in
+                riga(voce, preso: presi[voce.chiave] == true)
             }
+        } header: {
+            Text(reparto.nome)
+                .textCase(nil)
+                .accessibilityIdentifier("reparto.\(reparto.rawValue)")
         }
-        .padding(.top, 4)
     }
 
     private func riga(_ v: Profilo.VoceSpesa, preso: Bool) -> some View {
         let aperta = aperti.contains(v.chiave)
         let giorni = v.giorni.map { "\($0.giorno) \($0.quanto)" }.joined(separator: " · ")
-        return HStack(spacing: 4) {
-            Button {
-                withAnimation(.snappy) { archivio.spunta(v.chiave, lunedi: lunSpesa) }
-            } label: {
-                CerchioSpunta(fatta: preso)
+        let apriGiorni = {
+            guard !v.giorni.isEmpty else { return }
+            withAnimation(.snappy) {
+                if aperti.contains(v.chiave) { aperti.remove(v.chiave) } else { aperti.insert(v.chiave) }
             }
-            .buttonStyle(.plain)
-            .sensoryFeedback(.selection, trigger: preso)
-            .accessibilityIdentifier("spunta.\(v.chiave)")
-            .accessibilityLabel("Segna \(v.nome)")
-            .accessibilityValue(preso ? Text("preso") : Text("da prendere"))
-
-            Button {
-                guard !v.giorni.isEmpty else { return }
-                withAnimation(.snappy) {
-                    if aperta { aperti.remove(v.chiave) } else { aperti.insert(v.chiave) }
-                }
-            } label: {
-                etichetta(v, giorni: aperta ? giorni : "")
-                    .opacity(preso ? 0.5 : 1)
-                    .strikethrough(preso)
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(v.quanto.isEmpty ? v.nome : "\(v.nome), \(v.quanto)")
-            .accessibilityValue(aperta ? giorni : "")
-            .accessibilityHint(v.giorni.isEmpty ? Text(verbatim: "") : Text("Mostra i giorni"))
         }
-        .contextMenu {
-            Menu("Sposta in…", systemImage: "arrow.right") {
-                ForEach(Reparto.allCases, id: \.self) { r in
-                    Button {
-                        archivio.profilo.sposta(v.chiave, in: r)
-                    } label: {
-                        if r == v.reparto { Label(r.nome, systemImage: "checkmark") } else { Text(r.nome) }
+        return Riga(Text(v.nome).strikethrough(preso),
+                    dettaglio: aperta ? Text(verbatim: giorni) : nil,
+                    valore: v.quanto.isEmpty ? nil : Text(v.quanto),
+                    fatta: preso,
+                    inizio: CerchioSpunta(fatta: preso, etichetta: Text("Segna \(v.nome)"), stati: ("preso", "da prendere")) {
+                        withAnimation(.snappy) { archivio.spunta(v.chiave, lunedi: lunSpesa) }
+                    }
+                    .accessibilityIdentifier("spunta.\(v.chiave)"))
+            .righeTema()
+            // Il nome apre i giorni in cui serve il prodotto
+            .contentShape(Rectangle())
+            .onTapGesture(perform: apriGiorni)
+            .accessibilityAction(named: Text("Mostra i giorni"), apriGiorni)
+            .swipeActions(edge: .trailing) {
+                if v.aggiunta {
+                    Button("Togli dalla lista", systemImage: "trash", role: .destructive) {
+                        archivio.profilo.togliExtra(v.nome, lunedi: lunSpesa)
                     }
                 }
             }
-            if v.aggiunta {
-                Button("Togli dalla lista", systemImage: "trash", role: .destructive) {
-                    archivio.profilo.togliExtra(v.nome, lunedi: lunSpesa)
+            .contextMenu {
+                Menu("Sposta in…", systemImage: "arrow.right") {
+                    ForEach(Reparto.allCases, id: \.self) { r in
+                        Button {
+                            archivio.profilo.sposta(v.chiave, in: r)
+                        } label: {
+                            if r == v.reparto { Label(r.nome, systemImage: "checkmark") } else { Text(r.nome) }
+                        }
+                    }
+                }
+                if v.aggiunta {
+                    Button("Togli dalla lista", systemImage: "trash", role: .destructive) {
+                        archivio.profilo.togliExtra(v.nome, lunedi: lunSpesa)
+                    }
                 }
             }
-        }
-    }
-
-    // Nome a sinistra, quantità a destra (sotto il nome con il testo molto grande)
-    @ViewBuilder private func etichetta(_ v: Profilo.VoceSpesa, giorni: String) -> some View {
-        let nome = VStack(alignment: .leading, spacing: 2) {
-            Text(v.nome).multilineTextAlignment(.leading)
-            if !giorni.isEmpty {
-                Text(giorni).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-            }
-        }
-        if dimensione.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 2) {
-                nome
-                if !v.quanto.isEmpty { Text(v.quanto).foregroundStyle(.secondary) }
-            }
-        } else {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                nome
-                Spacer(minLength: 8)
-                if !v.quanto.isEmpty {
-                    Text(v.quanto).foregroundStyle(.secondary).monospacedDigit().multilineTextAlignment(.trailing)
-                }
-            }
-        }
     }
 
     // ---------- Aggiunta e stato vuoto ----------
 
+    // Voce libera: una riga con il campo; la nuova voce va in «Altro» e si può spostare con il tocco lungo
     private var aggiungi: some View {
-        Riquadro {
-            HStack(spacing: 4) {
+        Section {
+            HStack(spacing: Spazio.xs) {
                 Image(systemName: "plus")
                     .font(.title3)
-                    .foregroundStyle(Colori.accento)
-                    .frame(width: 44, height: 44)
+                    .foregroundStyle(.secondary)
+                    .frame(width: Misure.tocco, height: Misure.tocco)
                     .accessibilityHidden(true)
                 TextField("Aggiungi qualcos'altro", text: $nuovo)
                     .focused($scrivendo)
@@ -246,18 +202,19 @@ struct SpesaView: View {
                         nuovo = ""
                         scrivendo = true
                     }
-                    .frame(minHeight: 44)
+                    .frame(minHeight: Misure.tocco)
             }
+            .righeTema()
             if giaPresente {
                 Text("È già nella lista")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 48)
                     .accessibilityAddTraits(.updatesFrequently)
+                    .righeTema()
             }
+        } footer: {
+            Text("Le spunte restano per questa settimana e la prossima.")
         }
-        .padding(.top, 4)
     }
 
     // L'avviso resta due secondi (e lo legge anche VoiceOver)
@@ -275,12 +232,15 @@ struct SpesaView: View {
     static var indicazioneVuoto: String { String(localized: "Carica un piano alimentare da Impostazioni → Piani alimentari.") }
 
     private var vuoto: some View {
-        Riquadro {
-            Text("Nessun piano in questa settimana").font(.headline)
-            Text(Self.indicazioneVuoto)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
+        Section {
+            VStack(alignment: .leading, spacing: Spazio.xs) {
+                Text("Nessun piano in questa settimana").font(.headline)
+                Text(Self.indicazioneVuoto)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, Spazio.xs)
+            .righeTema()
         }
     }
 

@@ -38,7 +38,7 @@ final class SpesaUITests: XCTestCase {
         campo.typeText("Caffè\n")
 
         let altro = app.staticTexts["reparto.altro"]
-        let caffe = app.buttons["Caffè"]
+        let caffe = app.staticTexts["Caffè"]
         XCTAssertTrue(caffe.waitForExistence(timeout: 5), "«Caffè» non compare")
         XCTAssertTrue(altro.exists, "Manca il reparto Altro")
         // La riga nuova entra con un'animazione: si aspetta che sia al suo posto

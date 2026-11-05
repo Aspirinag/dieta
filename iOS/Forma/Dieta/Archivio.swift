@@ -352,14 +352,15 @@ extension Profilo {
         salvaSettimane(settimane)
     }
 
-    // Quantità somma di grammi/millilitri (kg e l si convertono); senza quantità si contano le porzioni
-    // Le unità restano metriche in ogni lingua; cambiano solo il separatore decimale e la parola «porzioni»
+    // Quantità somma di grammi/millilitri (kg e l si convertono), sempre a numeri interi nelle unità piccole;
+    // senza quantità in g o ml l'alimento è «a piacere» (non si compra a porzioni)
+    // Le unità restano metriche in ogni lingua; cambiano solo il separatore decimale e le parole
     private static func testoQuantita(_ unita: [String: Double], porzioni: Int, locale: Locale) -> String {
         var parti: [String] = []
-        if let g = unita["g"] { parti.append(g >= 1000 ? "\(num(g / 1000, locale: locale)) kg" : "\(num(g, locale: locale)) g") }
-        if let ml = unita["ml"] { parti.append(ml >= 1000 ? "\(num(ml / 1000, locale: locale)) L" : "\(num(ml, locale: locale)) ml") }
+        if let g = unita["g"] { parti.append(g >= 1000 ? "\(num(g / 1000, locale: locale)) kg" : "\(num(g.rounded(), locale: locale)) g") }
+        if let ml = unita["ml"] { parti.append(ml >= 1000 ? "\(num(ml / 1000, locale: locale)) L" : "\(num(ml.rounded(), locale: locale)) ml") }
         if !parti.isEmpty { return parti.joined(separator: " + ") }
-        return String(localized: "\(porzioni) porzioni", locale: locale)
+        return String(localized: "a piacere", locale: locale)
     }
 
     // Alimenti della settimana: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
