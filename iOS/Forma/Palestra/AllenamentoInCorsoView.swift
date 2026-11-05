@@ -849,13 +849,13 @@ struct SfondoVetro: ViewModifier {
 struct IconaEsercizio: View {
     let esercizio: Esercizio
     // Il cerchio e il simbolo crescono con il testo grande
-    @ScaledMetric(relativeTo: .body) private var lato: CGFloat
-    @ScaledMetric(relativeTo: .body) private var simbolo: CGFloat
+    private let base: CGFloat
+    @ScaledMetric(relativeTo: .body) private var scala: CGFloat = 1
+    private var lato: CGFloat { base * min(scala, 1.6) }
 
     init(esercizio: Esercizio, lato: CGFloat = 40) {
         self.esercizio = esercizio
-        _lato = ScaledMetric(wrappedValue: lato, relativeTo: .body)
-        _simbolo = ScaledMetric(wrappedValue: lato * 0.45, relativeTo: .body)
+        self.base = lato
     }
 
     var body: some View {
@@ -864,7 +864,7 @@ struct IconaEsercizio: View {
                 Pittogramma(figura: f, lato: lato * 0.85)
             } else {
                 Image(systemName: esercizio.muscolo.simbolo)
-                    .font(.system(size: simbolo))
+                    .font(.system(size: lato * 0.45))
                     .foregroundStyle(.secondary)
             }
         }
