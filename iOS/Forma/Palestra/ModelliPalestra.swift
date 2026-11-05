@@ -332,3 +332,26 @@ struct StatoPalestra: Codable, Hashable {
         for e in Libreria.predefiniti where !esercizi.contains(where: { $0.id == e.id }) { esercizi.append(e) }
     }
 }
+
+// Totale di una settimana, da lunedì a domenica. È l'unica definizione di «questa settimana»:
+// Progressi (grafico e titolo), Tutti gli allenamenti e ogni altro riepilogo la usano
+struct RiepilogoSettimana: Equatable {
+    let inizio: String          // lunedì
+    let fine: String            // domenica
+    let allenamenti: Int        // allenamenti con i pesi
+    let kg: Double              // kg totali (kg × ripetizioni)
+
+    // «2–8 novembre»: la scritta da mettere accanto al totale
+    func etichetta(locale: Locale = .current) -> String {
+        Testi.periodo(da: Giorni.data(inizio), a: Giorni.data(fine), locale: locale)
+    }
+}
+
+extension StatoPalestra {
+    // La settimana (da lunedì) che contiene `oggi`
+    func riepilogoSettimana(oggi: String) -> RiepilogoSettimana {
+        let lun = Giorni.lunedi(oggi), dom = Giorni.aggiungi(lun, 6)
+        let della = allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }
+        return RiepilogoSettimana(inizio: lun, fine: dom, allenamenti: della.count, kg: della.reduce(0) { $0 + $1.volume })
+    }
+}

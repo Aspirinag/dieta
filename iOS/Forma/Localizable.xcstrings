@@ -1469,6 +1469,22 @@
         }
       }
     },
+    "Allenamenti in tutto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total workouts"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total workouts"
+          }
+        }
+      }
+    },
     "Allenamento": {
       "extractionState": "manual",
       "comment": "Una singola seduta di allenamento (workout)",
@@ -3620,6 +3636,22 @@
         }
       }
     },
+    "Distanza": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distance"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distance"
+          }
+        }
+      }
+    },
     "Domani si paga la palestra.": {
       "localizations": {
         "en": {
@@ -3812,6 +3844,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete option"
+          }
+        }
+      }
+    },
+    "Elimina cardio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete cardio"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete cardio"
           }
         }
       }
@@ -4272,6 +4320,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Until"
+          }
+        }
+      }
+    },
+    "finora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "so far"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "so far"
           }
         }
       }
@@ -4926,6 +4990,22 @@
         }
       }
     },
+    "Il massimale è una stima del peso con cui faresti una sola ripetizione.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The estimated 1RM is the weight you could lift for a single repetition."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The estimated 1RM is the weight you could lift for a single repetition."
+          }
+        }
+      }
+    },
     "il pasto": {
       "localizations": {
         "en": {
@@ -5362,6 +5442,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "F"
+          }
+        }
+      }
+    },
+    "Inizio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
           }
         }
       }
@@ -6667,6 +6763,22 @@
         }
       }
     },
+    "Massimale stimato (1 ripetizione)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated 1RM (1 repetition)"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated 1RM (1 repetition)"
+          }
+        }
+      }
+    },
     "Mercoledì": {
       "localizations": {
         "en": {
@@ -7813,18 +7925,18 @@
         }
       }
     },
-    "Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato.": {
+    "Pallino pieno: pesi o cardio fatti. Pallino vuoto: in programma.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filled dot: weights or cardio done. Gray: planned. ✕: skipped."
+            "value": "Filled dot: weights or cardio done. Empty dot: planned."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filled dot: weights or cardio done. Grey: planned. ✕: skipped."
+            "value": "Filled dot: weights or cardio done. Empty dot: planned."
           }
         }
       }
@@ -8849,6 +8961,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "This week"
+          }
+        }
+      }
+    },
+    "questa settimana, finora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this week, so far"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this week, so far"
           }
         }
       }
@@ -9990,6 +10118,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Warm-up set"
+          }
+        }
+      }
+    },
+    "Serie migliore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set"
           }
         }
       }

@@ -69,13 +69,14 @@ final class ProgressiPalestraTests: XCTestCase {
         let riga = cardio.firstMatch
         let id = riga.identifier
         porta(riga, app)
-        riga.press(forDuration: 1.2)
-        let elimina = app.buttons["Elimina"]
-        XCTAssertTrue(elimina.waitForExistence(timeout: 3), "Il tocco prolungato deve offrire «Elimina»")
+        riga.tap()
+        let elimina = app.buttons["Elimina cardio"]
+        XCTAssertTrue(elimina.waitForExistence(timeout: 3), "Toccando un cardio si apre il dettaglio, dove si elimina")
         elimina.tap()
         let conferma = app.sheets.buttons["Elimina"].firstMatch
         XCTAssertTrue(conferma.waitForExistence(timeout: 3), "Prima di eliminare serve una conferma")
         conferma.tap()
+        XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 5), "Dopo l'eliminazione si torna a Progressi")
         XCTAssertTrue(app.descendants(matching: .any)[id].waitForNonExistence(timeout: 3), "Il cardio eliminato non deve più comparire")
     }
 
