@@ -52,6 +52,22 @@
         }
       }
     },
+    "%@ in 30 giorni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in 30 days"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in 30 days"
+          }
+        }
+      }
+    },
     "%@ kg × %lld": {
       "localizations": {
         "en": {
@@ -866,6 +882,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kneeling ab wheel"
+          }
+        }
+      }
+    },
+    "Abbonamento palestra": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gym membership"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gym membership"
           }
         }
       }
@@ -2707,6 +2739,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "What's your name?"
+          }
+        }
+      }
+    },
+    "Composizione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body composition"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body composition"
           }
         }
       }
@@ -7315,6 +7363,22 @@
         }
       }
     },
+    "Nuova misura": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New measurement"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New measurement"
+          }
+        }
+      }
+    },
     "Nuova misurazione": {
       "localizations": {
         "en": {
@@ -8103,6 +8167,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "To get reminders, allow notifications in Settings → Notifications → Forma."
+          }
+        }
+      }
+    },
+    "Per salvare scrivi almeno il peso.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save, enter at least your weight."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save, enter at least your weight."
+          }
+        }
+      }
+    },
+    "Periodo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
           }
         }
       }
@@ -11155,6 +11251,22 @@
         }
       }
     },
+    "Torna al peso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to weight"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to weight"
+          }
+        }
+      }
+    },
     "Torna al peso nel grafico": {
       "localizations": {
         "en": {
@@ -11417,6 +11529,22 @@
         }
       }
     },
+    "Tutte le misurazioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All measurements"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All measurements"
+          }
+        }
+      }
+    },
     "Tutti": {
       "localizations": {
         "en": {
@@ -11493,6 +11621,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Last time"
+          }
+        }
+      }
+    },
+    "ultima: %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last: %@ %@"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last: %@ %@"
           }
         }
       }

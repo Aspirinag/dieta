@@ -78,11 +78,11 @@ struct ProfiliImpostazioni: View {
         } label: {
             HStack {
                 Image(systemName: id == archivio.stato.attivo ? "person.crop.circle.fill" : "person.crop.circle")
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(.secondary)
                 Text(nome).foregroundStyle(.primary)
                 Spacer()
                 if archivio.stato.preferito == id {
-                    Image(systemName: "star.fill").foregroundStyle(.yellow)
+                    Image(systemName: "star.fill").foregroundStyle(.secondary)
                 }
             }
         }
@@ -137,18 +137,21 @@ struct PromemoriaImpostazioni: View {
                     Toggle(isOn: Binding(get: { pr.mattino }, set: { v in cambiaPromemoria { $0.mattino = v } })) {
                         Label("Dieta del giorno", systemImage: "sun.horizon")
                     }
+                    .tint(Colori.accento)
                     if pr.mattino {
                         SceltaOrario(titolo: "Ogni mattina alle", minuti: pr.oraMattino) { m in cambiaPromemoria { $0.oraMattino = m } }
                     }
                     Toggle(isOn: Binding(get: { pr.pasti }, set: { v in cambiaPromemoria { $0.pasti = v } })) {
                         Label("Ricordami di segnare i pasti", systemImage: "checklist")
                     }
+                    .tint(Colori.accento)
                     if pr.pasti {
                         SceltaOrario(titolo: "alle-pasti", minuti: pr.oraPasti) { m in cambiaPromemoria { $0.oraPasti = m } }
                     }
                     Toggle(isOn: Binding(get: { pr.acqua }, set: { v in cambiaPromemoria { $0.acqua = v } })) {
                         Label("Ricordami di bere", systemImage: "drop.fill")
                     }
+                    .tint(Colori.accento)
                     if pr.acqua {
                         SceltaOrario(titolo: "Dalle", minuti: pr.acquaDalle) { m in cambiaPromemoria { $0.acquaDalle = m; $0.acquaAlle = max($0.acquaAlle, m) } }
                         SceltaOrario(titolo: "Alle", minuti: pr.acquaAlle) { m in cambiaPromemoria { $0.acquaAlle = m; $0.acquaDalle = min($0.acquaDalle, m) } }
@@ -297,7 +300,7 @@ struct FoglioNuovoPiano: View {
                         DatePicker("Valido dal", selection: $dal, displayedComponents: .date)
                     } footer: {
                         if let altro = archivio.profilo.pianoConStessaData(Giorni.iso(dal), escluso: nil) {
-                            Text("Sostituisce «\(altro.nome)», che inizia lo stesso giorno.").foregroundStyle(.orange)
+                            Text("Sostituisce «\(altro.nome)», che inizia lo stesso giorno.").foregroundStyle(.secondary)
                         } else {
                             Text("Il piano precedente si chiude il giorno prima.")
                         }
