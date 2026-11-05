@@ -26,8 +26,11 @@ VERSIONE=$(xcodebuild -version | head -1 | grep -oE '[0-9]+' | head -1)
 
 # ---------- Apple ID (team) ----------
 passo "Cerco il tuo Apple ID in Xcode"
-TEAM=${TEAM:-$( { defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null; defaults read com.apple.dt.Xcode IDEProvisioningTeams 2>/dev/null; } \
-  | grep -m1 -oE 'teamID = "?[A-Z0-9]{10}' | grep -oE '[A-Z0-9]{10}$' || true)}
+# (in due passi: il bash del Mac, 3.2, non legge $( ) dentro ${TEAM:-...})
+if [ -z "${TEAM:-}" ]; then
+  TEAM=$( { defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null; defaults read com.apple.dt.Xcode IDEProvisioningTeams 2>/dev/null; } \
+    | grep -m1 -oE 'teamID = "?[A-Z0-9]{10}' | grep -oE '[A-Z0-9]{10}$' || true)
+fi
 if [ -z "$TEAM" ]; then
   open -a Xcode
   errore "In Xcode non c'è nessun Apple ID. Si è aperto Xcode: vai in Xcode → Settings… → Accounts → + → Apple Account, accedi, poi rilancia questo comando."
@@ -61,8 +64,10 @@ APP_SCELTE=${1:-"forma"}
 
 for app in $APP_SCELTE; do
   case "$app" in
-    forma) REPO=dieta; NOME=Forma ;;
-    palestra) REPO=Palestra; NOME=Palestra ;;
+    # Forma ha anche l'estensione della Live Activity: il suo identificativo deriva da FORMA_BUNDLE_ID
+    # (PRODUCT_BUNDLE_IDENTIFIER da riga di comando lo darebbe uguale anche all'estensione)
+    forma) REPO=dieta; NOME=Forma; CHIAVE_ID=FORMA_BUNDLE_ID ;;
+    palestra) REPO=Palestra; NOME=Palestra; CHIAVE_ID=PRODUCT_BUNDLE_IDENTIFIER ;;
     *) errore "App sconosciuta: $app (usa forma o palestra)" ;;
   esac
 
@@ -76,7 +81,7 @@ for app in $APP_SCELTE; do
   xcodebuild -project "$LAVORO/$REPO/iOS/$NOME.xcodeproj" -scheme "$NOME" -configuration Release \
     -destination "id=$UDID" -derivedDataPath "$LAVORO/$REPO/build" -allowProvisioningUpdates \
     DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic \
-    PRODUCT_BUNDLE_IDENTIFIER="io.github.aspirinag.$app.$(echo "$TEAM" | tr 'A-Z' 'a-z')" \
+    "$CHIAVE_ID=io.github.aspirinag.$app.$(echo "$TEAM" | tr 'A-Z' 'a-z')" \
     -quiet build \
     || errore "$NOME: la compilazione non è riuscita. Copia le righe rosse qui sopra e mandamele."
 

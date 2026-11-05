@@ -1,19 +1,6 @@
 import SwiftUI
 
-// Il recupero in corso, tutto quello che serve per mostrarlo anche fuori dall'app (Live Activity):
-// quando è partito, quando finisce (cambia con ±15 s) e per quale esercizio
-struct StatoRecupero: Codable, Hashable {
-    var inizio: Date
-    var fine: Date
-    var esercizio: String?
-
-    // Quanto del recupero è passato, da 0 a 1
-    func trascorso(il momento: Date) -> Double {
-        let totale = fine.timeIntervalSince(inizio)
-        guard totale > 0 else { return 1 }
-        return min(1, max(0, momento.timeIntervalSince(inizio) / totale))
-    }
-}
+// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity
 
 // Timer di recupero tra le serie: parte da solo quando segni una serie; a fine recupero vibra
 // e, con l'app chiusa o il telefono bloccato, arriva una notifica.

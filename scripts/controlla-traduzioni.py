@@ -3,7 +3,7 @@
 en-GB deve essere uguale a en, salvo le voci in DIVERSE_IN_GB.
 
 Uso: python3 scripts/controlla-traduzioni.py [catalogo ...]
-Senza argomenti controlla iOS/Forma/Localizable.xcstrings e iOS/Forma/InfoPlist.xcstrings.
+Senza argomenti controlla iOS/Forma/Localizable.xcstrings, iOS/Forma/InfoPlist.xcstrings e il catalogo della Live Activity.
 Esce con 1 se trova problemi. Le voci con "shouldTranslate": false (numeri, simboli) si saltano.
 """
 import json
@@ -11,7 +11,8 @@ import pathlib
 import sys
 
 RADICE = pathlib.Path(__file__).resolve().parent.parent
-PREDEFINITI = [RADICE / "iOS/Forma/Localizable.xcstrings", RADICE / "iOS/Forma/InfoPlist.xcstrings"]
+PREDEFINITI = [RADICE / "iOS/Forma/Localizable.xcstrings", RADICE / "iOS/Forma/InfoPlist.xcstrings",
+               RADICE / "iOS/RecuperoWidget/Localizable.xcstrings"]
 STATI_NON_FINITI = {"new", "needs_review", "stale"}
 # Voci in cui l'inglese britannico è davvero diverso da quello americano (le altre devono essere uguali)
 DIVERSE_IN_GB = {"Salto della corda", "Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato."}
