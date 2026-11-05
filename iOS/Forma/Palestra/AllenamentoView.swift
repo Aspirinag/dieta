@@ -3,7 +3,8 @@ import SwiftUI
 // Apre l'editor di una scheda (tipo a parte: gli UUID semplici aprono il dettaglio di un allenamento)
 struct ApriScheda: Hashable { let id: UUID }
 
-// Palestra serve a iniziare: prossima scheda, settimana, schede con ▶. Storico e calendario stanno in Progressi
+// Palestra serve a iniziare: prossima scheda, altre schede, e le funzioni di tutti i giorni con il loro nome.
+// Storico e calendario stanno in Progressi
 struct AllenamentoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
@@ -15,30 +16,20 @@ struct AllenamentoView: View {
 
     var body: some View {
         NavigationStack(path: $percorso) {
-            ScrollView {
-                VStack(spacing: 12) {
-                    prossima
-                    settimana
-                    schede
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+            List {
+                prossima
+                altreSchede
+                altro
             }
+            .tint(.primary)
             .sfondoTema()
             .navigationTitle("Palestra")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Nuova scheda", systemImage: "square.and.pencil") { nuovaScheda() }
-                        Button("Schede pronte", systemImage: "square.stack.3d.up") { percorso.append(PaginaPalestraDest.modelli) }
-                        Button("Libreria esercizi", systemImage: "books.vertical") { percorso.append(PaginaPalestraDest.libreria) }
-                        Button("Programma della settimana", systemImage: "calendar") { percorso.append(PaginaPalestraDest.pianoSettimanale) }
-                        Button("Registra cardio", systemImage: "figure.run") { cardio = true }
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("Aggiungi")
+                    Button("Nuova scheda", systemImage: "plus") { nuovaScheda() }
+                        .tint(.primary)
                 }
+                ToolbarItem(placement: .topBarTrailing) { PulsanteImpostazioni() }
             }
             .destinazioniArchivioPalestra()
             .navigationDestination(for: PaginaPalestraDest.self) { pagina in
@@ -95,146 +86,96 @@ struct AllenamentoView: View {
         return scelti.joined(separator: ", ") + (scelti.count < nomi.count ? "…" : "")
     }
 
-    // ---------- Prossima scheda ----------
+    // La scheda messa in evidenza in alto (la prossima): nella lista sotto non si ripete
+    private var inEvidenza: Routine? {
+        palestra.stato.inCorso == nil ? palestra.stato.prossimaRoutine() : nil
+    }
 
-    @ViewBuilder private var prossima: some View {
+    // ---------- Prossima scheda, con sotto il riepilogo della settimana ----------
+
+    private var prossima: some View {
+        let oggi = Giorni.oggi()
+        let riepilogo = riepilogoAllenamenti(palestra.stato.allenamentiSettimana(oggi), durata: palestra.stato.durataSettimana(oggi))
+        return Section {
+            riquadroPrincipale
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+        } footer: {
+            Text("Questa settimana: \(riepilogo)")
+                .accessibilityIdentifier("settimana")
+        }
+    }
+
+    @ViewBuilder private var riquadroPrincipale: some View {
         if let a = palestra.stato.inCorso {
             Riquadro {
                 Text("In corso").font(.footnote).foregroundStyle(.secondary)
-                Text(verbatim: a.titolo).font(.title2.bold()).padding(.top, 2)
+                Text(verbatim: a.titolo).font(.title2.bold()).padding(.top, Spazio.xs)
                 Button { navigazione.allenamentoAperto = true } label: {
                     Text("Riprendi").frame(maxWidth: .infinity, minHeight: 28)
                 }
                 .buttonStyle(PulsanteAccento())
-                .padding(.top, 12)
+                .padding(.top, Spazio.m)
             }
-        } else if let r = palestra.stato.prossimaRoutine() {
+        } else if let r = inEvidenza {
             Riquadro {
                 Text("Prossima scheda").font(.footnote).foregroundStyle(.secondary)
-                Text(r.nome).font(.title2.bold()).padding(.top, 2)
+                Text(r.nome).font(.title2.bold()).padding(.top, Spazio.xs)
                 if !r.voci.isEmpty {
                     Text(frase(r, massimo: 80))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(dimensione.isAccessibilitySize ? nil : 2)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 2)
+                        .padding(.top, Spazio.xs)
                 }
                 Button { avvia(r) } label: {
                     Text("Inizia").frame(maxWidth: .infinity, minHeight: 28)
                 }
                 .buttonStyle(PulsanteAccento())
-                .padding(.top, 12)
+                .padding(.top, Spazio.m)
             }
         } else {
             Riquadro {
                 Text("Nessuna scheda").font(.title2.bold())
                 Text("Crea la tua o parti da una scheda pronta.")
-                    .font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+                    .font(.subheadline).foregroundStyle(.secondary).padding(.top, Spazio.xs)
                 Button { nuovaScheda() } label: {
                     Text("Crea la prima scheda").frame(maxWidth: .infinity, minHeight: 28)
                 }
                 .buttonStyle(PulsanteAccento())
-                .padding(.top, 12)
+                .padding(.top, Spazio.m)
                 Button { percorso.append(PaginaPalestraDest.modelli) } label: {
                     Text("Scegli tra le schede pronte")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Colori.accento)
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, minHeight: Misure.tocco)
                 }
                 .buttonStyle(.plain)
             }
         }
     }
 
-    // ---------- Questa settimana ----------
+    // ---------- Altre schede ----------
 
-    private var settimana: some View {
-        let oggi = Giorni.oggi()
-        let fatti = palestra.stato.giorniAllenati(settimanaDi: oggi)
-        let durata = palestra.stato.durataSettimana(oggi)
-        let n = palestra.stato.allenamentiSettimana(oggi)
-        let riepilogo = riepilogoAllenamenti(n, durata: durata)
-        let giorni = HStack(spacing: 6) {
-            ForEach(0..<7, id: \.self) { i in
-                VStack(spacing: 3) {
-                    Circle()
-                        .fill(fatti.contains(i) ? Colori.accento : Color(.systemFill))
-                        .frame(width: 14, height: 14)
-                    Text(Giorni.iniziale(i))
-                        .font(.caption2.weight(i == Giorni.indice(oggi) ? .bold : .regular))
-                        .foregroundStyle(i == Giorni.indice(oggi) ? Color.primary : Color.secondary)
-                }
-                .frame(minWidth: 16)
-            }
-        }
-        let testo = Text(riepilogo)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.trailing)
-        // Una riga sola: i sette giorni e il riepilogo (con caratteri molto grandi uno sotto l'altro)
-        return Riquadro {
-            if dimensione.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 6) { giorni; testo }
-            } else {
-                HStack(alignment: .center, spacing: 8) {
-                    giorni
-                    Spacer(minLength: 4)
-                    testo.lineLimit(1).minimumScaleFactor(0.7)
-                }
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Questa settimana")
-        .accessibilityValue(riepilogo)
-        .accessibilityIdentifier("settimana")
-    }
-
-    // ---------- Schede ----------
-
-    private var schede: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Schede").font(.headline).padding(.leading, 4).padding(.top, 8)
-            Riquadro {
-                ForEach(palestra.stato.routine) { r in
-                    let testo = NavigationLink(value: ApriScheda(id: r.id)) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.nome).font(.headline).foregroundStyle(.primary)
-                                .multilineTextAlignment(.leading)
-                            if !r.voci.isEmpty {
-                                Text(frase(r, massimo: 44))
-                                    .font(.footnote)
+    @ViewBuilder private var altreSchede: some View {
+        let altre = palestra.stato.routine.filter { $0.id != inEvidenza?.id }
+        if !altre.isEmpty {
+            Section {
+                ForEach(altre) { r in
+                    NavigationLink(value: ApriScheda(id: r.id)) {
+                        Riga(Text(r.nome), dettaglio: r.voci.isEmpty ? nil : Text(frase(r, massimo: 44)), evidente: true, righeDettaglio: 2) {
+                            Button { avvia(r) } label: {
+                                Image(systemName: "play.fill")
                                     .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(2)
-                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(minWidth: Misure.tocco, minHeight: Misure.tocco)
+                                    .contentShape(Rectangle())
                             }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Inizia \(r.nome)")
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                     .accessibilityHint("Tieni premuto per duplicare o eliminare la scheda")
-                    let play = Button { avvia(r) } label: {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Colori.accento)
-                            .frame(width: 36, height: 36)
-                            .background(Colori.accento.opacity(0.12), in: .circle)
-                            .frame(width: 44, height: 44)
-                            .contentShape(.circle)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Inizia \(r.nome)")
-                    let layout = dimensione.isAccessibilitySize
-                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-                        : AnyLayout(HStackLayout(spacing: 8))
-                    layout {
-                        testo
-                        play
-                    }
-                    .padding(.vertical, 4)
                     .contextMenu {
                         Button("Duplica", systemImage: "plus.square.on.square") {
                             var copia = r
@@ -244,16 +185,32 @@ struct AllenamentoView: View {
                         }
                         Button("Elimina", systemImage: "trash", role: .destructive) { schedaDaEliminare = r }
                     }
-                    Divider()
                 }
-                Button { avvia(nil) } label: {
-                    Text("Allenamento libero")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Colori.accento)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+            } header: {
+                Text(inEvidenza == nil ? LocalizedStringKey("Schede") : LocalizedStringKey("Altre schede"))
+                    .accessibilityIdentifier("intestazioneSchede")
+            }
+        }
+    }
+
+    // ---------- Altro: le funzioni, ognuna con il suo nome ----------
+
+    private var altro: some View {
+        Section("Altro") {
+            Button { cardio = true } label: {
+                Label("Registra cardio", systemImage: "figure.run").foregroundStyle(.primary)
+            }
+            NavigationLink(value: PaginaPalestraDest.pianoSettimanale) {
+                Label("Programma della settimana", systemImage: "calendar")
+            }
+            NavigationLink(value: PaginaPalestraDest.libreria) {
+                Label("Libreria esercizi", systemImage: "books.vertical")
+            }
+            NavigationLink(value: PaginaPalestraDest.modelli) {
+                Label("Schede pronte", systemImage: "square.stack.3d.up")
+            }
+            Button { avvia(nil) } label: {
+                Label("Allenamento libero", systemImage: "figure.strengthtraining.traditional").foregroundStyle(.primary)
             }
         }
     }
@@ -283,13 +240,6 @@ struct EditorSchedaView: View {
             List {
                 Group {
                     Section {
-                        TextField("Nome della scheda", text: Binding(
-                            get: { r.nome },
-                            set: { palestra.stato.routine[i].nome = $0 }
-                        ))
-                        .font(.headline)
-                    }
-                    Section {
                         ForEach(r.voci) { v in
                             if let j = r.voci.firstIndex(where: { $0.id == v.id }) {
                                 VoceSchedaView(voce: Binding(
@@ -312,22 +262,30 @@ struct EditorSchedaView: View {
                 }
                 .righeTema()
             }
+            .tint(.primary)
             .sfondoTema()
-            .navigationTitle(r.nome)
+            // Il nome si cambia toccando il titolo (menu del titolo → Rinomina)
+            .navigationTitle(Binding(get: { r.nome }, set: { palestra.stato.routine[i].nome = $0 }))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarTitleMenu { RenameButton() }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) { EditButton() }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Inizia", systemImage: "play.fill") {
-                        guard palestra.stato.inCorso == nil else {
-                            navigazione.allenamentoAperto = true
-                            return
-                        }
-                        palestra.inizia(r)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    guard palestra.stato.inCorso == nil else {
                         navigazione.allenamentoAperto = true
+                        return
                     }
-                    .disabled(r.voci.isEmpty)
+                    palestra.inizia(r)
+                    navigazione.allenamentoAperto = true
+                } label: {
+                    Text("Inizia").frame(maxWidth: .infinity, minHeight: 28)
                 }
+                .buttonStyle(PulsanteAccento())
+                .disabled(r.voci.isEmpty)
+                .padding(.horizontal, Spazio.l)
+                .padding(.vertical, Spazio.s)
             }
             .confirmationDialog("Eliminare la scheda?", isPresented: $chiediElimina, titleVisibility: .visible) {
                 Button("Elimina \(r.nome)", role: .destructive) {
@@ -367,10 +325,13 @@ struct VoceSchedaView: View {
             }
         } label: {
             HStack(spacing: 12) {
-                IconaEsercizio(esercizio: palestra.esercizio(voce.esercizio), lato: 36)
+                // L'omino solo se c'è il disegno della macchina: l'omino generico non dice niente
+                if Figura.esercizi[voce.esercizio] != nil {
+                    IconaEsercizio(esercizio: palestra.esercizio(voce.esercizio), lato: 36)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(palestra.nome(voce.esercizio))
-                    Text("\(voce.obiettivo) · recupero \(voce.recupero) s").font(.caption).foregroundStyle(.secondary)
+                    Text("\(voce.obiettivo) · recupero \(voce.recupero) s").font(.footnote).foregroundStyle(.secondary)
                 }
             }
         }
@@ -382,13 +343,18 @@ struct ModelliView: View {
     @Environment(Palestra.self) private var palestra
     @Binding var percorso: NavigationPath
 
+    // «3 × 30–45 s» per gli esercizi a tempo (plank): ogni numero ha la sua unità
+    private func obiettivo(_ v: VoceRoutine) -> String {
+        palestra.nome(v.esercizio).localizedCaseInsensitiveContains("plank") ? "\(v.obiettivo) s" : v.obiettivo
+    }
+
     var body: some View {
         List {
             Group {
                 ForEach(Libreria.modelli) { m in
                     Section {
                         ForEach(m.voci) { v in
-                            LabeledContent(palestra.nome(v.esercizio), value: v.obiettivo)
+                            LabeledContent(palestra.nome(v.esercizio), value: obiettivo(v))
                         }
                         Button("Aggiungi alle mie schede", systemImage: "plus.circle") {
                             var copia = m
@@ -403,6 +369,7 @@ struct ModelliView: View {
             }
             .righeTema()
         }
+        .tint(.primary)
         .sfondoTema()
         .navigationTitle("Schede pronte")
         .navigationBarTitleDisplayMode(.inline)
@@ -414,8 +381,14 @@ struct NuovoCardioView: View {
     @Environment(\.dismiss) private var chiudi
     @State private var tipo = Libreria.tipiCardio[0]
     @State private var data = Date()
-    @State private var minuti = ""
+    @State private var minuti = 30
+    @State private var minutiToccati = false
     @State private var km = ""
+
+    // Minuti dell'ultimo cardio dello stesso tipo, altrimenti 30: è un valore vero, si salva così com'è
+    private func minutiTipici(_ tipo: String) -> Int {
+        palestra.stato.cardio.last(where: { $0.tipo == tipo })?.minuti ?? 30
+    }
 
     var body: some View {
         NavigationStack {
@@ -425,29 +398,33 @@ struct NuovoCardioView: View {
                         ForEach(Libreria.tipiCardio, id: \.self) { Label(Libreria.nomeCardio($0), systemImage: Libreria.simboloCardio($0)).tag($0) }
                     }
                     DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
-                    LabeledContent("Minuti") {
-                        TextField("30", text: $minuti).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                    Stepper(value: Binding(get: { minuti }, set: { minuti = $0; minutiToccati = true }), in: 5...600, step: 5) {
+                        LabeledContent("Minuti") { Text("\(minuti)").numero() }
                     }
                     LabeledContent("Km (facoltativi)") {
-                        TextField("0", text: $km).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
+                        TextField("", text: $km)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Km (facoltativi)")
                     }
                 }
                 .righeTema()
             }
+            .tint(.primary)
             .sfondoTema()
             .navigationTitle("Cardio")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear { minuti = minutiTipici(tipo) }
+            .onChange(of: tipo) { _, nuovo in if !minutiToccati { minuti = minutiTipici(nuovo) } }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Annulla", role: .cancel) { chiudi() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Salva", systemImage: "checkmark") {
-                        guard let m = Int(minuti), m > 0 else { return }
                         let iso = Giorni.iso(data)
-                        palestra.stato.cardio.append(SessioneCardio(data: iso, tipo: tipo, minuti: m, km: leggiNumero(km) ?? 0))
+                        palestra.stato.cardio.append(SessioneCardio(data: iso, tipo: tipo, minuti: minuti, km: leggiNumero(km) ?? 0))
                         palestra.stato.saltati.removeAll { $0 == iso }
                         chiudi()
                     }
-                    .disabled((Int(minuti) ?? 0) <= 0)
                 }
             }
         }

@@ -109,8 +109,9 @@ struct PianoSettimanaleView: View {
                 Section {
                     Toggle("Alterna settimane A e B", isOn: Binding(get: { palestra.stato.usaAB }, set: { palestra.stato.usaAB = $0 }))
                     if palestra.stato.usaAB {
+                        // «Scambia» è un'azione: si annulla toccandola di nuovo
                         LabeledContent("Questa settimana", value: palestra.settimana(Giorni.oggi()))
-                        Toggle("Scambia A e B", isOn: Binding(get: { palestra.stato.scambia }, set: { palestra.stato.scambia = $0 }))
+                        Button("Scambia A e B") { palestra.stato.scambia.toggle() }
                     }
                 } footer: {
                     Text(palestra.stato.usaAB
@@ -132,6 +133,7 @@ struct PianoSettimanaleView: View {
             }
             .righeTema()
         }
+        .tint(.primary)
         .sfondoTema()
         .navigationTitle("Programma della settimana")
         .navigationBarTitleDisplayMode(.inline)
