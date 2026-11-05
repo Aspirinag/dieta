@@ -41,19 +41,6 @@ enum PesoVeloce {
     }
 }
 
-extension Pasto {
-    // Gli alimenti dell'alternativa su una riga: «Yogurt greco 150 g, avena 40 g»
-    static func riga(_ o: Opzione) -> String? {
-        let voci = o.alimenti.enumerated().compactMap { i, a -> String? in
-            let nome = a.nome.trimmingCharacters(in: .whitespaces)
-            guard !nome.isEmpty else { return nil }
-            let testo = ((i == 0 ? nome : nome.prefix(1).lowercased() + nome.dropFirst()) + " " + a.quantita)
-            return testo.trimmingCharacters(in: .whitespaces)
-        }
-        return voci.isEmpty ? nil : voci.joined(separator: ", ")
-    }
-}
-
 // Foglio piccolo: il peso (già compilato con l'ultimo, è un valore vero), −0,1 / +0,1, «Salva» e il rimando al modulo completo
 struct PesoVeloceView: View {
     @Environment(Archivio.self) private var archivio
@@ -133,8 +120,10 @@ struct PesoVeloceView: View {
             scrivendo = true
         }
         // Toccando il campo il numero si seleziona tutto: scrivere lo sostituisce
+        // (in differita, altrimenti il cursore arriva dopo e la selezione salta; solo il campo del peso)
         .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { n in
-            (n.object as? UITextField)?.selectAll(nil)
+            guard let campo = n.object as? UITextField, campo.accessibilityIdentifier == "campo-peso" else { return }
+            DispatchQueue.main.async { campo.selectAll(nil) }
         }
     }
 }

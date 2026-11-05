@@ -140,13 +140,13 @@ struct HomeView: View {
                     let fatto = archivio.slot(oggi, i).fatto
                     let opzioni = elenco[i].opzioni
                     let scelta = opzioni.indices.contains(archivio.slot(oggi, i).opt) ? archivio.slot(oggi, i).opt : 0
-                    let alimenti = opzioni.indices.contains(scelta) ? Pasto.riga(opzioni[scelta]) : nil
+                    let alimenti = opzioni.indices.contains(scelta) ? opzioni[scelta].riassunto : ""
                     HStack(spacing: 0) {
                         NavigationLink(value: PaginaDieta.pasto(oggi, i)) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(elenco[i].nome)
                                     .foregroundStyle(fatto ? Color.secondary : Color.primary)
-                                if let alimenti {
+                                if !alimenti.isEmpty {
                                     Text(alimenti)
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
