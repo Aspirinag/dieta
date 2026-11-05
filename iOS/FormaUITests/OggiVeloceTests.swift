@@ -13,7 +13,7 @@ final class OggiVeloceTests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
         let peso = app.buttons["Peso"]
-        XCTAssertTrue(peso.waitForExistence(timeout: 8), "Manca il riquadro Peso")
+        XCTAssertTrue(peso.esisteScorrendo(in: app), "Manca il riquadro Peso")
         peso.tap()
         let campo = app.textFields["campo-peso"]
         XCTAssertTrue(campo.waitForExistence(timeout: 5), "Il peso non apre il foglio veloce")
@@ -34,7 +34,9 @@ final class OggiVeloceTests: XCTestCase {
     func testAltriDatiApreEditorCompleto() {
         continueAfterFailure = false
         let app = avvia()
-        app.buttons["Peso"].tap()
+        let peso = app.buttons["Peso"]
+        XCTAssertTrue(peso.esisteScorrendo(in: app), "Manca il riquadro Peso")
+        peso.tap()
         let altri = app.buttons["Altri dati"]
         XCTAssertTrue(altri.waitForExistence(timeout: 5), "Manca «Altri dati»")
         altri.tap()

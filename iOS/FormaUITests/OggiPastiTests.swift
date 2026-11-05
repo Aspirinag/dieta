@@ -1,5 +1,18 @@
 import XCTest
 
+extension XCUIElement {
+    // Oggi è una lista: le righe fuori schermo esistono solo dopo aver scorso
+    func esisteScorrendo(in app: XCUIApplication, timeout: TimeInterval = 8) -> Bool {
+        _ = app.tabBars.firstMatch.waitForExistence(timeout: timeout)
+        let barra = app.tabBars.firstMatch.frame.minY
+        for _ in 0..<8 {
+            if exists && isHittable && frame.maxY < barra { return true }
+            app.swipeUp()
+        }
+        return exists && isHittable
+    }
+}
+
 // Oggi: i pasti si segnano con un tocco; olio e acqua si segnano toccando i cucchiaini e le gocce
 final class OggiPastiTests: XCTestCase {
     private func avvia() -> XCUIApplication {
@@ -26,13 +39,16 @@ final class OggiPastiTests: XCTestCase {
         let app = avvia()
 
         let olio = app.descendants(matching: .any)["Olio"].firstMatch
-        XCTAssertTrue(olio.waitForExistence(timeout: 8), "Manca l'elemento Olio")
+        XCTAssertTrue(olio.esisteScorrendo(in: app), "Manca l'elemento Olio")
         XCTAssertEqual(olio.value as? String, "2 di 6 cucchiaini")
         // Si tocca il terzo cucchiaino: ogni cucchiaino occupa 44 punti, in una riga sotto il testo, dal bordo sinistro
         let terzo = olio.coordinate(withNormalizedOffset: .zero)
             .withOffset(CGVector(dx: 2.5 * 44, dy: olio.frame.height - 22))
         terzo.tap()
-        XCTAssertEqual(olio.value as? String, "3 di 6 cucchiaini")
+        // La riga può essere ricreata dalla lista: si cerca di nuovo
+        let dopo = app.descendants(matching: .any)["Olio"].firstMatch
+        XCTAssertTrue(dopo.esisteScorrendo(in: app, timeout: 3), "L'elemento Olio sparisce dopo il tocco")
+        XCTAssertEqual(dopo.value as? String, "3 di 6 cucchiaini")
     }
 
     func testPesoApreIlFoglioVeloce() {
@@ -40,7 +56,7 @@ final class OggiPastiTests: XCTestCase {
         let app = avvia()
 
         let peso = app.buttons["Peso"]
-        XCTAssertTrue(peso.waitForExistence(timeout: 8), "Manca il riquadro Peso")
+        XCTAssertTrue(peso.esisteScorrendo(in: app), "Manca il riquadro Peso")
         peso.tap()
         XCTAssertTrue(app.textFields["campo-peso"].waitForExistence(timeout: 5), "Il peso apre il foglio veloce")
     }
