@@ -13,9 +13,17 @@ struct EditorMisura: View {
     @State private var valori: [CampoMisura: String] = [:]
     @State private var caricato = false
     @State private var chiediSostituzione = false
+    @ScaledMetric(relativeTo: .body) private var larghezzaUnita: CGFloat = 44   // colonna delle unità, uguale per tutte le righe
 
     private var esistente: Misura? {
         dataEsistente.flatMap { d in archivio.profilo.bia.first { $0.data == d } }
+    }
+
+    // Valore dell'ultima volta (misura precedente a questa), mostrato in grigio sotto l'etichetta: non è nel campo
+    private func ultima(_ c: CampoMisura) -> Double? {
+        archivio.profilo.bia
+            .filter { m in m[c] != nil && m.data != dataEsistente && (dataEsistente.map { m.data < $0 } ?? true) }
+            .max { $0.data < $1.data }?[c]
     }
 
     var body: some View {
@@ -23,24 +31,38 @@ struct EditorMisura: View {
             Group {
                 Section {
                     if let d = dataEsistente {
-                        LabeledContent("Data", value: Giorni.breve(d))
+                        LabeledContent("Data", value: Testi.data(iso: d, anno: true))
                     } else {
                         DatePicker("Data", selection: $data, in: ...Date(), displayedComponents: .date)
+                    }
+                } footer: {
+                    // Il ✓ in alto resta spento finché manca il peso: lo si dice subito sotto la data, in vista
+                    if leggiNumero(valori[.peso] ?? "") == nil {
+                        Text("Per salvare scrivi almeno il peso.")
                     }
                 }
                 Section {
                     ForEach(CampoMisura.allCases) { c in
-                        LabeledContent(c.nome) {
+                        LabeledContent {
                             HStack {
-                                TextField("–", text: Binding(get: { valori[c] ?? "" }, set: { valori[c] = $0 }))
+                                TextField("", text: Binding(get: { valori[c] ?? "" }, set: { valori[c] = $0 }))
                                     .keyboardType(c == .bmr || c == .vat ? .numberPad : .decimalPad)
                                     .multilineTextAlignment(.trailing)
-                                Text(c.unita).foregroundStyle(.secondary).frame(width: 40, alignment: .leading)
+                                    .accessibilityLabel(c.nome)
+                                    .frame(minHeight: Misure.tocco)
+                                Text(c.unita).foregroundStyle(.secondary)
+                                    .frame(width: larghezzaUnita, alignment: .leading)
+                            }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(c.nome)
+                                if let u = ultima(c) {
+                                    Text("ultima: \(num(u)) \(c.unita)")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                             }
                         }
                     }
-                } footer: {
-                    Text("Serve almeno il peso.")
                 }
                 if dataEsistente != nil {
                     Section {

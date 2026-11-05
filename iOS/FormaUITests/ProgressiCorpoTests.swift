@@ -15,9 +15,9 @@ final class ProgressiCorpoTests: XCTestCase {
 
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8), "Progressi si apre su Corpo")
 
-        let tutte = app.buttons["Tutte"]
+        let tutte = app.buttons["tutte-le-misurazioni"]
         for _ in 0..<6 where !tutte.isHittable { app.swipeUp() }
-        XCTAssertTrue(tutte.waitForExistence(timeout: 5), "Manca «Tutte» sotto le misurazioni")
+        XCTAssertTrue(tutte.waitForExistence(timeout: 5), "Manca «Tutte le misurazioni» sotto le misurazioni")
         tutte.tap()
         XCTAssertTrue(app.navigationBars["Misurazioni"].waitForExistence(timeout: 5), "«Tutte» apre l'elenco completo")
 
@@ -32,15 +32,16 @@ final class ProgressiCorpoTests: XCTestCase {
         XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 2), "Tornando indietro non deve comparire un errore")
     }
 
-    func testCorpoMostraPesoGraficoAderenzaEMisurazioni() {
+    func testCorpoMostraPesoGraficoEMisurazioni() {
         continueAfterFailure = false
         let app = avvia()
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
 
         XCTAssertTrue(app.staticTexts["valore-grande"].waitForExistence(timeout: 5), "Manca il peso grande")
         XCTAssertTrue(app.buttons["Tutto"].exists && app.buttons["3 mesi"].exists && app.buttons["1 mese"].exists, "Mancano i periodi")
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Pasti segnati negli ultimi 7 giorni: '")).firstMatch.exists,
-                      "Manca la riga dell'aderenza")
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Pasti segnati'")).firstMatch.exists,
+                       "L'aderenza dei pasti non va nel peso")
+        XCTAssertTrue(app.staticTexts["variazione"].exists, "Manca la variazione rispetto a 30 giorni fa")
 
         // Toccando un riquadro il grafico cambia misura; toccando ancora torna al peso
         let grasso = app.otherElements["metrica-grasso"]
@@ -61,8 +62,29 @@ final class ProgressiCorpoTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
         app.navigationBars["Progressi"].buttons["Aggiungi"].tap()
         XCTAssertTrue(app.buttons["Carica la BIA (PDF)"].waitForExistence(timeout: 3), "Manca il caricamento della BIA")
-        app.buttons["Aggiungi misurazione"].tap()
+        app.buttons["Nuova misura"].tap()
         XCTAssertTrue(app.navigationBars["Nuova misurazione"].waitForExistence(timeout: 5), "Si apre l'editor")
+    }
+
+    func testImpostazioniSiApronoDaProgressi() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
+        app.navigationBars["Progressi"].buttons["Impostazioni"].tap()
+        XCTAssertTrue(app.navigationBars["Impostazioni"].waitForExistence(timeout: 5), "L'ingranaggio di Progressi apre le Impostazioni")
+        XCTAssertTrue(app.buttons["Abbonamento palestra"].exists, "Manca «Abbonamento palestra»")
+    }
+
+    func testEditorNuovoSpiegaSalvaSpento() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.navigationBars["Progressi"].waitForExistence(timeout: 8))
+        app.navigationBars["Progressi"].buttons["Aggiungi"].tap()
+        app.buttons["Nuova misura"].tap()
+        XCTAssertTrue(app.navigationBars["Nuova misurazione"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars["Nuova misurazione"].buttons["Salva"].isEnabled, "Senza peso Salva è spento")
+        XCTAssertTrue(app.staticTexts["Per salvare scrivi almeno il peso."].exists, "Manca la spiegazione vicino ai campi")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'ultima: '")).firstMatch.exists, "Manca il valore dell'ultima volta")
     }
 
     func testPalestraRestaRaggiungibile() {
