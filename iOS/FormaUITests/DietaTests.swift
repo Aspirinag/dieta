@@ -9,6 +9,11 @@ final class DietaTests: XCTestCase {
         return app
     }
 
+    // La riga di un pasto (apre il dettaglio): il suo nome comincia l'etichetta, il cerchio si chiama «Segna …»
+    private func pasto(_ app: XCUIApplication, _ nome: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", nome)).firstMatch
+    }
+
     private func giorni(_ app: XCUIApplication) -> XCUIElementQuery {
         app.buttons.matching(NSPredicate(format: "label MATCHES %@", "(Lunedì|Martedì|Mercoledì|Giovedì|Venerdì|Sabato|Domenica) [0-9]+"))
     }
@@ -22,14 +27,14 @@ final class DietaTests: XCTestCase {
 
         let mercoledi = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Mercoledì '")).firstMatch
         mercoledi.tap()
-        let colazione = app.buttons["Colazione"]
+        let colazione = pasto(app, "Colazione")
         XCTAssertTrue(colazione.waitForExistence(timeout: 3), "Manca il riquadro Colazione")
         colazione.tap()
 
         XCTAssertTrue(app.staticTexts["Yogurt greco"].waitForExistence(timeout: 5), "Il dettaglio mostra lo yogurt")
         XCTAssertTrue(app.staticTexts["150 g"].exists, "Il dettaglio mostra la quantità")
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.buttons["Colazione"].waitForExistence(timeout: 5), "Indietro torna a Dieta")
+        XCTAssertTrue(pasto(app, "Colazione").waitForExistence(timeout: 5), "Indietro torna a Dieta")
         XCTAssertEqual(giorni(app).count, 7)
     }
 
@@ -37,31 +42,34 @@ final class DietaTests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
 
-        app.buttons["Pranzo"].tap()
-        // Nel demo oggi il pranzo ha già l'alternativa «Riso»; lo segniamo dal dettaglio
-        let segna = app.buttons["Pranzo"]
+        pasto(app, "Pranzo").tap()
+        // Il pasto si segna dal pulsante «Fatto» in barra, nel dettaglio
+        let segna = app.navigationBars.buttons["Segna Pranzo"]
         XCTAssertTrue(segna.waitForExistence(timeout: 5), "Manca la spunta del pasto")
-        XCTAssertEqual(segna.value as? String, "da fare")
+        XCTAssertFalse(segna.isSelected)
         segna.tap()
-        XCTAssertEqual(app.buttons["Pranzo"].value as? String, "fatto")
         app.navigationBars.buttons.firstMatch.tap()
         app.tabBars.firstMatch.buttons["Oggi"].tap()
-        XCTAssertTrue(app.staticTexts["2 di 4"].waitForExistence(timeout: 5), "Il pasto segnato in Dieta conta in Oggi")
+        XCTAssertTrue(app.staticTexts["Pasti · 2 di 4"].waitForExistence(timeout: 5), "Il pasto segnato in Dieta conta in Oggi")
     }
 
-    func testRigaSpesaApreLaSpesa() {
+    func testSpesaHaUnaSolaPorta() {
         continueAfterFailure = false
         let app = avvia()
 
-        let riga = app.buttons["Spesa della settimana"]
-        for _ in 0..<4 where !riga.isHittable { app.swipeUp() }
-        XCTAssertTrue(riga.waitForExistence(timeout: 8), "Manca la riga della spesa")
-        let valore = riga.value as? String ?? ""
-        XCTAssertTrue(valore.contains("prodotti") && valore.contains("presi"), "La riga dice quanti prodotti e quanti presi: \(valore)")
-        riga.tap()
+        XCTAssertTrue(giorni(app).firstMatch.waitForExistence(timeout: 8), "Manca la striscia dei giorni")
+        XCTAssertFalse(app.buttons["Spesa della settimana"].exists, "La spesa ha solo il carrello in barra")
+        let carrello = app.navigationBars.buttons["Spesa"]
+        XCTAssertTrue(carrello.exists, "Manca il carrello")
+        carrello.tap()
         XCTAssertTrue(app.navigationBars["Spesa"].waitForExistence(timeout: 5), "Non si apre la spesa")
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(giorni(app).firstMatch.waitForExistence(timeout: 5), "Indietro torna a Dieta")
+    }
+
+    func testImpostazioniInBarra() {
+        let app = avvia()
+        XCTAssertTrue(app.navigationBars.buttons["Impostazioni"].waitForExistence(timeout: 8), "Manca l'ingranaggio in Dieta")
     }
 
     func testVistaSpesaApreLaSpesa() {
@@ -102,9 +110,9 @@ final class DietaTests: XCTestCase {
         XCTAssertTrue(prima == "fatto" || prima == "da fare", "Il cerchio non dice se il pasto è fatto")
         cerchio.tap()
         XCTAssertEqual(app.buttons["Segna Colazione"].value as? String, prima == "fatto" ? "da fare" : "fatto", "Il tocco sul cerchio non segna il pasto")
-        XCTAssertTrue(app.buttons["Colazione"].exists, "Il tocco sul cerchio non deve aprire il dettaglio")
+        XCTAssertTrue(pasto(app, "Colazione").exists, "Il tocco sul cerchio non deve aprire il dettaglio")
         XCTAssertEqual(giorni(app).count, 7, "Dopo il tocco si resta in Dieta")
-        app.buttons["Colazione"].tap()
+        pasto(app, "Colazione").tap()
         XCTAssertTrue(app.staticTexts["Yogurt greco"].waitForExistence(timeout: 5), "Il resto del riquadro apre il dettaglio")
     }
 
@@ -119,7 +127,7 @@ final class DietaTests: XCTestCase {
         let cerchio = app.buttons["Segna Colazione"]
         XCTAssertTrue(cerchio.waitForExistence(timeout: 3), "Manca il cerchio «Segna Colazione»")
         XCTAssertFalse(cerchio.isEnabled, "Il cerchio di un giorno futuro è attivo")
-        app.buttons["Colazione"].tap()
+        pasto(app, "Colazione").tap()
         XCTAssertTrue(app.staticTexts["Yogurt greco"].waitForExistence(timeout: 5), "Il riquadro di un giorno futuro deve aprire il dettaglio")
     }
 

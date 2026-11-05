@@ -21,7 +21,7 @@ struct ProgressiView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 12) {
+                VStack(spacing: Spazio.l) {
                     Picker("Mostra", selection: $sezione) {
                         ForEach(Sezione.allCases) { Text($0.etichetta).tag($0) }
                     }
@@ -31,22 +31,24 @@ struct ProgressiView: View {
                     case .palestra: ProgressiPalestraView()
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                .padding(.horizontal, Spazio.l)
+                .padding(.bottom, Spazio.l)
             }
             .sfondoTema()
             .navigationTitle("Progressi")
             .toolbar {
-                if sezione == .corpo {
-                    ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if sezione == .corpo {
                         Menu {
-                            Button("Aggiungi misurazione", systemImage: "square.and.pencil") { nuovaMisura = true }
+                            Button("Nuova misura", systemImage: "square.and.pencil") { nuovaMisura = true }
                             Button("Carica la BIA (PDF)", systemImage: "doc.badge.plus") { richiesta = .bia }
                         } label: {
                             Image(systemName: "plus")
                         }
+                        .tint(.primary)
                         .accessibilityLabel("Aggiungi")
                     }
+                    PulsanteImpostazioni()
                 }
             }
             .importaPDF($richiesta)
@@ -55,6 +57,8 @@ struct ProgressiView: View {
             }
             .destinazioniDieta()
             .destinazioniArchivioPalestra()
+            // Registrata una volta sola sulla radice (non su ogni figlio di un Group)
+            .navigationDestination(for: ApriCardio.self) { DettaglioCardioView(id: $0.id) }
             .navigationDestination(for: PaginaProgressi.self) { pagina in
                 switch pagina {
                 case .allenamenti: StoricoAllenamenti()

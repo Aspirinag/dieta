@@ -42,11 +42,27 @@ struct OggiVelocePesoTests {
         #expect(PesoVeloce.etichetta("2026-10-01", oggi: o, bundle: italiano) == Giorni.breve("2026-10-01"))
     }
 
-    @Test func rigaDegliAlimenti() {
+    @Test func variazioneConfrontaConTrentaGiorniFa() {
+        func m(_ d: String, _ kg: Double) -> Misura { var x = Misura(data: d); x.peso = kg; return x }
+        let misure = [m("2026-08-01", 90), m("2026-10-05", 82), m("2026-11-04", 81.2)]
+        let v = PesoVeloce.variazione(misure, ultimo: misure[2])
+        #expect(v != nil && abs(v! - (-0.8)) < 0.001)   // non rispetto alla prima misura (90)
+    }
+
+    @Test func variazioneSenzaMisuraVicinaATrentaGiorniNonSiMostra() {
+        func m(_ d: String, _ kg: Double) -> Misura { var x = Misura(data: d); x.peso = kg; return x }
+        let misure = [m("2026-10-25", 82), m("2026-08-01", 90), m("2026-11-04", 81.2)]
+        #expect(PesoVeloce.variazione(misure, ultimo: misure[2]) == nil)
+    }
+
+    @Test func riassuntoDegliAlimenti() {
         let o = Opzione(alimenti: [Alimento(nome: "Yogurt greco", quantita: "150 g"), Alimento(nome: "Avena", quantita: "40 g")])
-        #expect(Pasto.riga(o) == "Yogurt greco 150 g, avena 40 g")
-        #expect(Pasto.riga(Opzione(alimenti: [])) == nil)
-        #expect(Pasto.riga(Opzione(alimenti: [Alimento(nome: "Mela", quantita: "")])) == "Mela")
+        #expect(o.riassunto == "Yogurt greco 150 g, avena 40 g")
+        #expect(Opzione(alimenti: []).riassunto == "")
+        #expect(Opzione(alimenti: [Alimento(nome: "Mela", quantita: "")]).riassunto == "Mela")
+        // Oggi e Dieta scrivono lo stesso testo: senza i prefissi «Contorno:» e «Secondo:»
+        let c = Opzione(alimenti: [Alimento(nome: "Pollo", quantita: "150 g"), Alimento(nome: "Contorno: Spinaci", quantita: "200 g")])
+        #expect(c.riassunto == "Pollo 150 g, spinaci 200 g")
     }
 
     @Test func altraSchedaSoloAFineAllenamento() {

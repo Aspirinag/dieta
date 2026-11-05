@@ -82,10 +82,11 @@ struct LibreriaView: View {
             }
             .righeTema()
         }
+        .tint(.primary)
         .sfondoTema()
         .navigationTitle(inScelta ? LocalizedStringKey("Aggiungi esercizi") : LocalizedStringKey("Libreria esercizi"))
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $cerca, prompt: "Cerca esercizio")
+        .searchable(text: $cerca, placement: .navigationBarDrawer(displayMode: .always), prompt: "Cerca esercizio")
         .toolbar {
             if case .scelta(let fatto) = modo {
                 ToolbarItem(placement: .cancellationAction) {
@@ -119,18 +120,20 @@ struct LibreriaView: View {
             .font(.subheadline.weight(.semibold))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .foregroundStyle(attivo ? AnyShapeStyle(Colori.sulAccento) : AnyShapeStyle(.primary))
-            .background(attivo ? AnyShapeStyle(.tint) : AnyShapeStyle(.fill.secondary), in: .capsule)
+            .frame(minHeight: Misure.tocco - 16)
+            .foregroundStyle(attivo ? AnyShapeStyle(Color(.systemBackground)) : AnyShapeStyle(.primary))
+            .background(attivo ? AnyShapeStyle(.primary) : AnyShapeStyle(.fill.secondary), in: .capsule)
         }
     }
 
     @ViewBuilder
     private func riga(_ e: Esercizio) -> some View {
         let etichetta = HStack(spacing: 12) {
-            IconaEsercizio(esercizio: e)
+            // L'omino solo se c'è il disegno della macchina
+            if Figura.esercizi[e.id] != nil { IconaEsercizio(esercizio: e) }
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: e.titolo).foregroundStyle(.primary)
-                Text(e.attrezzo.nome).font(.caption).foregroundStyle(.secondary)
+                Text(e.attrezzo.nome).font(.footnote).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -143,10 +146,10 @@ struct LibreriaView: View {
                     etichetta
                     if let n {
                         Text("\(n + 1)")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(Colori.sulAccento)
-                            .frame(width: 24, height: 24)
-                            .background(.tint, in: .circle)
+                            .font(.footnote.weight(.bold))
+                            .foregroundStyle(Color(.systemBackground))
+                            .frame(minWidth: 28, minHeight: 28)
+                            .background(.primary, in: .circle)
                     } else {
                         Image(systemName: "circle").font(.title3).foregroundStyle(.tertiary)
                     }

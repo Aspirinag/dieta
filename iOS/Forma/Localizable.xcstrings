@@ -20,22 +20,6 @@
         }
       }
     },
-    "%@ dall'inizio": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ since the start"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ since the start"
-          }
-        }
-      }
-    },
     "%@ di %@ %@": {
       "localizations": {
         "en": {
@@ -48,6 +32,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ of %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "%@ in 30 giorni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in 30 days"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in 30 days"
           }
         }
       }
@@ -96,6 +96,66 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %lld serie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %#@serie@"
+          },
+          "substitutions": {
+            "serie": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg set"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sets"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %#@serie@"
+          },
+          "substitutions": {
+            "serie": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg set"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sets"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -176,6 +236,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@: %lld serie fatte": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %#@serie@"
+          },
+          "substitutions": {
+            "serie": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg serie fatta"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg serie fatte"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %#@serie@"
+          },
+          "substitutions": {
+            "serie": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg set done"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sets done"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %#@serie@"
+          },
+          "substitutions": {
+            "serie": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg set done"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sets done"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -659,6 +807,122 @@
         }
       }
     },
+    "%lld serie": {
+      "localizations": {
+        "it": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets"
+                }
+              }
+            }
+          }
+        },
+        "en-GB": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld serie senza spunta non verranno salvate.": {
+      "localizations": {
+        "it": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie senza spunta non verrà salvata."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld serie senza spunta non verranno salvate."
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld unchecked set won't be saved."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld unchecked sets won't be saved."
+                }
+              }
+            }
+          }
+        },
+        "en-GB": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld unchecked set won't be saved."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld unchecked sets won't be saved."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld serie ✓": {
       "localizations": {
         "it": {
@@ -717,6 +981,25 @@
         }
       }
     },
+    "+%@ kg": {
+      "shouldTranslate": false
+    },
+    "+%lld rip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld rep"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%lld rep"
+          }
+        }
+      }
+    },
     "+15": {
       "shouldTranslate": false
     },
@@ -735,6 +1018,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 month"
+          }
+        }
+      }
+    },
+    "15 secondi in meno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 seconds less"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 seconds less"
+          }
+        }
+      }
+    },
+    "15 secondi in più": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 seconds more"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 seconds more"
           }
         }
       }
@@ -806,6 +1121,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kneeling ab wheel"
+          }
+        }
+      }
+    },
+    "Abbonamento palestra": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gym membership"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gym membership"
           }
         }
       }
@@ -1092,6 +1423,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add"
+          }
+        }
+      }
+    },
+    "Aggiungi %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add %@ kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add %@ kg"
           }
         }
       }
@@ -1409,6 +1756,22 @@
         }
       }
     },
+    "Allenamenti in tutto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total workouts"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total workouts"
+          }
+        }
+      }
+    },
     "Allenamento": {
       "extractionState": "manual",
       "comment": "Una singola seduta di allenamento (workout)",
@@ -1523,6 +1886,22 @@
         }
       }
     },
+    "Alternativa: %@ (%lld di %lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option: %1$@ (%2$lld of %3$lld)"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option: %1$@ (%2$lld of %3$lld)"
+          }
+        }
+      }
+    },
     "Altre azioni": {
       "localizations": {
         "en": {
@@ -1535,6 +1914,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "More actions"
+          }
+        }
+      }
+    },
+    "Altre schede": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other workouts"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other workouts"
           }
         }
       }
@@ -2651,6 +3046,22 @@
         }
       }
     },
+    "Composizione": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body composition"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Body composition"
+          }
+        }
+      }
+    },
     "Condividi": {
       "localizations": {
         "en": {
@@ -3560,6 +3971,22 @@
         }
       }
     },
+    "Distanza": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distance"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distance"
+          }
+        }
+      }
+    },
     "Domani si paga la palestra.": {
       "localizations": {
         "en": {
@@ -3752,6 +4179,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete option"
+          }
+        }
+      }
+    },
+    "Elimina cardio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete cardio"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete cardio"
           }
         }
       }
@@ -4216,6 +4659,22 @@
         }
       }
     },
+    "finora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "so far"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "so far"
+          }
+        }
+      }
+    },
     "Flutter kicks": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -4348,6 +4807,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Full body"
+          }
+        }
+      }
+    },
+    "Gambe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legs"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legs"
           }
         }
       }
@@ -4866,6 +5341,22 @@
         }
       }
     },
+    "Il massimale è una stima del peso con cui faresti una sola ripetizione.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The estimated 1RM is the weight you could lift for a single repetition."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The estimated 1RM is the weight you could lift for a single repetition."
+          }
+        }
+      }
+    },
     "il pasto": {
       "localizations": {
         "en": {
@@ -5302,6 +5793,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "F"
+          }
+        }
+      }
+    },
+    "Inizio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
           }
         }
       }
@@ -6315,22 +6822,6 @@
         }
       }
     },
-    "Legs (gambe)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Legs"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Legs"
-          }
-        }
-      }
-    },
     "Lento avanti con bilanciere": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -6603,6 +7094,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estimated 1RM"
+          }
+        }
+      }
+    },
+    "Massimale stimato (1 ripetizione)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated 1RM (1 repetition)"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated 1RM (1 repetition)"
           }
         }
       }
@@ -7255,6 +7762,22 @@
         }
       }
     },
+    "Nuova misura": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New measurement"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New measurement"
+          }
+        }
+      }
+    },
     "Nuova misurazione": {
       "localizations": {
         "en": {
@@ -7395,38 +7918,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Today"
-          }
-        }
-      }
-    },
-    "Oggi cardio": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cardio today"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cardio today"
-          }
-        }
-      }
-    },
-    "Oggi riposo": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest day today"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest day today"
           }
         }
       }
@@ -7607,6 +8098,22 @@
         }
       }
     },
+    "a piacere": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to taste"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to taste"
+          }
+        }
+      }
+    },
     "oppure %@": {
       "localizations": {
         "en": {
@@ -7753,18 +8260,18 @@
         }
       }
     },
-    "Pallino pieno: pesi o cardio fatti. Grigio: in programma. ✕: saltato.": {
+    "Pallino pieno: pesi o cardio fatti. Pallino vuoto: in programma.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filled dot: weights or cardio done. Gray: planned. ✕: skipped."
+            "value": "Filled dot: weights or cardio done. Empty dot: planned."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Filled dot: weights or cardio done. Grey: planned. ✕: skipped."
+            "value": "Filled dot: weights or cardio done. Empty dot: planned."
           }
         }
       }
@@ -7963,6 +8470,22 @@
         }
       }
     },
+    "Pasti · %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meals · %1$lld of %2$lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meals · %1$lld of %2$lld"
+          }
+        }
+      }
+    },
     "Pasti segnati negli ultimi 7 giorni: %lld%%": {
       "localizations": {
         "en": {
@@ -8047,6 +8570,38 @@
         }
       }
     },
+    "Per salvare scrivi almeno il peso.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save, enter at least your weight."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save, enter at least your weight."
+          }
+        }
+      }
+    },
+    "Periodo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
     "Pesi": {
       "localizations": {
         "en": {
@@ -8075,6 +8630,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "weights done"
+          }
+        }
+      }
+    },
+    "Diminuisci di 0,1 kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease by 0.1 kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease by 0.1 kg"
+          }
+        }
+      }
+    },
+    "Aumenta di 0,1 kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase by 0.1 kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase by 0.1 kg"
           }
         }
       }
@@ -8365,6 +8952,22 @@
         }
       }
     },
+    "Precedente": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous"
+          }
+        }
+      }
+    },
     "preso": {
       "localizations": {
         "en": {
@@ -8525,22 +9128,6 @@
         }
       }
     },
-    "Pull (tirata)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pull"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pull"
-          }
-        }
-      }
-    },
     "Pulley basso": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -8625,22 +9212,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Time for your next set."
-          }
-        }
-      }
-    },
-    "Push (spinta)": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Push"
           }
         }
       }
@@ -8773,6 +9344,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "This week"
+          }
+        }
+      }
+    },
+    "questa settimana, finora": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this week, so far"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "this week, so far"
+          }
+        }
+      }
+    },
+    "Questa settimana: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week: %@"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week: %@"
           }
         }
       }
@@ -9672,6 +10275,22 @@
         }
       }
     },
+    "Scrivi il tuo peso per poterlo salvare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write your weight to be able to save it"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write your weight to be able to save it"
+          }
+        }
+      }
+    },
     "Scrivi il peso di oggi": {
       "localizations": {
         "en": {
@@ -9914,6 +10533,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Warm-up set"
+          }
+        }
+      }
+    },
+    "Serie migliore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best set"
           }
         }
       }
@@ -10537,6 +11172,22 @@
       },
       "comment": "Gruppo muscolare (shoulders), non la parte dell'abbigliamento"
     },
+    "Spinta": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Push"
+          }
+        }
+      }
+    },
     "Spesa": {
       "localizations": {
         "en": {
@@ -10931,6 +11582,22 @@
         }
       }
     },
+    "Tirata": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pull"
+          }
+        }
+      }
+    },
     "Tirate al mento": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -11075,6 +11742,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chest"
+          }
+        }
+      }
+    },
+    "Torna al peso": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to weight"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to weight"
           }
         }
       }
@@ -11341,6 +12024,22 @@
         }
       }
     },
+    "Tutte le misurazioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All measurements"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All measurements"
+          }
+        }
+      }
+    },
     "Tutti": {
       "localizations": {
         "en": {
@@ -11417,6 +12116,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Last time"
+          }
+        }
+      }
+    },
+    "ultima: %@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last: %@ %@"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "last: %@ %@"
           }
         }
       }
@@ -11787,6 +12502,70 @@
         }
       }
     },
+    "Chiudi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "Nessuna serie spuntata: chiudere senza salvare?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sets checked: close without saving?"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sets checked: close without saving?"
+          }
+        }
+      }
+    },
+    "Scrivi i kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the kg"
+          }
+        }
+      }
+    },
+    "Scrivi le ripetizioni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the reps"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the reps"
+          }
+        }
+      }
+    },
     "Tieni premuto per duplicare o eliminare la scheda": {
       "localizations": {
         "en": {
@@ -11799,6 +12578,73 @@
           "stringUnit": {
             "state": "translated",
             "value": "Touch and hold to duplicate or delete the routine"
+          }
+        }
+      }
+    },
+    "Togli %@ kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove %@ kg"
+          }
+        }
+      }
+    },
+    "Una ripetizione in meno": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One rep fewer"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One rep fewer"
+          }
+        }
+      }
+    },
+    "Una ripetizione in più": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One more rep"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One more rep"
+          }
+        }
+      }
+    },
+    "−%@ kg": {
+      "shouldTranslate": false
+    },
+    "−%lld rip": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld rep"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%lld rep"
           }
         }
       }

@@ -43,12 +43,15 @@ struct SpesaTests {
         #expect(profilo(cibo: "Latte", quantita: "1 l").vociSpesa(lunedi: "2026-11-02").first?.quanto == "7 L")
     }
 
-    @Test func porzioniSenzaGrammi() {
+    @Test func senzaGrammiEAPiacere() {
+        let it = Locale(identifier: "it")
         let p = profilo(cibo: "Insalata", quantita: "a piacere")
-        #expect(p.vociSpesa(lunedi: "2026-11-02").first?.quanto == "7 porzioni")
-        var q = p
-        q.piani[0].giorni = q.piani[0].giorni.enumerated().map { i, g in i == 0 ? g : GiornoPiano(nome: g.nome, palestra: false, pasti: []) }
-        #expect(q.vociSpesa(lunedi: "2026-11-02").first?.quanto == "1 porzione")
+        #expect(p.vociSpesa(lunedi: "2026-11-02", locale: it).first?.quanto == "a piacere")
+    }
+
+    @Test func grammatureIntere() {
+        let p = profilo(cibo: "Riso", quantita: "70,4 g")
+        #expect(p.vociSpesa(lunedi: "2026-11-02", locale: Locale(identifier: "it")).first?.quanto == "493 g")
     }
 
     @Test func giorniDellaVoce() {

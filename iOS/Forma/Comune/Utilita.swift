@@ -82,7 +82,8 @@ enum Giorni {
         scelto == ultimoOggi || lunedi(scelto) != lunedi(oggi) ? oggi : scelto
     }
 
-    // Data breve nel formato del telefono: 04/11/2026 in Italia, 11/4/2026 negli Stati Uniti
+    // Data breve nel formato del telefono: 04/11/2026 in Italia, 11/4/2026 negli Stati Uniti.
+    // Solo per campi stretti già esistenti: per i testi nuovi usare Testi.data (vedi Stile.swift)
     static func breve(_ iso: String, locale: Locale = .current) -> String {
         guard iso.split(separator: "-").count == 3 else { return iso }
         return data(iso).formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(locale))
@@ -155,7 +156,9 @@ extension View {
     }
 }
 
-// Voce di una checklist: cerchio pieno quando è fatta
+// Voce di una checklist: tutta la riga è il pulsante, a sinistra CerchioSpunta (la spunta unica dell'app).
+// Fatta: cerchio pieno e testo grigio. VoiceOver: etichetta + «fatto»/«da fare».
+//   RigaSpunta(fatto: s.fatto, azione: { … }) { Text("Riscaldamento") }
 struct RigaSpunta<Etichetta: View>: View {
     let fatto: Bool
     let azione: () -> Void
@@ -163,14 +166,10 @@ struct RigaSpunta<Etichetta: View>: View {
 
     var body: some View {
         Button(action: azione) {
-            HStack(spacing: 12) {
-                Image(systemName: fatto ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(fatto ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                    .contentTransition(.symbolEffect(.replace))
-                    .accessibilityHidden(true)   // lo stato lo dice già accessibilityValue
+            HStack(spacing: Spazio.s) {
+                CerchioSpunta(fatta: fatto)   // solo disegno: lo stato lo dice già accessibilityValue
                 etichetta
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(fatto ? .secondary : .primary)
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())
@@ -192,13 +191,13 @@ struct RigaAlimento: View {
         if dimensione.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 2) {
                 Text(nome)
-                if !quantita.isEmpty { Text(quantita).foregroundStyle(.secondary) }
+                if !quantita.isEmpty { Text(quantita).monospacedDigit().foregroundStyle(.secondary) }
             }
         } else {
-            HStack(alignment: .firstTextBaseline) {
-                Text(nome)
-                Spacer()
-                Text(quantita).foregroundStyle(.secondary)
+            // Il nome va a capo, la quantità resta intera a destra
+            HStack(alignment: .firstTextBaseline, spacing: Spazio.m) {
+                Text(nome).frame(maxWidth: .infinity, alignment: .leading)
+                Text(quantita).monospacedDigit().foregroundStyle(.secondary).fixedSize()
             }
         }
     }

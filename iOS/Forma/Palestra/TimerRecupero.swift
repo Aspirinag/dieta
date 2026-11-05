@@ -1,10 +1,15 @@
 import SwiftUI
 
+// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity
+
 // Timer di recupero tra le serie: parte da solo quando segni una serie; a fine recupero vibra
-// e, con l'app chiusa o il telefono bloccato, arriva una notifica
+// e, con l'app chiusa o il telefono bloccato, arriva una notifica.
+// `stato` (inizio, fine, esercizio) è il dato da esporre a una Live Activity: cambia a ogni avvio, ±15 s e fine
 @Observable
 final class TimerRecupero {
     private(set) var fine: Date?
+    private(set) var inizio: Date?
+    private(set) var esercizio: String?
     private(set) var durata = 90
     private var compito: Task<Void, Never>?
     private var compitoNotifica: Task<Void, Never>?   // l'aggiunta della notifica (è asincrona)
@@ -22,11 +27,18 @@ final class TimerRecupero {
 
     var attivo: Bool { fine.map { $0 > Date() } ?? false }
 
+    var stato: StatoRecupero? {
+        guard let fine, let inizio else { return nil }
+        return StatoRecupero(inizio: inizio, fine: fine, esercizio: esercizio)
+    }
+
     private var avviatoDa: UUID?   // la serie la cui spunta ha fatto partire il recupero
 
-    func avvia(_ secondi: Int, serie: UUID? = nil) {
+    func avvia(_ secondi: Int, serie: UUID? = nil, esercizio: String? = nil) {
         avviatoDa = serie
         durata = secondi
+        inizio = Date()
+        self.esercizio = esercizio
         programma(Date().addingTimeInterval(TimeInterval(secondi)))
     }
 
@@ -57,6 +69,8 @@ final class TimerRecupero {
             // Se l'app era in background la notifica è già arrivata: niente vibrazione in ritardo
             if Date().timeIntervalSince(f) < 2 { finiti += 1 }
             fine = nil
+            inizio = nil
+            esercizio = nil
         }
     }
 
@@ -72,6 +86,8 @@ final class TimerRecupero {
         compitoNotifica?.cancel()
         compitoNotifica = nil
         fine = nil
+        inizio = nil
+        esercizio = nil
         cancellaNotifica()
     }
 }
@@ -89,11 +105,10 @@ struct BarraAllenamento: View {
                 TimelineView(.periodic(from: .now, by: 1)) { ctx in
                     let resto = testoRecupero(fine.timeIntervalSince(ctx.date))
                     let conto = HStack(spacing: 10) {
-                        Image(systemName: "timer").foregroundStyle(.tint).symbolEffect(.pulse)
+                        Image(systemName: "timer").foregroundStyle(.secondary).symbolEffect(.pulse)
                         Text(verbatim: resto)
-                            .font(.title3.weight(.semibold))
-                            .monospacedDigit()
-                            .foregroundStyle(.tint)
+                            .numero(.title3)
+                            .foregroundStyle(.primary)
                         Spacer(minLength: 0)
                     }
                     if palestra.stato.inCorso != nil {
@@ -114,12 +129,11 @@ struct BarraAllenamento: View {
                 Button("Salta", systemImage: "forward.end.fill") { timer.ferma() }
                     .labelStyle(.iconOnly)
             } else if let a = palestra.stato.inCorso {
-                Image(systemName: "dumbbell.fill").foregroundStyle(.tint)
+                Image(systemName: "dumbbell.fill").foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(verbatim: a.titolo).font(.subheadline.weight(.semibold)).lineLimit(1)
                     Text(timerInterval: a.inizio...Date.distantFuture, countsDown: false)
-                        .font(.caption)
-                        .monospacedDigit()
+                        .font(.numero(.caption))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()

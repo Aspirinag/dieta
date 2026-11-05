@@ -1,7 +1,9 @@
 import SwiftUI
 import Charts
 
-// Progressi → Corpo: peso e grafico, tre numeri della BIA, ultime misurazioni
+// Progressi → Corpo: peso e grafico, grasso / magra / vita con la data, ultime misurazioni.
+// Le variazioni sono sempre grigie e col segno, rispetto a circa 30 giorni prima dell'ultima misura:
+// il colore non giudica mai un dato del corpo (M1, M3).
 struct CorpoView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dynamicTypeSize) private var dimensione
@@ -29,10 +31,7 @@ struct CorpoView: View {
         }
     }
 
-    // Tra le misure del riquadro: -1 è bene se scende, 1 è bene se sale
-    private static let riquadri: [(campo: CampoMisura, nome: String, verso: Double)] = [
-        (.grasso, String(localized: "Grasso"), -1), (.magra, String(localized: "Magra"), 1), (.vita, String(localized: "Vita"), -1),
-    ]
+    private static let riquadri: [CampoMisura] = [.grasso, .magra, .vita]
 
     var body: some View {
         let bia = archivio.profilo.bia.sorted { $0.data < $1.data }
@@ -40,7 +39,7 @@ struct CorpoView: View {
             vuoto
         } else {
             grafico(bia)
-            riquadriBia(bia)
+            composizione(bia)
             misurazioni(bia)
         }
     }
@@ -52,19 +51,12 @@ struct CorpoView: View {
     // ---------- Stato vuoto ----------
 
     private var vuoto: some View {
-        Button(action: aggiungi) {
-            Riquadro {
-                HStack {
-                    Text("Peso").font(.headline)
-                    Spacer()
-                    Text("Aggiungi il primo peso").font(.subheadline).foregroundStyle(Colori.accento)
-                }
-                .frame(minHeight: 44)
-            }
+        Riquadro {
+            Text("Peso").font(.headline)
+            Button("Aggiungi il primo peso", action: aggiungi)
+                .buttonStyle(PulsanteAccento())
+                .padding(.top, Spazio.s)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Peso")
-        .accessibilityValue("Aggiungi il primo peso")
     }
 
     // ---------- Dati ----------
@@ -83,23 +75,28 @@ struct CorpoView: View {
         return con.filter { $0.data >= da }
     }
 
-    private func variazione(_ bia: [Misura], _ campo: CampoMisura) -> Double? {
-        let m = misureNelPeriodo(bia, campo)
-        guard m.count > 1, let a = m.first?[campo], let b = m.last?[campo] else { return nil }
-        return ((b - a) * 10).rounded() / 10
+    // Variazione tra l'ultima misura di quel campo e quella più vicina a 30 giorni prima
+    // (accettata tra 23 e 37 giorni prima, come in PesoVeloce.variazione). Senza una misura così vecchia: nil, non si inventa un confronto.
+    static func variazioneTrentaGiorni(_ misure: [Misura], _ campo: CampoMisura) -> Double? {
+        let con = misure.filter { $0[campo] != nil }.sorted { $0.data < $1.data }
+        guard let ultima = con.last, let fine = ultima[campo] else { return nil }
+        let giorniFa: (Misura) -> Int = {
+            Giorni.calendario.dateComponents([.day], from: Giorni.data($0.data), to: Giorni.data(ultima.data)).day ?? 0
+        }
+        let candidate = con.dropLast().filter { (23...37).contains(giorniFa($0)) }
+        guard let inizio = candidate.min(by: { abs(giorniFa($0) - 30) < abs(giorniFa($1) - 30) }),
+              let a = inizio[campo] else { return nil }
+        return ((fine - a) * 10).rounded() / 10
     }
 
     // −1,2 kg · +0,4 kg · 0 kg
     static func testoVariazione(_ d: Double, _ unita: String) -> String {
-        "\(d > 0 ? "+" : d < 0 ? "−" : "")\(num(abs(d))) \(unita)"
+        Testi.conSegno(d, unita: unita)
     }
 
-    private func colore(_ d: Double?, _ verso: Double) -> some ShapeStyle {
-        guard let d, d != 0, d * verso > 0 else { return AnyShapeStyle(.secondary) }
-        return AnyShapeStyle(Colori.accento)
+    private func testoInTrentaGiorni(_ delta: Double, _ campo: CampoMisura) -> String {
+        String(localized: "\(Self.testoVariazione(delta, campo.unita)) in 30 giorni")
     }
-
-    private func verso(_ campo: CampoMisura) -> Double { campo == .magra ? 1 : -1 }
 
     // ---------- Peso e grafico ----------
 
@@ -107,7 +104,7 @@ struct CorpoView: View {
         let campo = metrica
         let misure = misureNelPeriodo(bia, campo)
         let ultimo = bia.last { $0[campo] != nil }?[campo]
-        let delta = variazione(bia, campo)
+        let delta = Self.variazioneTrentaGiorni(bia, campo)
         let punti = misure.compactMap { m in m[campo].map { Punto(data: Giorni.data(m.data), valore: $0) } }
         return Riquadro {
             HStack(alignment: .firstTextBaseline) {
@@ -115,46 +112,36 @@ struct CorpoView: View {
                     .accessibilityIdentifier("grafico-titolo")
                 Spacer()
                 if campo != .peso {
-                    Button("Peso") { withAnimation { metrica = .peso } }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Colori.accento)
-                        .frame(minHeight: 44)
-                } else if let delta {
-                    Text(Self.testoVariazione(delta, campo.unita))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(colore(delta, verso(campo)))
-                        .monospacedDigit()
+                    Button("Torna al peso") { withAnimation { metrica = .peso } }
+                        .font(.subheadline)
+                        .tint(.primary)
+                        .frame(minHeight: Misure.tocco)
                 }
             }
-            HStack(alignment: .firstTextBaseline) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(num(ultimo)).font(.system(size: 34, weight: .bold)).monospacedDigit()
-                        .accessibilityIdentifier("valore-grande")
-                    Text(campo.unita).font(.subheadline).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if campo != .peso, let delta {
-                    Text(Self.testoVariazione(delta, campo.unita))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(colore(delta, verso(campo)))
-                        .monospacedDigit()
-                }
+            HStack(alignment: .firstTextBaseline, spacing: Spazio.xs) {
+                Text(num(ultimo)).numero(.largeTitle)
+                    .accessibilityIdentifier("valore-grande")
+                Text(campo.unita).font(.subheadline).foregroundStyle(.secondary)
+            }
+            if let delta {
+                Text(testoInTrentaGiorni(delta, campo))
+                    .font(.subheadline).foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .accessibilityIdentifier("variazione")
             }
             if punti.count < 2 {
                 Text(punti.isEmpty ? LocalizedStringKey("Nessun valore in questo periodo.") : LocalizedStringKey("Servono due misurazioni in questo periodo."))
                     .font(.subheadline).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 120)
+                    .frame(maxWidth: .infinity, minHeight: 100)
             } else {
                 Chart(punti) { p in
                     LineMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
                         .interpolationMethod(.monotone)
-                        .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(Colori.accento)
-                    if let u = punti.last {
-                        PointMark(x: .value("Data", u.data), y: .value(campo.nome, u.valore))
-                            .symbolSize(60)
-                            .foregroundStyle(Colori.accento)
-                    }
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                        .foregroundStyle(Color.secondary)
+                    PointMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
+                        .symbolSize(p.id == punti.last?.id ? 70 : 28)
+                        .foregroundStyle(Color.primary)
                 }
                 .chartYScale(domain: .automatic(includesZero: false))
                 .chartXAxis {
@@ -168,110 +155,84 @@ struct CorpoView: View {
                         AxisValueLabel()
                     }
                 }
-                .frame(height: 150)
+                .frame(height: 130)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)   // assi leggibili, senza sovrapporsi al testo grande
-                .padding(.top, 8)
+                .padding(.top, Spazio.s)
                 .accessibilityLabel("Grafico: \(campo.nome)")
                 .accessibilityValue(punti.map { "\(num($0.valore)) \(campo.unita)" }.joined(separator: ", "))
             }
-            periodi.padding(.top, 8)
-            if let a = archivio.profilo.aderenza() {
-                Divider().padding(.top, 8)
-                Text("Pasti segnati negli ultimi 7 giorni: \(a)%")
-                    .font(.footnote).foregroundStyle(.secondary)
-                    .padding(.top, 8)
+            Picker("Periodo", selection: $periodo) {
+                ForEach(Periodo.allCases) { Text($0.etichetta).tag($0) }
             }
-        }
-    }
-
-    private var periodi: some View {
-        // Con testo molto grande i tre pulsanti vanno uno sotto l'altro invece di spezzare le parole
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) { pulsantiPeriodo }
-            VStack(alignment: .leading, spacing: 8) { pulsantiPeriodo }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var pulsantiPeriodo: some View {
-        Group {
-            ForEach(Periodo.allCases) { p in
-                Button { periodo = p } label: {
-                    Text(p.etichetta)
-                        .lineLimit(1)
-                        .font(.subheadline.weight(p == periodo ? .semibold : .regular))
-                        .foregroundStyle(p == periodo ? AnyShapeStyle(Colori.sulAccento) : AnyShapeStyle(.primary))
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 44)
-                        .background(p == periodo ? AnyShapeStyle(Colori.accento) : AnyShapeStyle(Color(.systemFill)), in: .capsule)
-                        .contentShape(.capsule)
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(p == periodo ? .isSelected : [])
-            }
+            .pickerStyle(.segmented)
+            .padding(.top, Spazio.m)
         }
     }
 
     // ---------- Grasso, magra, vita ----------
 
-    private func riquadriBia(_ bia: [Misura]) -> some View {
-        let layout = dimensione.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
-        return layout {
-            ForEach(Self.riquadri, id: \.campo) { r in
-                let scelto = metrica == r.campo
-                let ultimo = bia.last { $0[r.campo] != nil }?[r.campo]
-                let delta = variazione(bia, r.campo)
-                Button {
-                    withAnimation { metrica = scelto ? .peso : r.campo }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: r.nome).font(.caption).foregroundStyle(.secondary)
-                        HStack(alignment: .firstTextBaseline, spacing: 3) {
-                            Text(num(ultimo)).font(.title3.weight(.bold)).monospacedDigit()
-                            Text(r.campo.unita).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Text(delta.map { Self.testoVariazione($0, r.campo.unita) } ?? " ")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(colore(delta, r.verso))
-                            .monospacedDigit()
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 16, style: .continuous))
-                    .overlay {
-                        if scelto {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Colori.accento, lineWidth: 2)
-                        }
-                    }
-                    .contentShape(.rect(cornerRadius: 16))
+    private func composizione(_ bia: [Misura]) -> some View {
+        VStack(alignment: .leading, spacing: Spazio.xs) {
+            Text("Composizione").font(.headline).padding(.horizontal, Spazio.xs)
+            Riquadro {
+                ForEach(Array(Self.riquadri.enumerated()), id: \.element) { i, campo in
+                    if i > 0 { Divider() }
+                    rigaComposizione(bia, campo)
                 }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(r.campo.nome)
-                .accessibilityValue("\(num(ultimo)) \(r.campo.unita)" + (delta.map { ", \(Self.testoVariazione($0, r.campo.unita))" } ?? ""))
-                .accessibilityHint(scelto ? Text("Torna al peso nel grafico") : Text("Mostra nel grafico"))
-                .accessibilityAddTraits(scelto ? .isSelected : [])
-                .accessibilityIdentifier("metrica-\(r.campo.rawValue)")
             }
         }
+    }
+
+    private func rigaComposizione(_ bia: [Misura], _ campo: CampoMisura) -> some View {
+        let scelto = metrica == campo
+        let ultima = bia.last { $0[campo] != nil }
+        let valore = ultima?[campo]
+        let delta = Self.variazioneTrentaGiorni(bia, campo)
+        let dettaglio: Text? = ultima.map { m in
+            // La data e, sotto, la variazione: ognuna sulla sua riga, senza andare a capo a metà
+            Text(verbatim: ([dataMisura(m.data)] + (delta.map { [testoInTrentaGiorni($0, campo)] } ?? [])).joined(separator: "\n"))
+        }
+        return Button {
+            withAnimation { metrica = scelto ? .peso : campo }
+        } label: {
+            Riga(Text(verbatim: campo.nome), dettaglio: dettaglio, valore: Text(verbatim: "\(num(valore)) \(campo.unita)")) {
+                Image(systemName: "chart.xyaxis.line")
+                    .foregroundStyle(scelto ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, Spazio.s)
+            .frame(minHeight: Misure.tocco)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(campo.nome)
+        .accessibilityValue("\(num(valore)) \(campo.unita)" + (delta.map { ", " + testoInTrentaGiorni($0, campo) } ?? ""))
+        .accessibilityHint(scelto ? Text("Torna al peso nel grafico") : Text("Mostra nel grafico"))
+        .accessibilityAddTraits(scelto ? .isSelected : [])
+        .accessibilityIdentifier("metrica-\(campo.rawValue)")
     }
 
     // ---------- Misurazioni ----------
 
     private func misurazioni(_ bia: [Misura]) -> some View {
-        VStack(spacing: 4) {
-            HStack {
-                Text("Misurazioni").font(.headline)
-                Spacer()
+        VStack(alignment: .leading, spacing: Spazio.xs) {
+            Text("Misurazioni").font(.headline).padding(.horizontal, Spazio.xs)
+            Riquadro {
+                RigheMisure(misure: Array(bia.reversed().prefix(2)))
+                Divider()
                 NavigationLink(value: PaginaDieta.misure) {
-                    Text("Tutte").font(.subheadline.weight(.semibold)).foregroundStyle(Colori.accento)
-                        .frame(minHeight: 44)
-                        .contentShape(.rect)
+                    HStack {
+                        Text("Tutte le misurazioni")
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
+                    .frame(minHeight: Misure.riga)
+                    .contentShape(.rect)
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("tutte-le-misurazioni")
             }
-            .padding(.horizontal, 4)
-            Riquadro { RigheMisure(misure: Array(bia.reversed().prefix(2))) }
         }
     }
 }
@@ -283,36 +244,38 @@ func dataMisura(_ iso: String) -> String {
     return stessoAnno ? d.formatted(.dateTime.day().month(.wide)) : d.formatted(.dateTime.day().month(.wide).year())
 }
 
-// Righe delle misurazioni: data e peso, si toccano per modificare
+// Righe delle misurazioni nella schermata Corpo: data e peso, si toccano per modificare
 struct RigheMisure: View {
     let misure: [Misura]
-    var elimina: ((Misura) -> Void)?
 
     var body: some View {
         ForEach(Array(misure.enumerated()), id: \.element.id) { i, m in
             if i > 0 { Divider() }
             NavigationLink(value: PaginaDieta.misura(m.data)) {
                 HStack {
-                    Text(dataMisura(m.data))
-                    Spacer()
-                    Text(verbatim: m.peso.map { kgTesto($0) } ?? "–").foregroundStyle(.secondary).monospacedDigit()
+                    RigaMisura(misura: m)
                     Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
                 }
-                .frame(minHeight: 44)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(dataMisura(m.data)), \(m.peso.map { kgTesto($0) } ?? String(localized: "senza peso"))")
-            .accessibilityHint(elimina == nil ? Text("Apre la misurazione per modificarla") : Text("Apre la misurazione per modificarla. Tieni premuto per eliminarla."))
+            .accessibilityHint(Text("Apre la misurazione per modificarla"))
             .accessibilityIdentifier("misura-\(m.data)")
-            .contextMenu {
-                if let elimina { Button("Elimina", systemImage: "trash", role: .destructive) { elimina(m) } }
-            }
         }
     }
 }
 
-// Progressi → Corpo → Tutte: l'elenco completo. Si tocca per modificare; si elimina con un tocco prolungato
+// Data e peso di una misurazione
+struct RigaMisura: View {
+    let misura: Misura
+
+    var body: some View {
+        Riga(Text(dataMisura(misura.data)), valore: Text(verbatim: misura.peso.map { kgTesto($0) } ?? "–"))
+    }
+}
+
+// Progressi → Corpo → Tutte: l'elenco completo. Si tocca per modificare; si elimina con un tocco prolungato o scorrendo
 struct MisurazioniView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dismiss) private var chiudi
@@ -320,18 +283,29 @@ struct MisurazioniView: View {
 
     var body: some View {
         let bia = archivio.profilo.bia.sorted { $0.data > $1.data }
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("\(bia.count) misurazioni")
-                    .font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)
-                if bia.isEmpty {
-                    Text("Nessuna misurazione.").font(.subheadline).foregroundStyle(.secondary).padding(.horizontal, 4)
-                } else {
-                    Riquadro { RigheMisure(misure: bia, elimina: { daEliminare = $0 }) }
+        List {
+            Group {
+                Section {
+                    if bia.isEmpty {
+                        Text("Nessuna misurazione.").foregroundStyle(.secondary)
+                    }
+                    ForEach(bia) { m in
+                        NavigationLink(value: PaginaDieta.misura(m.data)) { RigaMisura(misura: m) }
+                            .accessibilityLabel("\(dataMisura(m.data)), \(m.peso.map { kgTesto($0) } ?? String(localized: "senza peso"))")
+                            .accessibilityHint(Text("Apre la misurazione per modificarla. Tieni premuto per eliminarla."))
+                            .accessibilityIdentifier("misura-\(m.data)")
+                            .contextMenu {
+                                Button("Elimina", systemImage: "trash", role: .destructive) { daEliminare = m }
+                            }
+                            .swipeActions {
+                                Button("Elimina", systemImage: "trash", role: .destructive) { daEliminare = m }
+                            }
+                    }
+                } header: {
+                    Text("\(bia.count) misurazioni")
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            .righeTema()
         }
         .sfondoTema()
         .navigationTitle("Misurazioni")

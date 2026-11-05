@@ -13,15 +13,16 @@ final class OggiVeloceTests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
         let peso = app.buttons["Peso"]
-        XCTAssertTrue(peso.waitForExistence(timeout: 8), "Manca il riquadro Peso")
+        XCTAssertTrue(peso.esisteScorrendo(in: app), "Manca il riquadro Peso")
         peso.tap()
         let campo = app.textFields["campo-peso"]
         XCTAssertTrue(campo.waitForExistence(timeout: 5), "Il peso non apre il foglio veloce")
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3), "La tastiera non è aperta")
-        // L'ultimo peso è solo un suggerimento: il campo è vuoto e «Salva» non si tocca finché non si scrive
-        XCTAssertFalse((campo.placeholderValue ?? "").isEmpty && (campo.placeholderValue ?? "") != "–", "Manca l'ultimo peso come suggerimento")
-        XCTAssertFalse(app.buttons["salva-peso"].isEnabled, "«Salva» è attivo senza aver scritto un peso")
-        campo.typeText("79,5")
+        // L'ultimo peso è un valore vero: il campo è compilato e «Salva» è subito attivo
+        XCTAssertFalse((campo.value as? String ?? "").isEmpty, "Il campo non è compilato con l'ultimo peso")
+        XCTAssertTrue(app.buttons["salva-peso"].isEnabled, "«Salva» è spento con il peso già compilato")
+        app.buttons["peso-piu"].tap()
+        campo.clearAndTypeText("79,5")
         XCTAssertTrue(app.buttons["salva-peso"].isEnabled, "«Salva» resta spento dopo aver scritto un peso")
         app.buttons["salva-peso"].tap()
         let chiuso = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: campo)
@@ -33,7 +34,9 @@ final class OggiVeloceTests: XCTestCase {
     func testAltriDatiApreEditorCompleto() {
         continueAfterFailure = false
         let app = avvia()
-        app.buttons["Peso"].tap()
+        let peso = app.buttons["Peso"]
+        XCTAssertTrue(peso.esisteScorrendo(in: app), "Manca il riquadro Peso")
+        peso.tap()
         let altri = app.buttons["Altri dati"]
         XCTAssertTrue(altri.waitForExistence(timeout: 5), "Manca «Altri dati»")
         altri.tap()
@@ -49,11 +52,34 @@ final class OggiVeloceTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Colazione"].waitForExistence(timeout: 5), "Non si apre il dettaglio del pasto")
     }
 
+    // Giorno di riposo: «Allenati lo stesso» apre la scelta della scheda e avvia quella scelta
+    func testAllenatiLoStessoApreLaSceltaEAvvia() {
+        continueAfterFailure = false
+        let app = avvia(["-oggi-riposo"])
+        XCTAssertTrue(app.staticTexts["Riposo"].waitForExistence(timeout: 8), "Manca «Riposo»")
+        let pulsante = app.buttons["allenati-lo-stesso"]
+        XCTAssertTrue(pulsante.exists, "Manca «Allenati lo stesso»")
+        pulsante.tap()
+        let libero = app.buttons["Allenamento libero"]
+        XCTAssertTrue(libero.waitForExistence(timeout: 5), "Non si apre la scelta della scheda")
+        XCTAssertFalse(app.tabBars.firstMatch.buttons["Palestra"].isSelected, "Non deve portare alla scheda Palestra")
+        libero.tap()
+        XCTAssertTrue(app.navigationBars["Allenamento libero"].waitForExistence(timeout: 8), "Non parte l'allenamento scelto")
+        XCTAssertTrue(app.buttons["Fine"].exists, "Manca «Fine»: l'allenamento non è in corso")
+    }
+
     func testAltraSchedaDopoAllenamentoFatto() {
         continueAfterFailure = false
         let app = avvia(["-allenato-oggi"])
         XCTAssertTrue(app.buttons["Un'altra scheda"].waitForExistence(timeout: 8), "Manca «Un'altra scheda»")
         app.buttons["Un'altra scheda"].tap()
         XCTAssertTrue(app.tabBars.firstMatch.buttons["Palestra"].isSelected, "Il link non porta a Palestra")
+    }
+}
+
+private extension XCUIElement {
+    func clearAndTypeText(_ testo: String) {
+        guard let attuale = value as? String else { typeText(testo); return }
+        typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: attuale.count) + testo)
     }
 }

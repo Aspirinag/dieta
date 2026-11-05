@@ -2,7 +2,10 @@ import SwiftUI
 
 // Una dose da segnare toccando: un cucchiaino o una goccia per unità.
 // Toccare l'elemento n segna n; ritoccare l'ultimo segnato lo toglie.
-// Oltre la dose gli elementi diventano arancioni, fino al doppio della dose.
+// Oltre la dose gli elementi diventano arancioni (Colori.oltre), fino al doppio della dose.
+// Pieni nel colore dato (Colori.olio per i cucchiaini, Colori.acqua per le gocce); vuoti con il contorno
+// Colori.vuoto, ben visibili anche in scuro.
+//   Dosaggio(nome: "Olio", unita: "cucchiaini", valore: $olio, dose: 3, colore: Colori.olio, simbolo: .cucchiaino)
 struct Dosaggio: View {
     let nome: LocalizedStringResource
     let unita: LocalizedStringResource
@@ -14,7 +17,7 @@ struct Dosaggio: View {
     var doseTesto: String? = nil            // dose esatta, se non è un multiplo degli elementi
 
     // Ogni elemento da toccare è alto 44 punti e largo fino a 44: sulla stessa riga si stringono (mai sotto 32), poi vanno a capo
-    private static let lato: CGFloat = 44
+    private static let lato: CGFloat = Misure.tocco
     private static let latoMinimo: CGFloat = 32
     @State private var larghezza: CGFloat = 0
 
@@ -58,7 +61,7 @@ struct Dosaggio: View {
     private var etichetta: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(nome)
-            Text(verbatim: testo).font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+            Text(verbatim: testo).font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
         }
     }
 
@@ -69,14 +72,21 @@ struct Dosaggio: View {
             Button {
                 valore = (n == valore) ? n - 1 : n
             } label: {
-                forma
-                    .fill(pieno ? (oltre ? Color.orange : colore) : (oltre ? Color.orange.opacity(0.25) : Color(.systemFill)))
-                    .frame(width: simbolo == .cucchiaino ? 12 : 16, height: simbolo == .cucchiaino ? 26 : 18)
+                elemento(pieno: pieno, oltre: oltre)
                     .frame(width: larghezza, height: Self.lato)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
+    }
+
+    // Pieno: colore della dose (o arancione oltre la dose). Vuoto: contorno ben visibile su riempimento leggero
+    private func elemento(pieno: Bool, oltre: Bool) -> some View {
+        let tinta = oltre ? Colori.oltre : colore
+        return forma
+            .fill(pieno ? AnyShapeStyle(tinta) : AnyShapeStyle(Colori.riempimentoVuoto))
+            .overlay { if !pieno { forma.stroke(oltre ? tinta : Colori.vuoto, lineWidth: Misure.contorno) } }
+            .frame(width: simbolo == .cucchiaino ? 12 : 16, height: simbolo == .cucchiaino ? 26 : 18)
     }
 
     private var forma: AnyShape {

@@ -495,8 +495,7 @@ extension StatoPalestra {
     func volumiSettimanali(ultime n: Int, oggi: String) -> [Double] {
         let lun = Giorni.lunedi(oggi)
         return (0..<n).reversed().map { k in
-            let da = Giorni.aggiungi(lun, -7 * k), a = Giorni.aggiungi(da, 6)
-            return allenamenti.filter { $0.giorno >= da && $0.giorno <= a }.reduce(0) { $0 + $1.volume }
+            riepilogoSettimana(oggi: Giorni.aggiungi(lun, -7 * k)).kg
         }
     }
 }

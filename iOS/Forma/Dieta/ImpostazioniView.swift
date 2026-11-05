@@ -15,12 +15,12 @@ struct ImpostazioniView: View {
                 Group {
                     Section("Dieta") {
                         NavigationLink(value: PaginaDieta.piani) {
-                            Label("Piani alimentari", systemImage: "doc.text")
+                            etichetta("Piani alimentari", "doc.text")
                         }
                         riga("Olio e acqua", "drop", .olioAcqua)
                     }
                     Section("Palestra") {
-                        riga("Pagamento", "creditcard", .pagamento)
+                        riga("Abbonamento palestra", "creditcard", .pagamento)
                         riga("Apple Watch", "applewatch", .watch)
                     }
                     Section("Generali") {
@@ -43,7 +43,7 @@ struct ImpostazioniView: View {
             .navigationDestination(for: PaginaImpostazioni.self) { pagina in
                 switch pagina {
                 case .olioAcqua: OlioAcquaImpostazioni()
-                case .pagamento: PaginaPalestra(titolo: "Pagamento") { SezioniPalestra(parte: .pagamento) }
+                case .pagamento: PaginaPalestra(titolo: "Abbonamento palestra") { SezioniPalestra(parte: .pagamento) }
                 case .watch: PaginaPalestra(titolo: "Apple Watch") { SezioniPalestra(parte: .watch) }
                 case .promemoria: PromemoriaImpostazioni()
                 case .backup: BackupImpostazioni()
@@ -51,9 +51,19 @@ struct ImpostazioniView: View {
                 }
             }
         }
+        .tint(.primary)   // niente verde nei menu: le icone e le azioni sono neutre
     }
 
     private func riga(_ titolo: LocalizedStringKey, _ simbolo: String, _ pagina: PaginaImpostazioni) -> some View {
-        NavigationLink(value: pagina) { Label(titolo, systemImage: simbolo) }
+        NavigationLink(value: pagina) { etichetta(titolo, simbolo) }
+    }
+
+    // Icona grigia: il verde resta all'azione principale e allo stato «fatto»
+    private func etichetta(_ titolo: LocalizedStringKey, _ simbolo: String) -> some View {
+        Label {
+            Text(titolo)
+        } icon: {
+            Image(systemName: simbolo).foregroundStyle(.secondary)
+        }
     }
 }

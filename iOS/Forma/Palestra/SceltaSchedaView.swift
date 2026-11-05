@@ -39,6 +39,7 @@ struct SceltaSchedaView: View {
                 }
                 .righeTema()
             }
+            .tint(.primary)
             .sfondoTema()
             .navigationTitle("Aggiungi esercizi")
             .navigationBarTitleDisplayMode(.inline)

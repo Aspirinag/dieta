@@ -29,10 +29,11 @@ extension StatoPalestra {
             s.giornoPagamento = min(Int(giorno.suffix(2)) ?? 1, 28)
         }
         // `-oggi-cardio`: oggi è giorno di cardio (per vedere il riquadro in Oggi)
-        if Avvio.argomenti.contains("-oggi-cardio") {
+        // `-oggi-riposo`: oggi è giorno di riposo (per «Allenati lo stesso»)
+        for (argomento, tipo) in [("-oggi-cardio", TipoGiorno.cardio), ("-oggi-riposo", TipoGiorno.riposo)] where Avvio.argomenti.contains(argomento) {
             var p = s.piani[s.settimana(Giorni.oggi())] ?? []
             while p.count < 7 { p.append(.riposo) }
-            p[Giorni.indice(Giorni.oggi())] = .cardio
+            p[Giorni.indice(Giorni.oggi())] = tipo
             s.piani[s.settimana(Giorni.oggi())] = p
         }
         s.saltati = [Giorni.aggiungi(Giorni.oggi(), -8)]
