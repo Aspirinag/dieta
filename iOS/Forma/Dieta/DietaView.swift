@@ -1,11 +1,10 @@
 import SwiftUI
 
-// Scheda Dieta: la settimana del piano. In alto i sette giorni, sotto i pasti del giorno scelto,
-// in fondo la spesa. I pasti di oggi si segnano anche in Oggi: è la stessa spunta
+// Scheda Dieta: la settimana del piano. In alto i sette giorni, sotto i pasti del giorno scelto in una lista.
+// La spesa si apre dal carrello nella barra. I pasti di oggi si segnano anche in Oggi: è la stessa spunta
 struct DietaView: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.scenePhase) private var fase
-    @Environment(\.dynamicTypeSize) private var dimensione
     @State private var giorno = Giorni.oggi()
     @State private var ultimoOggi = Giorni.oggi()
     @State private var percorso: [PaginaDieta] = Avvio.valore("-vista") == "spesa" ? [.spesa] : []
@@ -20,41 +19,47 @@ struct DietaView: View {
 
     var body: some View {
         NavigationStack(path: $percorso) {
-            ScrollView {
-                VStack(spacing: 12) {
+            List {
+                Section {
                     StrisciaGiorni(lunedi: Giorni.lunedi(ultimoOggi), selezionato: $giorno)
-                    if let piano = archivio.profilo.piano(per: giorno) {
-                        let pasti = piano.giorni[Giorni.indice(giorno)].pasti
-                        if pasti.isEmpty {
-                            Riquadro { Text("Nessun pasto per questo giorno").font(.headline) }
-                        }
-                        ForEach(pasti.indices, id: \.self) { i in
-                            RiquadroPasto(giorno: giorno, indice: i, pasto: pasti[i])
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+                if let piano = archivio.profilo.piano(per: giorno) {
+                    let pasti = piano.giorni[Giorni.indice(giorno)].pasti
+                    if pasti.isEmpty {
+                        Section {
+                            Riga("Nessun pasto per questo giorno").righeTema()
                         }
                     } else {
-                        vuoto
+                        let fatti = pasti.indices.filter { archivio.slot(giorno, $0).fatto }.count
+                        Section {
+                            ForEach(pasti.indices, id: \.self) { i in
+                                RigaPasto(giorno: giorno, indice: i, pasto: pasti[i])
+                            }
+                        } header: {
+                            Text("Pasti · \(fatti) di \(pasti.count)").textCase(nil)
+                        }
                     }
-                    rigaSpesa
+                } else {
+                    vuoto
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
             }
             .sfondoTema()
             .navigationTitle("Dieta")
             .navigationSubtitleSePossibile(sottotitolo)
             .importaPDF($richiesta)
             .toolbar {
-                // Il carrello c'è solo se la settimana ha una spesa (come la riga in fondo)
-                if !archivio.profilo.vociSpesa(lunedi: Profilo.lunediSpesa(oggi: ultimoOggi)).isEmpty {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
-                            .labelStyle(.iconOnly)
-                    }
+                // Il carrello c'è solo se la settimana ha una spesa; è l'unica porta della Spesa
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    carrello
+                    PulsanteImpostazioni()
                 }
             }
             .sheet(isPresented: $aMano) { EditorPianoView(originale: nil) }
             .destinazioniDieta()
         }
+        .tint(.primary)
         // Se l'app resta aperta oltre la mezzanotte, passa al nuovo giorno
         .onChange(of: fase) { _, nuova in
             guard nuova == .active else { return }
@@ -67,17 +72,20 @@ struct DietaView: View {
     // ---------- Giorno senza piano ----------
 
     private var vuoto: some View {
-        Riquadro {
-            Text("Nessun piano per questo giorno").font(.headline)
-            Text("Carica il PDF del piano alimentare che ti ha dato il nutrizionista.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 16) { azioniVuoto }
-                VStack(alignment: .leading, spacing: 12) { azioniVuoto }
+        Section {
+            VStack(alignment: .leading, spacing: Spazio.xs) {
+                Text("Nessun piano per questo giorno").font(.headline)
+                Text("Carica il PDF del piano alimentare che ti ha dato il nutrizionista.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Spazio.l) { azioniVuoto }
+                    VStack(alignment: .leading, spacing: Spazio.m) { azioniVuoto }
+                }
+                .padding(.top, Spazio.m)
             }
-            .padding(.top, 12)
+            .padding(.vertical, Spazio.xs)
+            .righeTema()
         }
     }
 
@@ -86,55 +94,29 @@ struct DietaView: View {
             .buttonStyle(PulsanteAccento())
         Button("Scrivilo a mano") { aMano = true }
             .font(.subheadline)
-            .frame(minHeight: 44)
+            .frame(minHeight: Misure.tocco)
     }
 
     // ---------- Spesa ----------
 
-    // Nascosta se la settimana non ha nessun piano. È la stessa settimana che la Spesa apre di base
-    @ViewBuilder private var rigaSpesa: some View {
+    // Nascosto se la settimana non ha nessun piano. È la stessa settimana che la Spesa apre di base.
+    // Il conteggio sta nel valore di accessibilità («3 di 11 presi»)
+    @ViewBuilder private var carrello: some View {
         let lun = Profilo.lunediSpesa(oggi: ultimoOggi)
         let voci = archivio.profilo.vociSpesa(lunedi: lun)
         if !voci.isEmpty {
             let presi = archivio.spunteSpesa(lunedi: lun)
             let quanti = voci.filter { presi[$0.chiave] == true }.count
-            let testo = String(localized: "\(String(localized: "\(voci.count) prodotti")) · \(String(localized: "\(quanti) presi"))")
-            NavigationLink(value: PaginaDieta.spesa) {
-                Riquadro {
-                    HStack(spacing: 12) {
-                        Image(systemName: "cart")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(Colori.accento)
-                            .frame(width: 34, height: 34)
-                            .background(Colori.accento.opacity(0.14), in: .rect(cornerRadius: 10, style: .continuous))
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Spesa della settimana").foregroundStyle(.primary)
-                            Text(verbatim: testo).font(.footnote).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 8)
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Color(.tertiaryLabel))
-                            .accessibilityHidden(true)
-                    }
-                    .padding(.vertical, 2)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Spesa della settimana")
-            .accessibilityValue(Text(verbatim: testo))
-            .accessibilityAddTraits(.isButton)
+            Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
+                .accessibilityValue(Text("\(quanti) di \(voci.count) presi"))
         }
     }
 }
 
 // ---------- Striscia dei giorni ----------
 
-// I sette giorni della settimana: oggi ha il numero verde, il giorno scelto è pieno verde.
-// Sotto ogni giorno un puntino per pasto, pieno se segnato
+// I sette giorni della settimana: il giorno scelto è pieno (scuro), oggi ha un contorno.
+// Sotto ogni giorno un puntino per pasto: pieno verde = segnato, contorno = da fare
 struct StrisciaGiorni: View {
     @Environment(Archivio.self) private var archivio
     let lunedi: String
@@ -146,9 +128,7 @@ struct StrisciaGiorni: View {
                 giorno(Giorni.aggiungi(lunedi, i), i)
             }
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, Spazio.xs)
         // Sette colonne strette: con il testo molto grande le sigle non devono andare a capo
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
@@ -160,22 +140,26 @@ struct StrisciaGiorni: View {
         let fatti = (0..<pasti).filter { archivio.slot(iso, $0).fatto }.count
         let numero = Giorni.calendario.component(.day, from: Giorni.data(iso))
         return Button { selezionato = iso } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: Spazio.xs) {
                 Text(Giorni.sigla(i)).font(.caption)
-                Text("\(numero)").font(.headline).monospacedDigit()
-                HStack(spacing: 2) {
+                Text("\(numero)").font(.numero(.headline))
+                HStack(spacing: 3) {
                     ForEach(0..<pasti, id: \.self) { p in
-                        Circle()
-                            .fill(puntino(pieno: p < fatti, scelto: scelto))
-                            .frame(width: 4, height: 4)
+                        puntino(pieno: p < fatti, scelto: scelto)
                     }
                 }
-                .frame(height: 4)
+                .frame(height: 6)
             }
-            .foregroundStyle(scelto ? Colori.sulAccento : (oggi ? Colori.accento : Color.primary))
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .padding(.vertical, 6)
-            .background(scelto ? Colori.accento : Color.clear, in: .rect(cornerRadius: 12, style: .continuous))
+            .foregroundStyle(scelto ? Color(.systemBackground) : Color.primary)
+            .frame(maxWidth: .infinity, minHeight: Misure.tocco)
+            .padding(.vertical, Spazio.xs)
+            .background {
+                if scelto {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary)
+                } else if oggi {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Colori.vuoto, lineWidth: Misure.contorno)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -185,16 +169,21 @@ struct StrisciaGiorni: View {
         .accessibilityAddTraits(scelto ? [.isButton, .isSelected] : .isButton)
     }
 
-    private func puntino(pieno: Bool, scelto: Bool) -> Color {
-        if scelto { return Colori.sulAccento.opacity(pieno ? 1 : 0.4) }
-        return pieno ? Colori.accento : Color(.systemGray4)
+    // Pieno = segnato (verde, o chiaro sul giorno scelto); contorno = da fare: si distinguono anche senza colore
+    @ViewBuilder private func puntino(pieno: Bool, scelto: Bool) -> some View {
+        if pieno {
+            Circle().fill(scelto ? Color(.systemBackground) : Colori.accento).frame(width: 6, height: 6)
+        } else {
+            Circle().strokeBorder(scelto ? Color(.systemBackground) : Colori.vuoto, lineWidth: 1).frame(width: 6, height: 6)
+        }
     }
 }
 
 // ---------- Pasto ----------
 
-// Un pasto del giorno: nome, cibi di seguito con le quantità, «oppure …» per le alternative
-private struct RiquadroPasto: View {
+// Una riga per pasto: cerchio a sinistra (segna il pasto), nome, cibi con le quantità, alternativa in grigio.
+// Il resto della riga apre il dettaglio
+private struct RigaPasto: View {
     @Environment(Archivio.self) private var archivio
     @Environment(\.dynamicTypeSize) private var dimensione
     let giorno: String
@@ -205,55 +194,41 @@ private struct RiquadroPasto: View {
         let s = archivio.slot(giorno, indice)
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
         let cibi = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta].riassunto : ""
-        let alternative = pasto.opzioni.indices.filter { $0 != scelta }.map { pasto.opzioni[$0].principale }.filter { !$0.isEmpty }
-        let oppure = alternative.isEmpty ? "" : String(localized: "oppure \(alternative.joined(separator: ", "))")
-        ZStack(alignment: .trailing) {
+        let alternativa = pasto.opzioni.count > 1
+            ? String(localized: "Alternativa: \(pasto.nomeAlternativa(scelta)) (\(scelta + 1) di \(pasto.opzioni.count))")
+            : ""
+        let dettaglio = [cibi, alternativa].filter { !$0.isEmpty }.joined(separator: "\n")
+        let spunta = CerchioSpunta(fatta: s.fatto, etichetta: Text("Segna \(pasto.nome)")) {
+            // Segna il pasto del giorno scelto, anche se non è oggi
+            archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() }
+        }
+        .disabled(giorno > Giorni.oggi())   // un pasto futuro non si segna; la riga apre comunque il dettaglio
+        let titolo = Text(pasto.nome)
+        let testo = dettaglio.isEmpty ? nil : Text(verbatim: dettaglio)
         NavigationLink(value: PaginaDieta.pasto(giorno, indice)) {
-            Riquadro {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(pasto.nome).font(.headline).foregroundStyle(.primary)
-                        if !cibi.isEmpty {
-                            Text(cibi).font(.subheadline).foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                        }
-                        if !oppure.isEmpty {
-                            Text(oppure).font(.footnote).foregroundStyle(Colori.accento)
-                                .multilineTextAlignment(.leading)
-                                .padding(.top, 3)
-                        }
-                    }
-                    Spacer(minLength: 8)
-                    // Con il testo molto grande il nome ha bisogno di tutta la riga: resta solo il cerchio
-                    if !dimensione.isAccessibilitySize {
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Color(.tertiaryLabel))
-                    }
-                    // Posto del cerchio, che sta sopra al riquadro come pulsante a sé
-                    Color.clear.frame(width: 36, height: 1)
+            if dimensione.isAccessibilitySize {
+                // A testo molto grande il cerchio sta sopra: il nome e i cibi hanno tutta la larghezza
+                VStack(alignment: .leading, spacing: 0) {
+                    spunta
+                    Riga(titolo, dettaglio: testo, evidente: true, fatta: s.fatto)
                 }
-                .accessibilityHidden(true)
+            } else {
+                Riga(titolo, dettaglio: testo, evidente: true, fatta: s.fatto, inizio: spunta)
             }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(pasto.nome)
-        .accessibilityValue(Text(verbatim: [cibi, oppure, s.fatto ? String(localized: "fatto") : ""].filter { !$0.isEmpty }.joined(separator: ". ")))
-        .accessibilityAddTraits(.isButton)
-        // Il cerchio segna il pasto del giorno scelto, anche se non è oggi; il resto del riquadro apre il dettaglio
-        Button { archivio.cambiaSlot(giorno, indice) { $0.fatto.toggle() } } label: {
-            CerchioSpunta(fatta: s.fatto)
-        }
-        .buttonStyle(.plain)
-        .disabled(giorno > Giorni.oggi())   // un pasto futuro non si segna; il riquadro apre comunque il dettaglio
-        .sensoryFeedback(.selection, trigger: s.fatto)
-        .accessibilityLabel("Segna \(pasto.nome)")
-        .accessibilityValue(s.fatto ? Text("fatto") : Text("da fare"))
-        .accessibilityAddTraits(s.fatto ? .isSelected : [])
-        .padding(.trailing, 6)
-        }
+        .righeTema()
+    }
+}
+
+extension Pasto {
+    // Il nome di un'alternativa, uguale in lista e nel selettore del dettaglio: il titolo se c'è
+    // («Pasta»), altrimenti il primo cibo («Riso basmati»), altrimenti «Alternativa 2»
+    func nomeAlternativa(_ j: Int) -> String {
+        guard opzioni.indices.contains(j) else { return "" }
+        if let titolo = opzioni[j].titolo?.trimmingCharacters(in: .whitespaces), !titolo.isEmpty { return titolo }
+        let primo = opzioni[j].principale
+        if !primo.isEmpty { return primo.prefix(1).uppercased() + primo.dropFirst() }
+        return String(localized: "Alternativa \(j + 1)")
     }
 }
 

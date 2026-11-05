@@ -1583,6 +1583,22 @@
         }
       }
     },
+    "Alternativa: %@ (%lld di %lld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option: %1$@ (%2$lld of %3$lld)"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option: %1$@ (%2$lld of %3$lld)"
+          }
+        }
+      }
+    },
     "Altre azioni": {
       "localizations": {
         "en": {
@@ -7667,6 +7683,22 @@
         }
       }
     },
+    "a piacere": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to taste"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "to taste"
+          }
+        }
+      }
+    },
     "oppure %@": {
       "localizations": {
         "en": {
@@ -8019,6 +8051,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Meals"
+          }
+        }
+      }
+    },
+    "Pasti · %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meals · %1$lld of %2$lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meals · %1$lld of %2$lld"
           }
         }
       }
