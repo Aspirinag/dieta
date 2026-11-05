@@ -17,7 +17,7 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var dimensione
 
     private var titolo: String {
-        Date().formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalized
+        Testi.data(Date())
     }
 
     var body: some View {
@@ -103,7 +103,7 @@ struct HomeView: View {
                 Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .tint(Colori.accento)
+                    .tint(.primary)
                     .padding(.top, 8)
             }
             .accessibilityIdentifier("riquadro-pagamento")
@@ -134,8 +134,6 @@ struct HomeView: View {
                             .monospacedDigit()
                     }
                     .padding(.bottom, 10)
-                    BarraSegmenti(fatti: fatti, totale: elenco.count)
-                        .padding(.bottom, 4)
                 }
                 ForEach(elenco.indices, id: \.self) { i in
                     if i > 0 { Divider() }
@@ -152,8 +150,7 @@ struct HomeView: View {
                                     Text(alimenti)
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                        .truncationMode(.tail)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
                             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -223,17 +220,19 @@ struct HomeView: View {
             } else if fatti.isEmpty && cardio.isEmpty {
                 if tipo == .cardio {
                     disposizione {
-                        Text("Oggi cardio").font(.headline)
+                        Text("Cardio").font(.headline)
                         Spacer(minLength: 8)
                         Button("Registra cardio") { cardioAperto = true }
                             .font(.subheadline)
+                            .tint(.primary)
                     }
                 } else {
                     disposizione {
-                        Text("Oggi riposo").font(.headline)
+                        Text("Riposo").font(.headline)
                         Spacer(minLength: 8)
                         Button("Allenati lo stesso") { navigazione.scheda = .allenamento }
                             .font(.subheadline)
+                            .tint(.primary)
                     }
                 }
             }
@@ -261,6 +260,7 @@ struct HomeView: View {
             if Self.mostraAltraScheda(inCorso: palestra.stato.inCorso != nil, pesiFatti: fatti.count, cardioFatto: cardio.count) {
                 Button("Un'altra scheda") { navigazione.scheda = .allenamento }
                     .font(.subheadline)
+                    .tint(.primary)
                     .frame(minHeight: 44, alignment: .leading)
             }
         }
@@ -311,11 +311,8 @@ struct HomeView: View {
         let bia = archivio.profilo.bia.filter { $0.peso != nil }.sorted { $0.data < $1.data }
         if let ultimo = PesoVeloce.ultimo(bia), let kg = ultimo.peso {
             let quando = PesoVeloce.etichetta(ultimo.data, oggi: Giorni.oggi())
-            let variazione = bia.first.flatMap { $0.data != ultimo.data ? $0.peso : nil }.map { kg - $0 }
-            let testoVariazione = variazione.map { v in
-                let r = (v * 10).rounded() / 10
-                return "\(r > 0 ? "+" : r < 0 ? "−" : "")\(kgTesto(abs(r)))"
-            }
+            let variazione = PesoVeloce.variazione(bia, ultimo: ultimo)
+            let testoVariazione = variazione.map { String(localized: "\(Testi.conSegno($0, unita: "kg")) in 30 giorni") }
             Button { pesoVeloce = true } label: {
                 Riquadro {
                     HStack(alignment: .firstTextBaseline) {
@@ -323,15 +320,15 @@ struct HomeView: View {
                         Spacer()
                         if let t = testoVariazione {
                             Text(t)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle((variazione ?? 0) < 0 ? AnyShapeStyle(Colori.accento) : AnyShapeStyle(.secondary))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                                 .monospacedDigit()
                         }
                     }
                     disposizione(allineamento: .bottom) {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text(num(kg)).font(.system(size: 34, weight: .bold)).monospacedDigit()
+                                Text(num(kg)).numero(.largeTitle)
                                 Text("kg").font(.subheadline).foregroundStyle(.secondary)
                             }
                             Text(quando).font(.footnote).foregroundStyle(.secondary)
@@ -347,7 +344,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Peso")
-            .accessibilityValue(kgTesto(kg) + ", " + quando + (testoVariazione.map { ", " + String(localized: "\($0) dall'inizio") } ?? ""))
+            .accessibilityValue(kgTesto(kg) + ", " + quando + (testoVariazione.map { ", " + $0 } ?? ""))
             .accessibilityHint("Scrivi il peso di oggi")
         } else {
             Button { pesoVeloce = true } label: {
@@ -355,7 +352,7 @@ struct HomeView: View {
                     HStack {
                         Text("Peso").font(.headline)
                         Spacer()
-                        Text("Aggiungi il primo peso").font(.subheadline).foregroundStyle(Colori.accento)
+                        Text("Aggiungi il primo peso").font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -384,21 +381,6 @@ struct HomeView: View {
     }
 }
 
-// Un segmento per pasto, pieno se segnato
-private struct BarraSegmenti: View {
-    let fatti: Int
-    let totale: Int
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<max(totale, 1), id: \.self) { i in
-                Capsule().fill(i < fatti ? Colori.accento : Color(.systemFill)).frame(height: 5)
-            }
-        }
-        .accessibilityHidden(true)
-    }
-}
-
 // Mini-linea dell'andamento, con un punto sull'ultimo valore
 private struct Tendenza: View {
     let valori: [Double]
@@ -414,9 +396,9 @@ private struct Tendenza: View {
             }
             var linea = Path()
             linea.addLines(punti)
-            ctx.stroke(linea, with: .color(Colori.accento), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            ctx.stroke(linea, with: .color(.secondary), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
             if let u = punti.last {
-                ctx.fill(Path(ellipseIn: CGRect(x: u.x - 3.5, y: u.y - 3.5, width: 7, height: 7)), with: .color(Colori.accento))
+                ctx.fill(Path(ellipseIn: CGRect(x: u.x - 3.5, y: u.y - 3.5, width: 7, height: 7)), with: .color(.secondary))
             }
         }
     }

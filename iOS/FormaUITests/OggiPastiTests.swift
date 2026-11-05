@@ -69,7 +69,7 @@ final class OggiPastiTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-tab", "oggi", "-oggi-cardio"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["Oggi cardio"].waitForExistence(timeout: 8), "Manca «Oggi cardio»")
+        XCTAssertTrue(app.staticTexts["Cardio"].waitForExistence(timeout: 8), "Manca «Cardio»")
         let registra = app.buttons["Registra cardio"]
         XCTAssertTrue(registra.exists, "Manca il pulsante «Registra cardio»")
         registra.tap()

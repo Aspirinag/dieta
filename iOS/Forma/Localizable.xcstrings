@@ -20,22 +20,6 @@
         }
       }
     },
-    "%@ dall'inizio": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ since the start"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ since the start"
-          }
-        }
-      }
-    },
     "%@ di %@ %@": {
       "localizations": {
         "en": {
@@ -7459,38 +7443,6 @@
         }
       }
     },
-    "Oggi cardio": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cardio today"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cardio today"
-          }
-        }
-      }
-    },
-    "Oggi riposo": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest day today"
-          }
-        },
-        "en-GB": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest day today"
-          }
-        }
-      }
-    },
     "Oggi si paga la palestra.": {
       "localizations": {
         "en": {
@@ -8135,6 +8087,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "weights done"
+          }
+        }
+      }
+    },
+    "Diminuisci di 0,1 kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease by 0.1 kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrease by 0.1 kg"
+          }
+        }
+      }
+    },
+    "Aumenta di 0,1 kg": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase by 0.1 kg"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Increase by 0.1 kg"
+          }
+        }
+      }
+    },
+    "%@ in 30 giorni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in 30 days"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ in 30 days"
           }
         }
       }
@@ -9744,6 +9744,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Swipe left on a food to delete it."
+          }
+        }
+      }
+    },
+    "Scrivi il tuo peso per poterlo salvare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write your weight to be able to save it"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write your weight to be able to save it"
           }
         }
       }
