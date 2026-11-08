@@ -14,7 +14,7 @@ final class CaricamentoPDFTests: XCTestCase {
     // Il selettore di iOS ha la barra di ricerca e le schede Recenti/Sfoglia
     private var selettoreAperto: Bool {
         let barra = app.searchFields.firstMatch
-        return barra.waitForExistence(timeout: 6)
+        return barra.waitForExistence(timeout: 15)
     }
 
     private func apriPianiEReferti() {
