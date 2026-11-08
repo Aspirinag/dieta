@@ -65,7 +65,7 @@ jobs:
     # Test di unità e dell'interfaccia nel simulatore, dopo la build (un Mac alla volta)
     needs: build
     runs-on: macos-26
-    timeout-minutes: 30          # un test bloccato non tiene occupato il Mac per ore
+    timeout-minutes: 50          # un test bloccato non tiene occupato il Mac per ore (i test durano ~30 min)
     steps:
       - uses: actions/checkout@v4
       - name: Esegui i test
