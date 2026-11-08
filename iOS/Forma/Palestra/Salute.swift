@@ -36,24 +36,19 @@ final class Salute {
     static let minutiCardio = 20
     static let minutiPalestra = 10
 
+    // Risvegli in background quando cambia un allenamento: al più uno l'ora
+    static let frequenzaRisveglio: HKUpdateFrequency = .hourly
+
     private let store = HKHealthStore()
+    private lazy var lettura = LetturaWatch(fonte: FonteHealthKit(store: store))
     private var osservatore: HKObserverQuery?
     private weak var palestra: Palestra?
     private var importando = false
 
-    private var tipiLettura: Set<HKObjectType> {
-        [HKObjectType.workoutType(), HKQuantityType(.activeEnergyBurned), HKQuantityType(.heartRate),
-         HKQuantityType(.distanceWalkingRunning), HKQuantityType(.distanceCycling), HKQuantityType(.distanceSwimming)]
-    }
-
+    // Il permesso si chiede solo se non è già stato chiesto
     func chiediPermesso() async -> Bool {
         guard Self.disponibile else { return false }
-        do {
-            try await store.requestAuthorization(toShare: [], read: tipiLettura)
-            return true
-        } catch {
-            return false
-        }
+        return await lettura.permesso()
     }
 
     // Da chiamare all'avvio dell'app: anche quando iOS la apre in background per un allenamento nuovo
@@ -70,7 +65,7 @@ final class Salute {
         }
         store.execute(q)
         osservatore = q
-        Task { try? await store.enableBackgroundDelivery(for: HKObjectType.workoutType(), frequency: .immediate) }
+        Task { try? await store.enableBackgroundDelivery(for: HKObjectType.workoutType(), frequency: Self.frequenzaRisveglio) }
     }
 
     func ferma() {
@@ -79,50 +74,18 @@ final class Salute {
         Task { try? await store.disableBackgroundDelivery(for: HKObjectType.workoutType()) }
     }
 
-    // Legge gli allenamenti dell'ultima settimana non ancora importati
+    // Legge solo gli allenamenti nuovi dall'ultima lettura (al primo avvio: l'ultima settimana)
     func importa() async {
         guard let palestra, Self.attivo, !palestra.demo, !importando else { return }
         importando = true
         defer { importando = false }
-        let da = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        let richiesta = HKSampleQueryDescriptor(
-            predicates: [.workout(HKQuery.predicateForSamples(withStart: da, end: nil))],
-            sortDescriptors: [SortDescriptor(\.endDate)])
-        guard let allenamenti = try? await richiesta.result(for: store) else { return }
-        for w in allenamenti where !palestra.stato.importati.contains(w.uuid.uuidString) {
-            guard let a = traduci(w) else {
-                palestra.stato.importati.append(w.uuid.uuidString)
-                continue
-            }
+        guard let allenamenti = await lettura.leggi() else { return }
+        for a in allenamenti {
             if case .nuovo(let salvato) = palestra.registraDalWatch(a), a.fine > Date().addingTimeInterval(-3 * 3600) {
                 let kcal = a.calorie.map { " · \(Int($0.rounded())) kcal" } ?? ""
                 await Notifiche.sessioneWatch(id: salvato.id, titolo: String(localized: "Sessione palestra registrata ✓"),
                                               testo: String(localized: "Dal Watch: \(a.minuti) min\(kcal). Aggiungi esercizi e pesi?"))
             }
         }
-    }
-
-    private func traduci(_ w: HKWorkout) -> AllenamentoWatch? {
-        let genere: AllenamentoWatch.Genere
-        switch w.workoutActivityType {
-        case .traditionalStrengthTraining, .functionalStrengthTraining, .crossTraining, .coreTraining, .highIntensityIntervalTraining:
-            genere = .palestra
-        case .walking, .hiking: genere = .cardio("Camminata")
-        case .running: genere = .cardio("Corsa")
-        case .cycling: genere = .cardio("Bici")
-        case .elliptical: genere = .cardio("Ellittica")
-        case .rowing: genere = .cardio("Vogatore")
-        case .stairClimbing, .stairs, .stepTraining: genere = .cardio("Scale")
-        case .mixedCardio: genere = .cardio("Cardio")
-        case .swimming: genere = .cardio("Nuoto")
-        default: return nil
-        }
-        let kcal = w.statistics(for: HKQuantityType(.activeEnergyBurned))?.sumQuantity()?.doubleValue(for: .kilocalorie())
-        let bpm = w.statistics(for: HKQuantityType(.heartRate))?.averageQuantity()?.doubleValue(for: .count().unitDivided(by: .minute()))
-        let km = [HKQuantityType(.distanceWalkingRunning), HKQuantityType(.distanceCycling), HKQuantityType(.distanceSwimming)]
-            .compactMap { w.statistics(for: $0)?.sumQuantity()?.doubleValue(for: .meterUnit(with: .kilo)) }
-            .reduce(0, +)
-        return AllenamentoWatch(uuid: w.uuid.uuidString, genere: genere, inizio: w.startDate, fine: w.endDate,
-                                calorie: kcal, battito: bpm, km: km)
     }
 }
