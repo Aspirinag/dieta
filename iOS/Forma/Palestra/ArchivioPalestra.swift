@@ -9,8 +9,12 @@ final class Palestra {
     }
 
     let demo: Bool
-    // L'ultima serie spuntata (dall'app o dalla Live Activity): da lei si cerca la serie attiva. Non si salva su file
-    var ultimaSerie: UUID?
+    // L'ultima serie spuntata (dall'app o dalla Live Activity): da lei si cerca la serie attiva.
+    // Sta nell'allenamento in corso, così si salva e dopo un riavvio la Live Activity riparte dal punto giusto
+    var ultimaSerie: UUID? {
+        get { stato.inCorso?.ultimaSerie }
+        set { if stato.inCorso != nil, stato.inCorso?.ultimaSerie != newValue { stato.inCorso?.ultimaSerie = newValue } }
+    }
     // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
     @ObservationIgnored private(set) var fileIlleggibile: URL?
     // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente

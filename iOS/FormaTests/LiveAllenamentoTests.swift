@@ -304,6 +304,30 @@ struct LiveAllenamentoTests {
         #expect(p.stato.inCorso?.riscaldamento["99"] == nil)
     }
 
+    @Test func segnaDaLiveSalvaLUltimaSerieNellAllenamento() {
+        let s = SerieFatta(kg: 60, rip: 8)
+        let (p, timer) = palestraCon([EsercizioFatto(esercizio: "panca", serie: [s, SerieFatta()])])
+        p.segnaDaLive(s.id, timer: timer)
+        #expect(p.stato.inCorso?.ultimaSerie == s.id)
+        timer.ferma()
+    }
+
+    @Test func ultimaSerieSenzaAllenamentoNonFaNiente() {
+        let p = Palestra(stato: StatoPalestra())
+        p.ultimaSerie = UUID()
+        #expect(p.ultimaSerie == nil)
+    }
+
+    @Test func ultimaSerieSiCodificaEVecchioJSONSenzaCampo() throws {
+        var a = Allenamento(nome: "Push")
+        let id = UUID()
+        a.ultimaSerie = id
+        let letto = try JSONDecoder().decode(Allenamento.self, from: JSONEncoder().encode(a))
+        #expect(letto.ultimaSerie == id)
+        let vecchio = try JSONDecoder().decode(Allenamento.self, from: Data(#"{"nome":"Push"}"#.utf8))
+        #expect(vecchio.ultimaSerie == nil)
+    }
+
     @Test func segnaDaLiveSerieGiaFattaNonFaNiente() {
         let s = SerieFatta(kg: 60, rip: 8, fatta: true)
         let (p, timer) = palestraCon([EsercizioFatto(esercizio: "panca", serie: [s])])
