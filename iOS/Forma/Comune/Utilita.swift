@@ -63,7 +63,17 @@ enum Giorni {
         return calendario.date(from: DateComponents(year: p[0], month: p[1], day: p[2])) ?? Date()
     }
 
-    static func oggi() -> String { iso(Date()) }
+    static func oggi() -> String { oggi(argomenti: Avvio.argomenti) }
+
+    // Con `-demo -oggi AAAA-MM-GG` la data è fissa: serve ai test dell'interfaccia, che altrimenti
+    // dipenderebbero dal giorno della settimana in cui girano. Fuori dalla demo conta solo l'orologio
+    static func oggi(argomenti: [String]) -> String {
+        if argomenti.contains("-demo"), let i = argomenti.firstIndex(of: "-oggi"), i + 1 < argomenti.count {
+            let v = argomenti[i + 1]
+            if v.count == 10, iso(data(v)) == v { return v }
+        }
+        return iso(Date())
+    }
 
     static func aggiungi(_ iso: String, _ giorni: Int) -> String {
         Self.iso(calendario.date(byAdding: .day, value: giorni, to: data(iso)) ?? Date())
