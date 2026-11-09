@@ -10425,6 +10425,22 @@
         }
       }
     },
+    "Segna la serie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log set"
+          }
+        }
+      }
+    },
     "Segna la serie e fa partire il recupero": {
       "localizations": {
         "en": {
