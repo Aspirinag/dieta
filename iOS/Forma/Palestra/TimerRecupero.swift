@@ -1,6 +1,6 @@
 import SwiftUI
 
-// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity
+// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity dell'allenamento
 
 // Timer di recupero tra le serie: parte da solo quando segni una serie; a fine recupero vibra
 // e, con l'app chiusa o il telefono bloccato, arriva una notifica.

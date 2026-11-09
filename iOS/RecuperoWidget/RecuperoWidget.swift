@@ -14,11 +14,11 @@ struct RecuperoWidgetBundle: WidgetBundle {
 
 struct RecuperoLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: AttivitaRecupero.self) { contesto in
-            VistaRecuperoBloccata(stato: contesto.state, finito: contesto.isStale)
+        ActivityConfiguration(for: AttivitaAllenamento.self) { contesto in
+            VistaRecuperoBloccata(stato: contesto.state.recupero ?? StatoRecupero(inizio: .now, fine: .now, esercizio: nil), finito: contesto.isStale)
                 .activitySystemActionForegroundColor(.primary)
         } dynamicIsland: { contesto in
-            let stato = contesto.state
+            let stato = contesto.state.recupero ?? StatoRecupero(inizio: .now, fine: .now, esercizio: nil)
             let finito = contesto.isStale
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
