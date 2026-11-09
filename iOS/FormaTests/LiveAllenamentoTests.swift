@@ -8,9 +8,22 @@ struct LiveAllenamentoTests {
     final class Finto: SistemaAttivita {
         enum Chiamata: Equatable { case avvia(StatoAllenamentoLive), aggiorna(StatoAllenamentoLive), chiudi }
         var chiamate: [Chiamata] = []
-        func avvia(_ stato: StatoAllenamentoLive) { chiamate.append(.avvia(stato)) }
-        func aggiorna(_ stato: StatoAllenamentoLive) { chiamate.append(.aggiorna(stato)) }
-        func chiudi() { chiamate.append(.chiudi) }
+        var haAttivita = false
+        var riesce = true   // false = avvio e aggiornamento falliscono
+        func avvia(_ stato: StatoAllenamentoLive) -> Bool {
+            chiamate.append(.avvia(stato))
+            if riesce { haAttivita = true }
+            return riesce
+        }
+        func aggiorna(_ stato: StatoAllenamentoLive) -> Bool {
+            chiamate.append(.aggiorna(stato))
+            return riesce
+        }
+        func chiudi() {
+            chiamate.append(.chiudi)
+            haAttivita = false
+        }
+        func attendi() async {}
     }
 
     let adesso = Date(timeIntervalSinceReferenceDate: 800_000_000)
@@ -254,6 +267,63 @@ struct LiveAllenamentoTests {
         #expect(finto.chiamate == [.avvia(base()), .chiudi, .avvia(base())])
     }
 
+    // Avvio fallito (app in background): `mostrato` non cambia e il prossimo giro riprova
+    @Test func avvioFallitoSiRiprova() {
+        let finto = Finto()
+        finto.riesce = false
+        let live = LiveAllenamento(sistema: finto)
+        live.applica(base(), adesso: adesso)
+        #expect(live.mostrato == nil)
+        finto.riesce = true
+        live.applica(base(), adesso: adesso)
+        live.applica(base(), adesso: adesso)
+        #expect(finto.chiamate == [.avvia(base()), .avvia(base())])
+        #expect(live.mostrato == base())
+    }
+
+    @Test func aggiornamentoFallitoSiRiprova() {
+        let finto = Finto()
+        let live = LiveAllenamento(sistema: finto)
+        live.applica(base(), adesso: adesso)
+        finto.riesce = false
+        live.applica(base(serie: 2), adesso: adesso)
+        #expect(live.mostrato == base())
+        finto.riesce = true
+        live.applica(base(serie: 2), adesso: adesso)
+        #expect(finto.chiamate == [.avvia(base()), .aggiorna(base(serie: 2)), .aggiorna(base(serie: 2))])
+        #expect(live.mostrato == base(serie: 2))
+    }
+
+    // `riallinea` fa reinviare lo stato anche se è uguale a quello mostrato
+    @Test func riallineaForzaLInvio() {
+        let finto = Finto()
+        let live = LiveAllenamento(sistema: finto)
+        live.applica(base(), adesso: adesso)
+        live.applica(base(), adesso: adesso)
+        live.riallinea()
+        live.applica(base(), adesso: adesso)
+        #expect(finto.chiamate == [.avvia(base()), .avvia(base())])
+    }
+
+    // Attività ripresa all'avvio ma nessun allenamento in corso: si chiude al primo `applica(nil)`, una volta sola
+    @Test func attivitaRipresaSenzaAllenamentoSiChiude() {
+        let finto = Finto()
+        finto.haAttivita = true
+        let live = LiveAllenamento(sistema: finto)
+        live.applica(nil, adesso: adesso)
+        live.applica(nil, adesso: adesso)
+        #expect(finto.chiamate == [.chiudi])
+    }
+
+    // Attività ripresa e allenamento in corso: il sistema la aggiorna (qui `avvia` lo fa da sé), non la chiude
+    @Test func attivitaRipresaConAllenamentoNonSiChiude() {
+        let finto = Finto()
+        finto.haAttivita = true
+        let live = LiveAllenamento(sistema: finto)
+        live.applica(base(), adesso: adesso)
+        #expect(finto.chiamate == [.avvia(base())])
+    }
+
     // ---------- «Fatta» dalla Live Activity ----------
 
     func palestraCon(_ esercizi: [EsercizioFatto], storico: [Allenamento] = []) -> (Palestra, TimerRecupero) {
@@ -356,5 +426,18 @@ struct LiveAllenamentoTests {
         #expect(timer.stato?.inizio == primo?.inizio)
         timer.ferma()
         #expect(timer.stato == nil)
+    }
+
+    // Dopo la spunta si può aspettare la notifica di fine recupero
+    @Test func attendiNotificaAspettaLAggiunta() async {
+        var aggiunte: [Int] = []
+        let timer = TimerRecupero(aggiungiNotifica: { s in
+            try? await Task.sleep(for: .milliseconds(50))
+            aggiunte.append(s)
+        }, cancellaNotifica: {})
+        timer.avvia(90)
+        await timer.attendiNotifica()
+        #expect(aggiunte == [90])
+        timer.ferma()
     }
 }

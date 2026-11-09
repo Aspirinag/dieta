@@ -64,9 +64,11 @@ extension StatoAllenamentoLive {
 
 // Quello che serve di ActivityKit: nei test si sostituisce con un finto
 protocol SistemaAttivita {
-    func avvia(_ stato: StatoAllenamentoLive)
-    func aggiorna(_ stato: StatoAllenamentoLive)
+    var haAttivita: Bool { get }                        // c'è un'attività (anche ripresa all'avvio) da tenere o chiudere
+    @discardableResult func avvia(_ stato: StatoAllenamentoLive) -> Bool       // false = non è riuscita
+    @discardableResult func aggiorna(_ stato: StatoAllenamentoLive) -> Bool    // false = non è riuscita
     func chiudi()
+    func attendi() async                                // aspetta che gli aggiornamenti in coda siano finiti
 }
 
 // Decide se avviare, aggiornare o chiudere l'attività. Riceve lo stato voluto (nil = nessun allenamento in corso)
@@ -84,14 +86,28 @@ final class LiveAllenamento {
         var voluto = stato
         // Un recupero già scaduto non si mostra più (ma l'attività resta: c'è ancora la serie da fare)
         if let fine = voluto?.recupero?.fine, fine <= adesso { voluto?.recupero = nil }
-        guard voluto != mostrato else { return }
+        // Senza allenamento si chiude anche l'attività ripresa all'avvio, che `mostrato` non conosce
+        guard voluto != mostrato || (voluto == nil && sistema.haAttivita) else { return }
         switch (mostrato, voluto) {
-        case (nil, let nuovo?): sistema.avvia(nuovo)
-        case (_?, let nuovo?): sistema.aggiorna(nuovo)
-        case (_?, nil): sistema.chiudi()
-        case (nil, nil): break
+        case (nil, let nuovo?):
+            // Se l'avvio non riesce (di solito: app in background) `mostrato` resta com'era e il prossimo giro riprova
+            if sistema.avvia(nuovo) { mostrato = voluto }
+        case (_?, let nuovo?):
+            if sistema.aggiorna(nuovo) { mostrato = voluto }
+        case (_, nil):
+            sistema.chiudi()
+            mostrato = nil
         }
-        mostrato = voluto
+    }
+
+    // Dimentica quello che risulta mostrato: la prossima `applica` invia di nuovo lo stato, anche se uguale
+    func riallinea() {
+        mostrato = nil
+    }
+
+    // Aspetta che l'attività sia davvero aggiornata (serve all'intent: iOS può sospendere l'app appena `perform` ritorna)
+    func attendi() async {
+        await sistema.attendi()
     }
 }
 
@@ -124,6 +140,18 @@ final class CollegamentoLive {
         live.applica(costruisci())
     }
 
+    // Come `aggiorna`, ma ritorna solo a update fatto
+    func aggiornaEAttendi() async {
+        aggiorna()
+        await live.attendi()
+    }
+
+    // App di nuovo attiva: l'attività può essere sparita (swipe, sistema, avvio fallito in background), si reinvia lo stato
+    func riallinea() {
+        live.riallinea()
+        aggiorna()
+    }
+
     private func costruisci() -> StatoAllenamentoLive? {
         StatoAllenamentoLive.da(allenamento: palestra.stato.inCorso, ultimaSerie: palestra.ultimaSerie,
                                 recupero: timer.stato, libreria: palestra.stato.esercizi,
@@ -133,9 +161,11 @@ final class CollegamentoLive {
 
 // Per i test e la modalità demo: non crea attività vere
 struct SistemaAttivitaNullo: SistemaAttivita {
-    func avvia(_ stato: StatoAllenamentoLive) {}
-    func aggiorna(_ stato: StatoAllenamentoLive) {}
+    var haAttivita: Bool { false }
+    func avvia(_ stato: StatoAllenamentoLive) -> Bool { true }
+    func aggiorna(_ stato: StatoAllenamentoLive) -> Bool { true }
     func chiudi() {}
+    func attendi() async {}
 }
 
 // La Live Activity vera, con ActivityKit (niente notifiche push: la aggiorna solo l'app)
@@ -143,32 +173,54 @@ final class AttivitaDiSistema: SistemaAttivita {
     private var attivita: Activity<AttivitaAllenamento>?
     private var coda: Task<Void, Never>?   // gli aggiornamenti vanno in ordine, uno dopo l'altro
 
-    // All'avvio dell'app le attività rimaste aperte si chiudono: se c'è un allenamento in corso se ne avvia una nuova
-    static func chiudiRimaste() {
-        let rimaste = Activity<AttivitaAllenamento>.activities
-        guard !rimaste.isEmpty else { return }
-        Task { for a in rimaste { await a.end(nil, dismissalPolicy: .immediate) } }
-    }
-
-    func avvia(_ stato: StatoAllenamentoLive) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        do {
-            attivita = try Activity.request(attributes: AttivitaAllenamento(), content: contenuto(stato), pushType: nil)
-        } catch {
-            attivita = nil
+    // All'avvio dell'app si riprende l'attività ancora viva (quella che l'utente sta guardando) e si chiudono le altre
+    init() {
+        let tutte = Activity<AttivitaAllenamento>.activities
+        attivita = tutte.first { Self.viva($0) }
+        let altre = tutte.filter { $0.id != attivita?.id }
+        if !altre.isEmpty {
+            accoda { for a in altre { await a.end(nil, dismissalPolicy: .immediate) } }
         }
     }
 
-    func aggiorna(_ stato: StatoAllenamentoLive) {
-        guard let a = attivita else { return avvia(stato) }
+    var haAttivita: Bool { attivita != nil }
+
+    // Chiusa dall'utente (swipe) o dal sistema (dopo 8 ore) non è più viva
+    private static func viva(_ a: Activity<AttivitaAllenamento>) -> Bool {
+        a.activityState == .active || a.activityState == .stale
+    }
+
+    // Con un'attività viva la aggiorna, altrimenti ne chiede una nuova (da background spesso non riesce)
+    @discardableResult
+    func avvia(_ stato: StatoAllenamentoLive) -> Bool {
         let c = contenuto(stato)
-        accoda { await a.update(c) }
+        if let a = attivita, Self.viva(a) {
+            accoda { await a.update(c) }
+            return true
+        }
+        attivita = nil
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
+        do {
+            attivita = try Activity.request(attributes: AttivitaAllenamento(), content: c, pushType: nil)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    @discardableResult
+    func aggiorna(_ stato: StatoAllenamentoLive) -> Bool {
+        avvia(stato)
     }
 
     func chiudi() {
         guard let a = attivita else { return }
         attivita = nil
         accoda { await a.end(nil, dismissalPolicy: .immediate) }
+    }
+
+    func attendi() async {
+        await coda?.value
     }
 
     // A fine recupero (anche con l'app sospesa) l'attività diventa «vecchia» e perde il conto alla rovescia

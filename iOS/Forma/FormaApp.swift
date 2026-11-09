@@ -10,6 +10,7 @@ struct FormaApp: App {
     @State private var navigazione: Navigazione
     private let collegamentoLive: CollegamentoLive
     private let delegato = DelegatoNotifiche()
+    @Environment(\.scenePhase) private var fase
 
     init() {
         let p = Palestra()
@@ -24,18 +25,19 @@ struct FormaApp: App {
         Salute.shared.avvia(p)
         // Live Activity dell'allenamento: niente attività vere in demo e nei test
         let senzaAttivita = Avvio.demo || ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        if !senzaAttivita { AttivitaDiSistema.chiudiRimaste() }
         let collegamento = CollegamentoLive(palestra: p, timer: t,
                                             live: LiveAllenamento(sistema: senzaAttivita ? SistemaAttivitaNullo() : AttivitaDiSistema()))
         collegamentoLive = collegamento
         // «Fatta» sulla schermata bloccata: gira nel processo dell'app, anche in background
         AzioniLive.segna = { id in
             p.segnaDaLive(id, timer: t)
-            collegamento.aggiorna()
+            // Si aspetta l'update e la notifica: appena `perform` ritorna iOS può sospendere l'app
+            await collegamento.aggiornaEAttendi()
+            await t.attendiNotifica()
         }
         AzioniLive.segnaRiscaldamento = { movimento in
             p.segnaRiscaldamentoDaLive(movimento)
-            collegamento.aggiorna()
+            await collegamento.aggiornaEAttendi()
         }
         collegamento.osserva()
     }
@@ -47,6 +49,10 @@ struct FormaApp: App {
                 .environment(palestra)
                 .environment(timer)
                 .environment(navigazione)
+        }
+        // Tornando in primo piano la Live Activity si riallinea ai dati (può essere sparita o non essere mai partita)
+        .onChange(of: fase) { _, f in
+            if f == .active { collegamentoLive.riallinea() }
         }
     }
 }

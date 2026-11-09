@@ -74,6 +74,11 @@ final class TimerRecupero {
         }
     }
 
+    // Aspetta che la notifica di fine recupero sia stata aggiunta (per l'intent: iOS può sospendere l'app appena ritorna)
+    func attendiNotifica() async {
+        await compitoNotifica?.value
+    }
+
     // Se la serie tolta è quella che ha fatto partire il recupero, lo ferma (e toglie la notifica)
     func fermaSeAvviatoDa(_ serie: UUID) {
         if avviatoDa == serie { ferma() }
