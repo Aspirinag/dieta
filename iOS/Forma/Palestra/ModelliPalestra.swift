@@ -198,6 +198,7 @@ struct Allenamento: Codable, Hashable, Identifiable {
     var routine: UUID?
     var riscaldamento: [String: Bool] = [:]
     var watch: DatiWatch?                       // dati dell'allenamento registrato sull'Apple Watch
+    var ultimaSerie: UUID?                      // l'ultima serie spuntata: da lei si cerca la serie attiva, anche dopo un riavvio
 
     init(nome: String, inizio: Date = Date(), esercizi: [EsercizioFatto] = [], routine: UUID? = nil) {
         self.nome = nome
@@ -216,6 +217,7 @@ struct Allenamento: Codable, Hashable, Identifiable {
         routine = c.valore(.routine, nil)
         riscaldamento = c.valore(.riscaldamento, [:])
         watch = c.valore(.watch, nil)
+        ultimaSerie = c.valore(.ultimaSerie, nil)
     }
 
     // Nomi dati dall'app (salvati in italiano, mostrati nella lingua del telefono)
