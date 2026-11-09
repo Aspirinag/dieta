@@ -6,20 +6,34 @@ import UserNotifications
 struct FormaApp: App {
     @State private var archivio = Archivio()
     @State private var palestra: Palestra
-    @State private var timer = TimerRecupero()
+    @State private var timer: TimerRecupero
     @State private var navigazione: Navigazione
+    private let collegamentoLive: CollegamentoLive
     private let delegato = DelegatoNotifiche()
 
     init() {
         let p = Palestra()
         let n = Navigazione()
+        let t = TimerRecupero()
         _palestra = State(initialValue: p)
+        _timer = State(initialValue: t)
         _navigazione = State(initialValue: n)
         delegato.navigazione = n
         UNUserNotificationCenter.current().delegate = delegato
         // Subito all'avvio: iOS apre l'app in background quando il Watch salva un allenamento
         Salute.shared.avvia(p)
-        AttivitaDiSistema.chiudiRimaste()
+        // Live Activity dell'allenamento: niente attività vere in demo e nei test
+        let senzaAttivita = Avvio.demo || ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+        if !senzaAttivita { AttivitaDiSistema.chiudiRimaste() }
+        let collegamento = CollegamentoLive(palestra: p, timer: t,
+                                            live: LiveAllenamento(sistema: senzaAttivita ? SistemaAttivitaNullo() : AttivitaDiSistema()))
+        collegamentoLive = collegamento
+        // «Fatta» sulla schermata bloccata: gira nel processo dell'app, anche in background
+        AzioniLive.segna = { id in
+            p.segnaDaLive(id, timer: t)
+            collegamento.aggiorna()
+        }
+        collegamento.osserva()
     }
 
     var body: some Scene {
@@ -53,7 +67,6 @@ struct Radice: View {
     @Environment(Palestra.self) private var palestra
     @Environment(TimerRecupero.self) private var timer
     @Environment(Navigazione.self) private var navigazione
-    @State private var live = LiveRecupero()
     @State private var avvisoDati = true
     @Environment(\.scenePhase) private var fase
     @AppStorage("benvenutoVisto") private var benvenutoVisto = false
@@ -86,10 +99,6 @@ struct Radice: View {
             if let id = navigazione.compila { SceltaSchedaView(id: id).applicaTema() }
         }
         .applicaTema()
-        // Live Activity del recupero: solo durante l'allenamento in corso
-        .onChange(of: palestra.stato.inCorso == nil ? nil : timer.stato, initial: true) { _, stato in
-            live.applica(stato)
-        }
         .onChange(of: fase) { _, f in
             if f != .active {
                 archivio.salvaOra()

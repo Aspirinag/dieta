@@ -9,6 +9,8 @@ final class Palestra {
     }
 
     let demo: Bool
+    // L'ultima serie spuntata (dall'app o dalla Live Activity): da lei si cerca la serie attiva. Non si salva su file
+    var ultimaSerie: UUID?
     // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
     @ObservationIgnored private(set) var fileIlleggibile: URL?
     // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
@@ -24,6 +26,12 @@ final class Palestra {
         stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
         salvataggioBloccato = illeggibile?.path == "/bloccato"
         fileIlleggibile = salvataggioBloccato ? nil : illeggibile
+    }
+
+    // Senza file dati: parte dallo stato dato e non salva (per i test)
+    init(stato: StatoPalestra) {
+        demo = true
+        self.stato = stato
     }
 
     // ---------- File ----------
@@ -116,6 +124,27 @@ final class Palestra {
             a.esercizi.append(EsercizioFatto(esercizio: v.esercizio, recupero: v.recupero, serie: (0..<v.serie).map { _ in SerieFatta() }))
         }
         stato.inCorso = a
+    }
+
+    // «Fatta» dalla Live Activity: come la spunta nell'app (kg e ripetizioni vuoti dalla serie precedente, recupero che parte).
+    // Se la serie non c'è, è già fatta o mancano i valori, non fa niente
+    func segnaDaLive(_ id: UUID, timer: TimerRecupero) {
+        guard let a = stato.inCorso,
+              let i = a.esercizi.firstIndex(where: { $0.serie.contains { $0.id == id } }),
+              let j = a.esercizi[i].serie.firstIndex(where: { $0.id == id }) else { return }
+        let e = a.esercizi[i]
+        let s = e.serie[j]
+        guard !s.fatta else { return }
+        let ex = esercizio(e.esercizio)
+        let numero = e.serie[..<j].filter { !$0.riscaldamento }.count
+        guard case .segna(let k, let r) = EsitoSpunta.valuta(kg: s.kg, rip: s.rip, precedente: precedente(e.esercizio, numero),
+                                                           corpoLibero: ex.attrezzo == .corpoLibero) else { return }
+        stato.inCorso?.esercizi[i].serie[j].kg = k
+        stato.inCorso?.esercizi[i].serie[j].rip = r
+        stato.inCorso?.esercizi[i].serie[j].fatta = true
+        ultimaSerie = id
+        timer.avvia(e.recupero, serie: id, esercizio: ex.titolo)
+        salvaOra()
     }
 
     func aggiungi(esercizi ids: [String]) {

@@ -739,6 +739,7 @@ struct RigaSerie: View {
     // se manca qualcosa lo dice sotto la riga e il cursore va nel campo da compilare. Togliere la spunta ferma il recupero che aveva fatto partire
     private func segna(_ s: SerieFatta, _ prec: SerieFatta?, _ recupero: Int, titolo: String, corpoLibero: Bool) {
         riferimento = idSerie
+        palestra.ultimaSerie = idSerie   // anche la Live Activity parte da questa serie
         if s.fatta {
             modifica { $0.fatta = false }
             timer.fermaSeAvviatoDa(s.id)
