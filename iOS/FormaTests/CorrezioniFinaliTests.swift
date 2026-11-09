@@ -45,3 +45,31 @@ struct CorrezioniFinaliTests {
         #expect(!t.contains("Piani e misure"))
     }
 }
+
+// Un test dell'interfaccia che dipende dal giorno della settimana fallisce un giorno su sette (di lunedì il
+// primo giorno che non è «oggi» è nel futuro e il suo cerchio è spento). Con `-demo -oggi AAAA-MM-GG` la data è fissa
+@MainActor
+struct OggiFissatoTests {
+    @Test func nelleProveDemoOggiSiPuoFissare() {
+        // domenica 8 novembre 2026: la striscia va da lunedì 2 a domenica 8, oggi è l'ultimo giorno
+        let oggi = Giorni.oggi(argomenti: ["-demo", "-oggi", "2026-11-08"])
+        #expect(oggi == "2026-11-08")
+        #expect(Giorni.indice(oggi) == 6)
+        #expect(Giorni.lunedi(oggi) == "2026-11-02")
+    }
+
+    @Test func senzaDemoOSenzaDataValidaOggiEQuelloVero() {
+        let vero = Giorni.iso(Date())
+        #expect(Giorni.oggi(argomenti: ["-oggi", "2026-11-08"]) == vero)
+        #expect(Giorni.oggi(argomenti: ["-demo", "-oggi", "domani"]) == vero)
+        #expect(Giorni.oggi(argomenti: ["-demo", "-oggi", "2026-13-40"]) == vero)
+        #expect(Giorni.oggi(argomenti: ["-demo"]) == vero)
+    }
+
+    // Di domenica i giorni passati sono sei e il cerchio resta attivo; di lunedì non ce n'è nessuno
+    @Test func giorniPassatiDellaSettimana() {
+        func passati(_ oggi: String) -> Int { (0..<7).filter { Giorni.aggiungi(Giorni.lunedi(oggi), $0) < oggi }.count }
+        #expect(passati("2026-11-08") == 6)
+        #expect(passati("2026-11-09") == 0)
+    }
+}

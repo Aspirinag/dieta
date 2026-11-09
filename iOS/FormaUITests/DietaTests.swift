@@ -97,7 +97,9 @@ final class DietaTests: XCTestCase {
 
     func testCerchioSegnaPastoDiUnAltroGiorno() {
         continueAfterFailure = false
-        let app = avvia()
+        // Oggi fisso a mercoledì: il lunedì è passato e il suo cerchio è attivo, qualunque giorno sia davvero.
+        // Senza, di lunedì il primo giorno che non è oggi è nel futuro e il cerchio è spento
+        let app = avvia(["-oggi", "2026-11-11"])
 
         XCTAssertTrue(giorni(app).firstMatch.waitForExistence(timeout: 8), "Manca la striscia dei giorni")
         let altro = giorni(app).allElementsBoundByIndex.first { !(($0.value as? String) ?? "").contains("oggi") }
@@ -118,7 +120,7 @@ final class DietaTests: XCTestCase {
 
     func testCerchioSpentoPerIGiorniFuturi() throws {
         continueAfterFailure = false
-        let app = avvia()
+        let app = avvia(["-oggi", "2026-11-11"])   // mercoledì: ci sono giorni futuri in qualunque giorno si lanci
         XCTAssertTrue(giorni(app).firstMatch.waitForExistence(timeout: 8), "Manca la striscia dei giorni")
         let tutti = giorni(app).allElementsBoundByIndex
         let oggi = try XCTUnwrap(tutti.firstIndex { (($0.value as? String) ?? "").contains("oggi") }, "Non trovo oggi nella striscia")
