@@ -232,24 +232,24 @@ struct EditorSchedaView: View {
     @State private var aggiungi = false
     @State private var chiediElimina = false
 
-    private var indice: Int? { palestra.stato.routine.firstIndex { $0.id == idScheda } }
+    // Niente posizioni tenute da parte: ogni lettura e scrittura cerca la scheda per id, quindi dopo l'eliminazione non può sbagliare
+    private func binding(_ v: VoceRoutine) -> Binding<VoceRoutine> {
+        Binding(
+            get: { palestra.stato.voce(v.id, in: idScheda) ?? v },
+            set: { nuova in palestra.stato.modificaVoce(v.id, in: idScheda) { $0 = nuova } }
+        )
+    }
 
     var body: some View {
-        if let i = indice {
-            let r = palestra.stato.routine[i]
+        if let r = palestra.stato.scheda(idScheda) {
             List {
                 Group {
                     Section {
                         ForEach(r.voci) { v in
-                            if let j = r.voci.firstIndex(where: { $0.id == v.id }) {
-                                VoceSchedaView(voce: Binding(
-                                    get: { palestra.stato.routine[i].voci[j] },
-                                    set: { palestra.stato.routine[i].voci[j] = $0 }
-                                ))
-                            }
+                            VoceSchedaView(voce: binding(v))
                         }
-                        .onDelete { palestra.stato.routine[i].voci.remove(atOffsets: $0) }
-                        .onMove { palestra.stato.routine[i].voci.move(fromOffsets: $0, toOffset: $1) }
+                        .onDelete { dove in palestra.stato.modificaScheda(idScheda) { $0.voci.remove(atOffsets: dove) } }
+                        .onMove { da, a in palestra.stato.modificaScheda(idScheda) { $0.voci.move(fromOffsets: da, toOffset: a) } }
                         Button("Aggiungi esercizi", systemImage: "plus") { aggiungi = true }
                     } header: {
                         Text("Esercizi")
@@ -265,7 +265,7 @@ struct EditorSchedaView: View {
             .tint(.primary)
             .sfondoTema()
             // Il nome si cambia toccando il titolo (menu del titolo → Rinomina)
-            .navigationTitle(Binding(get: { r.nome }, set: { palestra.stato.routine[i].nome = $0 }))
+            .navigationTitle(Binding(get: { r.nome }, set: { nuovo in palestra.stato.modificaScheda(idScheda) { $0.nome = nuovo } }))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarTitleMenu { RenameButton() }
             .toolbar {
@@ -297,7 +297,7 @@ struct EditorSchedaView: View {
             }
             .sheet(isPresented: $aggiungi) {
                 LibreriaView(modo: .scelta { ids in
-                    palestra.stato.routine[i].voci += ids.map { VoceRoutine(esercizio: $0) }
+                    palestra.stato.modificaScheda(idScheda) { $0.voci += ids.map { VoceRoutine(esercizio: $0) } }
                 })
             }
         }
