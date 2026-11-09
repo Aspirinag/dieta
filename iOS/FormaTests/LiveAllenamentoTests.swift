@@ -24,8 +24,13 @@ struct LiveAllenamentoTests {
         StatoRecupero(inizio: adesso, fine: adesso.addingTimeInterval(secondi), esercizio: esercizio)
     }
 
-    func allenamento(_ esercizi: [EsercizioFatto]) -> Allenamento {
-        Allenamento(nome: "Push", inizio: adesso, esercizi: esercizi)
+    // Di base il riscaldamento è già fatto: i test sulle serie non lo vedono
+    func allenamento(_ esercizi: [EsercizioFatto], riscaldamentoFatto: Bool = true) -> Allenamento {
+        var a = Allenamento(nome: "Push", inizio: adesso, esercizi: esercizi)
+        if riscaldamentoFatto {
+            for i in Libreria.riscaldamento.indices { a.riscaldamento[String(i)] = true }
+        }
+        return a
     }
 
     func stato(_ a: Allenamento?, ultima: UUID? = nil, recupero r: StatoRecupero? = nil,
@@ -34,6 +39,38 @@ struct LiveAllenamentoTests {
     }
 
     // ---------- Costruzione dello stato ----------
+
+    // Riscaldamento da fare e nessuna serie fatta: si mostra il primo movimento da fare, con «Fatta»
+    @Test func primaIlRiscaldamento() throws {
+        var a = allenamento([EsercizioFatto(esercizio: "panca", serie: [SerieFatta(kg: 60, rip: 8)])], riscaldamentoFatto: false)
+        a.riscaldamento["0"] = true
+        let live = try #require(stato(a))
+        #expect(live.movimento == 1)
+        #expect(live.esercizio == Libreria.riscaldamento[1].0)
+        #expect(live.spiegazione == Libreria.riscaldamento[1].1)
+        #expect(live.riscaldamento)
+        #expect(live.serie == 2)
+        #expect(live.totaleSerie == Libreria.riscaldamento.count)
+        #expect(live.idSerie == nil)
+        #expect(live.prossimo == "Panca piana")
+        #expect(live.puoSpuntare)
+    }
+
+    // Movimenti saltati: si mostra il primo ancora da fare, anche se prima di quello spuntato
+    @Test func riscaldamentoPrimoDaFare() throws {
+        var a = allenamento([EsercizioFatto(esercizio: "panca", serie: [SerieFatta(kg: 60, rip: 8)])], riscaldamentoFatto: false)
+        a.riscaldamento["3"] = true
+        #expect(try #require(stato(a)).movimento == 0)
+    }
+
+    // Se si è già iniziato con le serie, il riscaldamento non si mostra più
+    @Test func conUnaSerieFattaIlRiscaldamentoSiSalta() throws {
+        let fatta = SerieFatta(kg: 60, rip: 8, fatta: true)
+        let a = allenamento([EsercizioFatto(esercizio: "panca", serie: [fatta, SerieFatta(kg: 60, rip: 8)])], riscaldamentoFatto: false)
+        let live = try #require(stato(a, ultima: fatta.id))
+        #expect(live.movimento == nil)
+        #expect(live.esercizio == "Panca piana")
+    }
 
     @Test func senzaAllenamentoNonCeStato() {
         #expect(stato(nil) == nil)
@@ -255,6 +292,16 @@ struct LiveAllenamentoTests {
         #expect(p.stato.inCorso?.esercizi[1].serie[0].kg == 0)
         #expect(p.stato.inCorso?.esercizi[1].serie[0].rip == 12)
         timer.ferma()
+    }
+
+    @Test func segnaRiscaldamentoDaLive() {
+        let (p, _) = palestraCon([EsercizioFatto(esercizio: "panca", serie: [SerieFatta(kg: 60, rip: 8)])])
+        p.stato.inCorso?.riscaldamento = [:]
+        p.segnaRiscaldamentoDaLive(2)
+        #expect(p.stato.inCorso?.riscaldamento["2"] == true)
+        #expect(p.stato.inCorso?.riscaldamento["0"] == nil)
+        p.segnaRiscaldamentoDaLive(99)   // movimento che non c'è: niente
+        #expect(p.stato.inCorso?.riscaldamento["99"] == nil)
     }
 
     @Test func segnaDaLiveSerieGiaFattaNonFaNiente() {

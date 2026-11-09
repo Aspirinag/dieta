@@ -147,6 +147,13 @@ final class Palestra {
         salvaOra()
     }
 
+    // «Fatta» su un movimento del riscaldamento dalla Live Activity: lo segna e salva subito
+    func segnaRiscaldamentoDaLive(_ movimento: Int) {
+        guard stato.inCorso != nil, Libreria.riscaldamento.indices.contains(movimento) else { return }
+        stato.inCorso?.riscaldamento[String(movimento)] = true
+        salvaOra()
+    }
+
     func aggiungi(esercizi ids: [String]) {
         for id in ids {
             stato.inCorso?.esercizi.append(EsercizioFatto(esercizio: id, serie: (0..<3).map { _ in SerieFatta() }))

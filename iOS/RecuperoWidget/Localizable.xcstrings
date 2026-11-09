@@ -188,6 +188,22 @@
         }
       }
     },
+    "Riscaldamento %lld di %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warm-up %lld of %lld"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warm-up %lld of %lld"
+          }
+        }
+      }
+    },
     "Serie %lld di %lld" : {
       "localizations" : {
         "en" : {

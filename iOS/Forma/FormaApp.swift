@@ -33,6 +33,10 @@ struct FormaApp: App {
             p.segnaDaLive(id, timer: t)
             collegamento.aggiorna()
         }
+        AzioniLive.segnaRiscaldamento = { movimento in
+            p.segnaRiscaldamentoDaLive(movimento)
+            collegamento.aggiorna()
+        }
         collegamento.osserva()
     }
 

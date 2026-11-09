@@ -36,8 +36,8 @@ struct RecuperoLiveActivity: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    if stato.puoSpuntare, let id = stato.idSerie {
-                        PulsanteFatta(serie: id).padding(.trailing, 4)
+                    if stato.puoSpuntare {
+                        PulsanteFatta(stato: stato).padding(.trailing, 4)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -121,6 +121,9 @@ struct VistaAllenamentoBloccata: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(verbatim: esercizio).font(.title2.weight(.bold)).lineLimit(2)
                         Text(verbatim: stato.rigaSerie).font(.body).lineLimit(1)
+                        if let spiegazione = stato.spiegazione {
+                            Text(verbatim: spiegazione).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                        }
                         if scaduto && stato.recupero != nil {
                             Label("Recupero finito", systemImage: "timer")
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
@@ -128,8 +131,8 @@ struct VistaAllenamentoBloccata: View {
                         RigaPoi(prossimo: stato.prossimo)
                     }
                     Spacer(minLength: 0)
-                    if stato.puoSpuntare, let id = stato.idSerie {
-                        PulsanteFatta(serie: id)
+                    if stato.puoSpuntare {
+                        PulsanteFatta(stato: stato)
                     } else {
                         Text("Apri Forma per i kg")
                             .font(.caption).foregroundStyle(.secondary)
@@ -177,21 +180,30 @@ struct RigaPoi: View {
     }
 }
 
-// Il pulsante «Fatta»: l'unico verde pieno; segna la serie mostrata (gira nell'app, senza aprirla)
+// Il pulsante «Fatta»: l'unico verde pieno; segna il movimento del riscaldamento o la serie mostrata
+// (gira nell'app, senza aprirla)
 struct PulsanteFatta: View {
-    let serie: UUID
+    let stato: StatoAllenamentoLive
 
     var body: some View {
-        Button(intent: SegnaSerieIntent(serie: serie)) {
-            Label("Fatta", systemImage: "checkmark")
+        if let m = stato.movimento {
+            Button(intent: SegnaRiscaldamentoIntent(movimento: m)) { etichetta }
+                .buttonStyle(.plain)
+                .fixedSize()
+        } else if let id = stato.idSerie {
+            Button(intent: SegnaSerieIntent(serie: id)) { etichetta }
+                .buttonStyle(.plain)
+                .fixedSize()
+        }
+    }
+
+    private var etichetta: some View {
+        Label("Fatta", systemImage: "checkmark")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Colori.sulAccento)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(Colori.accento, in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .fixedSize()
     }
 }
 
@@ -237,6 +249,8 @@ extension StatoAllenamentoLive {
 
     // «Serie 2 di 4 · 80 kg × 8»; riscaldamento: «Riscaldamento · …»; corpo libero: «… · 8 ripetizioni»
     var rigaSerie: String {
+        // Movimento del riscaldamento: «Riscaldamento 2 di 6»
+        if movimento != nil { return String(localized: "Riscaldamento \(serie) di \(totaleSerie)") }
         var parti = [riscaldamento
             ? String(localized: "Riscaldamento")
             : String(localized: "Serie \(serie) di \(totaleSerie)")]
@@ -278,4 +292,7 @@ private extension StatoAllenamentoLive {
     StatoAllenamentoLive.esempio(recupero: StatoRecupero(inizio: .now, fine: .now.addingTimeInterval(90), esercizio: "Panca piana con manubri"))
     StatoAllenamentoLive.esempio(valori: false)
     StatoAllenamentoLive.esempio(fatte: true)
+    StatoAllenamentoLive(titolo: "Gambe", inizio: .now, esercizio: "Squat a corpo libero (10 lenti)", serie: 4, totaleSerie: 6,
+                         riscaldamento: true, prossimo: "Squat", movimento: 3,
+                         spiegazione: "Piedi alla larghezza delle spalle, scendi lentamente e risali. Scalda ginocchia e caviglie.")
 }

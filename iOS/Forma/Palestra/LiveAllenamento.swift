@@ -14,6 +14,21 @@ extension StatoAllenamentoLive {
                    precedente: (String, Int) -> SerieFatta? = { _, _ in nil }) -> StatoAllenamentoLive? {
         guard let a = allenamento else { return nil }
         var stato = StatoAllenamentoLive(titolo: a.titolo, inizio: a.inizio, recupero: recupero)
+        // Prima il riscaldamento: il primo movimento da fare, finché non si è spuntata nessuna serie
+        let movimenti = Libreria.riscaldamento
+        if !a.esercizi.contains(where: { $0.serie.contains(where: \.fatta) }),
+           let m = movimenti.indices.first(where: { a.riscaldamento[String($0)] != true }) {
+            stato.movimento = m
+            stato.esercizio = movimenti[m].0
+            stato.spiegazione = movimenti[m].1
+            stato.riscaldamento = true
+            stato.serie = m + 1
+            stato.totaleSerie = movimenti.count
+            if let primo = a.esercizi.first(where: { !PercorsoAllenamento.completo($0) }) {
+                stato.prossimo = (libreria.first { $0.id == primo.esercizio } ?? Esercizio(id: primo.esercizio, nome: primo.esercizio, muscolo: .altro, attrezzo: .altro)).titolo
+            }
+            return stato
+        }
         guard let id = SerieAttiva.trova(in: a.esercizi, riferimento: ultimaSerie),
               let i = a.esercizi.firstIndex(where: { $0.serie.contains { $0.id == id } }),
               let j = a.esercizi[i].serie.firstIndex(where: { $0.id == id }) else { return stato }

@@ -7376,6 +7376,22 @@
         }
       }
     },
+    "Movimento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement"
+          }
+        }
+      }
+    },
     "Multipower": {
       "localizations": {
         "en": {
@@ -10437,6 +10453,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Log set"
+          }
+        }
+      }
+    },
+    "Segna il riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log warm-up"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log warm-up"
           }
         }
       }
