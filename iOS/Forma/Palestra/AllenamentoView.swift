@@ -13,6 +13,7 @@ struct AllenamentoView: View {
     @State private var daAvviare: Routine??
     @State private var cardio = false
     @State private var schedaDaEliminare: Routine?
+    @State private var importaPDF = false
 
     var body: some View {
         NavigationStack(path: $percorso) {
@@ -26,8 +27,13 @@ struct AllenamentoView: View {
             .navigationTitle("Palestra")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Nuova scheda", systemImage: "plus") { nuovaScheda() }
-                        .tint(.primary)
+                    Menu {
+                        Button("Scheda vuota", systemImage: "square.and.pencil") { nuovaScheda() }
+                        Button("Importa da PDF", systemImage: "doc.badge.plus") { importaPDF = true }
+                    } label: {
+                        Label("Nuova scheda", systemImage: "plus")
+                    }
+                    .tint(.primary)
                 }
                 ToolbarItem(placement: .topBarTrailing) { PulsanteImpostazioni() }
             }
@@ -41,6 +47,7 @@ struct AllenamentoView: View {
             }
             .navigationDestination(for: ApriScheda.self) { EditorSchedaView(idScheda: $0.id) }
             .sheet(isPresented: $cardio) { NuovoCardioView() }
+            .importaSchedaPDF($importaPDF)
             .confirmationDialog("Eliminare la scheda?", isPresented: Binding(
                 get: { schedaDaEliminare != nil }, set: { if !$0 { schedaDaEliminare = nil } }
             ), titleVisibility: .visible, presenting: schedaDaEliminare) { r in
@@ -208,6 +215,9 @@ struct AllenamentoView: View {
             }
             NavigationLink(value: PaginaPalestraDest.modelli) {
                 Label("Schede pronte", systemImage: "square.stack.3d.up")
+            }
+            Button { importaPDF = true } label: {
+                Label("Importa da PDF", systemImage: "doc.badge.plus").foregroundStyle(.primary)
             }
             Button { avvia(nil) } label: {
                 Label("Allenamento libero", systemImage: "figure.strengthtraining.traditional").foregroundStyle(.primary)
