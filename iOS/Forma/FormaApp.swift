@@ -91,6 +91,8 @@ struct Radice: View {
                 ProgressiView()
             }
         }
+        // Sotto l'allenamento a tutto schermo la schermata non va letta da VoiceOver
+        .accessibilityHidden(navigazione.allenamentoAperto && palestra.stato.inCorso != nil)
         .sheet(isPresented: $navigazione.impostazioniAperte) {
             ImpostazioniView().applicaTema()
         }

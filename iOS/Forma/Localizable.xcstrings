@@ -240,6 +240,70 @@
         }
       }
     },
+    "%@, bicchiere %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, glass %lld of %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, glass %lld of %lld"
+          }
+        }
+      }
+    },
+    "%@, cucchiaino %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, teaspoon %lld of %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, teaspoon %lld of %lld"
+          }
+        }
+      }
+    },
+    "%@, serie %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, set %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, set %lld"
+          }
+        }
+      }
+    },
+    "%@, serie di riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, warm-up set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, warm-up set"
+          }
+        }
+      }
+    },
     "%@: %lld serie fatte": {
       "localizations": {
         "it": {
@@ -2312,6 +2376,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opens the measurement to edit it"
+          }
+        }
+      }
+    },
+    "Apre la rotella per scegliere il valore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a wheel to choose the value"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a wheel to choose the value"
           }
         }
       }
@@ -10489,6 +10569,38 @@
         }
       }
     },
+    "Segna la serie %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark set %lld of %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark set %lld of %lld"
+          }
+        }
+      }
+    },
+    "Segna la serie di riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark warm-up set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark warm-up set"
+          }
+        }
+      }
+    },
     "Segna la serie e fa partire il recupero": {
       "localizations": {
         "en": {
@@ -10565,6 +10677,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sets"
+          }
+        }
+      }
+    },
+    "Serie %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %@"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %@"
           }
         }
       }
@@ -11562,6 +11690,22 @@
         }
       }
     },
+    "Svuota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
     "Tapis roulant": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -12392,6 +12536,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rowing machine"
+          }
+        }
+      }
+    },
+    "vuoto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "empty"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "empty"
           }
         }
       }

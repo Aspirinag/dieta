@@ -38,17 +38,16 @@ final class OggiPastiTests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
 
-        let olio = app.descendants(matching: .any)["Olio"].firstMatch
-        XCTAssertTrue(olio.esisteScorrendo(in: app), "Manca l'elemento Olio")
-        XCTAssertEqual(olio.value as? String, "2 di 6 cucchiaini")
-        // Si tocca il terzo cucchiaino: ogni cucchiaino occupa 44 punti, in una riga sotto il testo, dal bordo sinistro
-        let terzo = olio.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: 2.5 * 44, dy: olio.frame.height - 22))
+        // Ogni cucchiaino è un pulsante con etichetta e stato («Olio, cucchiaino 3 di 6», fatto / da fare)
+        let terzo = app.buttons["Olio, cucchiaino 3 di 6"]
+        XCTAssertTrue(terzo.esisteScorrendo(in: app), "Manca il cucchiaino 3 di 6 dell'olio")
+        XCTAssertEqual(app.buttons["Olio, cucchiaino 2 di 6"].value as? String, "fatto")
+        XCTAssertEqual(terzo.value as? String, "da fare")
         terzo.tap()
         // La riga può essere ricreata dalla lista: si cerca di nuovo
-        let dopo = app.descendants(matching: .any)["Olio"].firstMatch
-        XCTAssertTrue(dopo.esisteScorrendo(in: app, timeout: 3), "L'elemento Olio sparisce dopo il tocco")
-        XCTAssertEqual(dopo.value as? String, "3 di 6 cucchiaini")
+        let dopo = app.buttons["Olio, cucchiaino 3 di 6"]
+        XCTAssertTrue(dopo.esisteScorrendo(in: app, timeout: 3), "Il cucchiaino sparisce dopo il tocco")
+        XCTAssertEqual(dopo.value as? String, "fatto")
     }
 
     func testPesoApreIlFoglioVeloce() {

@@ -45,16 +45,7 @@ struct Dosaggio: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background { Color.clear.onGeometryChange(for: CGFloat.self) { $0.size.width } action: { larghezza = $0 } }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(nome))
-        .accessibilityValue(testo)
-        .accessibilityAdjustableAction { direzione in
-            switch direzione {
-            case .increment: valore = min(valore + 1, massimo)
-            case .decrement: valore = max(valore - 1, 0)
-            @unknown default: break
-            }
-        }
+        .accessibilityElement(children: .contain)
         .sensoryFeedback(.selection, trigger: valore)
     }
 
@@ -77,6 +68,18 @@ struct Dosaggio: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(etichettaElemento(n))
+            .accessibilityValue(Text(pieno ? "fatto" : "da fare"))
+        }
+    }
+
+    // «Olio, cucchiaino 3 di 6» / «Acqua, bicchiere 5 di 8»: ogni elemento è un pulsante con il suo numero
+    private func etichettaElemento(_ n: Int) -> Text {
+        let nome = String(localized: nome)
+        let totale = max(dose, 1)
+        switch simbolo {
+        case .cucchiaino: return Text("\(nome), cucchiaino \(n) di \(totale)")
+        case .goccia: return Text("\(nome), bicchiere \(n) di \(totale)")
         }
     }
 
