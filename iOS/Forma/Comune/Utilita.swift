@@ -45,12 +45,14 @@ enum Giorni {
         }
     }
 
-    static let calendario: Calendar = {
+    // Creato a ogni uso: segue il fuso e la lingua attuali anche se cambiano con l'app aperta
+    static var calendario: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.locale = .current
+        c.timeZone = .autoupdatingCurrent
         c.firstWeekday = 2
         return c
-    }()
+    }
 
     static func iso(_ data: Date) -> String {
         let c = calendario.dateComponents([.year, .month, .day], from: data)
@@ -140,7 +142,10 @@ func leggiNumero(_ testo: String) -> Double? {
             latino.append(c)
         }
     }
-    return Double(latino)
+    // Solo cifre, segno e separatore: niente "nan", "inf", "1e5" o esadecimali; e mai un risultato non finito
+    guard !latino.isEmpty, latino.allSatisfy({ "0123456789.+-".contains($0) }),
+          let v = Double(latino), v.isFinite else { return nil }
+    return v
 }
 
 // Argomenti di avvio usati per le schermate di prova nel simulatore (es. -tab andamento -demo)
