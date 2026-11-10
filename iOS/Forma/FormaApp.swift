@@ -21,6 +21,7 @@ struct FormaApp: App {
         _navigazione = State(initialValue: n)
         delegato.navigazione = n
         UNUserNotificationCenter.current().delegate = delegato
+        Notifiche.registraCategorie()
         // Subito all'avvio: iOS apre l'app in background quando il Watch salva un allenamento
         Salute.shared.avvia(p)
         // Live Activity dell'allenamento: niente attività vere in demo e nei test
@@ -38,6 +39,26 @@ struct FormaApp: App {
         AzioniLive.segnaRiscaldamento = { movimento in
             p.segnaRiscaldamentoDaLive(movimento)
             await collegamento.aggiornaEAttendi()
+        }
+        AzioniLive.cambiaRecupero = { secondi in
+            t.cambia(secondi)
+            await collegamento.aggiornaEAttendi()
+            await t.attendiNotifica()
+        }
+        AzioniLive.saltaRecupero = {
+            t.ferma()
+            await collegamento.aggiornaEAttendi()
+            await t.attendiNotifica()
+        }
+        AzioniLive.saltaRiscaldamento = {
+            p.saltaRiscaldamentoDaLive()
+            await collegamento.aggiornaEAttendi()
+        }
+        // «Ancora 30 s» sulla notifica di fine recupero, con l'app anche chiusa
+        AzioniLive.ancora30 = {
+            t.ancora30()
+            await collegamento.aggiornaEAttendi()
+            await t.attendiNotifica()
         }
         collegamento.osserva()
     }

@@ -75,11 +75,14 @@ final class Palestra {
         }
     }
 
+    func datiDaSalvare() throws -> Data { try JSONEncoder().encode(stato) }
+
     private func salva() {
         guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
-            try JSONEncoder().encode(stato).write(to: Self.fileDati, options: .atomic)
+            // Se la codifica fallisce o i dati sono vuoti non si scrive niente: il file vecchio resta com'è
+            try FileDati.scrivi(datiDaSalvare(), su: Self.fileDati)
         } catch {
             print("Salvataggio non riuscito: \(error)")
         }
@@ -145,6 +148,7 @@ final class Palestra {
         stato.inCorso?.esercizi[i].serie[j].kg = k
         stato.inCorso?.esercizi[i].serie[j].rip = r
         stato.inCorso?.esercizi[i].serie[j].fatta = true
+        stato.inCorso?.esercizi[i].serie[j].fattaIl = Date()
         ultimaSerie = id
         timer.avvia(e.recupero, serie: id, esercizio: ex.titolo)
         salvaOra()
@@ -154,6 +158,14 @@ final class Palestra {
     func segnaRiscaldamentoDaLive(_ movimento: Int) {
         guard stato.inCorso != nil, Libreria.riscaldamento.indices.contains(movimento) else { return }
         stato.inCorso?.riscaldamento[String(movimento)] = true
+        salvaOra()
+    }
+
+    // «Salta» sul riscaldamento dalla Live Activity: i movimenti rimasti non si fanno, la Live passa alla prima serie.
+    // Quelli non fatti restano non fatti (l'app dice «Saltato»)
+    func saltaRiscaldamentoDaLive() {
+        guard stato.inCorso != nil else { return }
+        stato.inCorso?.riscaldamentoSaltato = true
         salvaOra()
     }
 
@@ -168,7 +180,7 @@ final class Palestra {
     @discardableResult
     func termina() -> Allenamento? {
         guard var a = stato.inCorso else { return nil }
-        a.fine = a.fine ?? Date()
+        a.fine = a.fineVerosimile()
         a.esercizi = a.esercizi.compactMap { e in
             var e = e
             e.serie = e.serie.filter(\.siSalva)
@@ -185,6 +197,13 @@ final class Palestra {
         stato.allenamenti.sort { $0.inizio < $1.inizio }
         stato.saltati.removeAll { $0 == a.giorno }
         return a
+    }
+
+    // «Annullalo e inizia il nuovo»: annulla davvero quello vecchio (sessione Watch tenuta, recupero fermato)
+    func annullaEInizia(_ routine: Routine?, timer: TimerRecupero) {
+        timer.ferma()
+        annulla()
+        inizia(routine)
     }
 
     // Annullando, se il Watch aveva registrato la sessione resta quella (senza esercizi)
@@ -260,7 +279,7 @@ final class Palestra {
     }
 
     static func sovrapposti(_ a: Allenamento, _ b: Allenamento) -> Bool {
-        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fine ?? Date()
+        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fineVerosimile()
         return a.inizio < fb && b.inizio < fa
     }
 
@@ -415,7 +434,7 @@ final class Palestra {
 
     // Una sola notifica, il primo giorno utile (giorno scelto o il successivo, all'ora scelta) di un mese non pagato
     func programmaPagamento() async {
-        guard !demo else { return }
+        guard !demo, !salvataggioBloccato else { return }
         Notifiche.cancella(["pagamento"])
         guard stato.pagamentoAttivo,
               let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)

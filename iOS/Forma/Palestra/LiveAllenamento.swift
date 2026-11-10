@@ -18,7 +18,7 @@ extension StatoAllenamentoLive {
         var stato = StatoAllenamentoLive(titolo: a.titolo, inizio: a.inizio, recupero: recupero)
         // Prima il riscaldamento: il primo movimento da fare, finché non si è spuntata nessuna serie
         let movimenti = Libreria.riscaldamento
-        if !a.esercizi.contains(where: { $0.serie.contains(where: \.fatta) }),
+        if !a.riscaldamentoSaltato, !a.esercizi.contains(where: { $0.serie.contains(where: \.fatta) }),
            let m = movimenti.indices.first(where: { a.riscaldamento[String($0)] != true }) {
             stato.movimento = m
             stato.esercizio = movimenti[m].0

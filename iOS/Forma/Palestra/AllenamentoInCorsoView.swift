@@ -257,7 +257,10 @@ struct RigaRiscaldamento: View {
 
     var body: some View {
         let fatti = palestra.stato.inCorso?.riscaldamento ?? [:]
-        let conteggio = "\(fatti.values.filter { $0 }.count)/\(Libreria.riscaldamento.count)"
+        let nFatti = fatti.values.filter { $0 }.count
+        // Saltato dalla Live Activity e nessun movimento fatto: «Saltato» invece di «0/6»
+        let saltato = palestra.stato.inCorso?.riscaldamentoSaltato == true && nFatti == 0
+        let conteggio = saltato ? String(localized: "Saltato") : "\(nFatti)/\(Libreria.riscaldamento.count)"
         VStack(alignment: .leading, spacing: 0) {
             Button {
                 withAnimation(.smooth) { aperto.toggle() }
@@ -547,14 +550,12 @@ struct RigaSerie: View {
                     cella(testo: kg, segnaposto: prec?.kg.map { num($0) } ?? String(localized: "kg"), quale: .kg, serie: numero + 1, riscaldamento: s.riscaldamento)
                         .onChange(of: kg) { _, v in
                             modifica { $0.kg = leggiNumero(v) }
-                            togliSpuntaSeSvuotata()
                             if !v.isEmpty, manca == .kg { manca = nil }
                         }
                 } rip: {
                     cella(testo: rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), quale: .rip, serie: numero + 1, riscaldamento: s.riscaldamento)
                         .onChange(of: rip) { _, v in
                             modifica { $0.rip = Int(v) }
-                            togliSpuntaSeSvuotata()
                             if !v.isEmpty, manca == .rip { manca = nil }
                         }
                 } spunta: {
@@ -606,6 +607,10 @@ struct RigaSerie: View {
                 rip = s.rip.map(String.init) ?? ""
             }
             // Valori cambiati da fuori (serie spuntata dalla Live Activity): i campi si riallineano, se non si sta scrivendo
+            // Si scrive con calma (anche cancellando per correggere): la spunta si toglie solo quando si esce dal campo lasciandolo vuoto
+            .onChange(of: campo.wrappedValue) { prima, ora in
+                if prima?.serie == idSerie, ora != prima { togliSpuntaSeSvuotata() }
+            }
             .onChange(of: s.fatta) { riallinea(s) }
             .onChange(of: s.kg) { riallinea(s) }
             .onChange(of: s.rip) { riallinea(s) }
@@ -748,7 +753,7 @@ struct RigaSerie: View {
         palestra.stato.inCorso?.esercizi[p.0].serie[p.1] = s
     }
 
-    // Una serie fatta a cui si svuota un campo non è più fatta: perde la spunta e il recupero che aveva fatto partire
+    // Una serie fatta che si lascia con un campo vuoto non è più fatta: perde la spunta e il recupero che aveva fatto partire
     private func togliSpuntaSeSvuotata() {
         var tolta = false
         modifica { tolta = $0.togliSpuntaSeIncompleta() }
@@ -768,7 +773,7 @@ struct RigaSerie: View {
         riferimento = idSerie
         palestra.ultimaSerie = idSerie   // anche la Live Activity parte da questa serie
         if s.fatta {
-            modifica { $0.fatta = false }
+            modifica { $0.fatta = false; $0.fattaIl = nil }
             timer.fermaSeAvviatoDa(s.id)
             return
         }
@@ -783,6 +788,7 @@ struct RigaSerie: View {
                 $0.kg = k
                 $0.rip = r
                 $0.fatta = true
+                $0.fattaIl = Date()
             }
             kg = num(k)
             rip = String(r)
