@@ -17,7 +17,7 @@ struct AllenamentoInCorsoView: View {
     @State private var senzaSpunta = 0   // serie che si perdono finendo (per la conferma)
     @State private var riaperti: Set<UUID> = []   // esercizi finiti che restano aperti: riaperti a mano o appena finiti
     @State private var chiusure: [UUID: Task<Void, Never>] = [:]   // chiusura in attesa, per esercizio
-    @State private var riferimento: UUID?   // l'ultima serie spuntata o toccata: da lei si cerca la serie attiva
+    @State private var riferimento: UUID?   // l'ultima serie toccata (all'apertura nil: vale palestra.ultimaSerie): da lei si cerca la serie attiva
     @State private var visibili: Set<UUID> = []   // serie che si vedono per intero
     @State private var passo: RichiestaPasso?   // ± della barra sopra la tastiera, per la serie che ha il cursore
     @FocusState private var campo: PuntoDiFocus?
@@ -25,7 +25,7 @@ struct AllenamentoInCorsoView: View {
     var body: some View {
         NavigationStack {
             if let a = palestra.stato.inCorso {
-                let attiva = SerieAttiva.trova(in: a.esercizi, riferimento: riferimento)
+                let attiva = palestra.serieAttiva(riferimento: riferimento)
                 ScrollViewReader { scorri in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -122,7 +122,7 @@ struct AllenamentoInCorsoView: View {
     // o mentre un esercizio appena finito aspetta di chiudersi
     private func mostraAttiva(_ scorri: ScrollViewProxy, animato: Bool = true) {
         guard campo == nil, chiusure.isEmpty,
-              let id = SerieAttiva.trova(in: palestra.stato.inCorso?.esercizi ?? [], riferimento: riferimento),
+              let id = palestra.serieAttiva(riferimento: riferimento),
               !visibili.contains(id) else { return }
         // Un po' sotto il bordo alto: sopra resta il nome dell'esercizio
         let punto = UnitPoint(x: 0.5, y: 0.3)
@@ -149,8 +149,8 @@ struct AllenamentoInCorsoView: View {
         ToolbarItem(placement: .confirmationAction) {
             // Sempre attivo: senza serie fatte chiede se chiudere senza salvare; con serie non spuntate dice quante se ne perdono
             Button("Fine") {
-                senzaSpunta = a.esercizi.flatMap(\.serie).filter { !$0.fatta }.count
-                if a.serieFatte == 0 {
+                senzaSpunta = a.serieNonSpuntate
+                if a.serieSpuntate == 0 {
                     chiediSenzaSerie = true
                 } else if senzaSpunta > 0 {
                     chiediFine = true
@@ -391,7 +391,7 @@ struct SezioneEsercizioInCorso: View {
                 compresso(ex, e)
             } else {
                 let conPrecedente = e.serie.indices.contains { j in
-                    palestra.precedente(e.esercizio, e.serie[..<j].filter { !$0.riscaldamento }.count) != nil
+                    palestra.precedente(e.esercizio, in: e.serie, posizione: j) != nil
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     intestazione(ex, e, i)
@@ -544,7 +544,7 @@ struct RigaSerie: View {
             let j = p.1
             let s = e.serie[j]
             let numero = e.serie[..<j].filter { !$0.riscaldamento }.count
-            let prec = palestra.precedente(e.esercizio, numero)
+            let prec = palestra.precedente(e.esercizio, in: e.serie, posizione: j)
             let ex = palestra.esercizio(e.esercizio)
             VStack(alignment: .leading, spacing: Spazio.xs) {
                 ColonneSerie(conPrecedente: conPrecedente) {
@@ -617,6 +617,10 @@ struct RigaSerie: View {
                 rip = s.rip.map(String.init) ?? ""
             }
             // Valori cambiati da fuori (serie spuntata dalla Live Activity): i campi si riallineano, se non si sta scrivendo
+            // Si scrive con calma (anche cancellando per correggere): la spunta si toglie solo quando si esce dal campo lasciandolo vuoto
+            .onChange(of: campo.wrappedValue) { prima, ora in
+                if prima?.serie == idSerie, ora != prima { togliSpuntaSeSvuotata() }
+            }
             .onChange(of: s.fatta) { riallinea(s) }
             .onChange(of: s.kg) { riallinea(s) }
             .onChange(of: s.rip) { riallinea(s) }
@@ -742,6 +746,13 @@ struct RigaSerie: View {
         guard let p = posizione, var s = palestra.stato.inCorso?.esercizi[p.0].serie[p.1] else { return }
         cambia(&s)
         palestra.stato.inCorso?.esercizi[p.0].serie[p.1] = s
+    }
+
+    // Una serie fatta che si lascia con un campo vuoto non è più fatta: perde la spunta e il recupero che aveva fatto partire
+    private func togliSpuntaSeSvuotata() {
+        var tolta = false
+        modifica { tolta = $0.togliSpuntaSeIncompleta() }
+        if tolta { timer.fermaSeAvviatoDa(idSerie) }
     }
 
     private func elimina() {

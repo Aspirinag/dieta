@@ -26,7 +26,7 @@ struct CorrezioniFinaliTests {
         s.cardio = [SessioneCardio(data: lunedi, tipo: "Corsa", minuti: 30, km: 4),
                     SessioneCardio(data: "2026-11-04", tipo: "Bici", minuti: 30, km: 10)]
         s.cardio.append(SessioneCardio(data: "2026-10-30", tipo: "Corsa", minuti: 30, km: 4))   // settimana prima
-        #expect(s.allenamentiSettimana("2026-11-05") == 3)
+        #expect(s.riepilogoSettimana(oggi: "2026-11-05").allenamenti == 3)
         #expect(s.giorniAllenati(settimanaDi: "2026-11-05") == [0, 2])
     }
 
