@@ -144,6 +144,7 @@ struct SerieFatta: Codable, Hashable, Identifiable {
     var rip: Int?
     var fatta = false
     var riscaldamento = false
+    var fattaIl: Date?                          // quando è stata spuntata: serve a dare una durata sensata all'allenamento
 
     init(kg: Double? = nil, rip: Int? = nil, fatta: Bool = false, riscaldamento: Bool = false) {
         self.kg = kg
@@ -159,6 +160,7 @@ struct SerieFatta: Codable, Hashable, Identifiable {
         rip = c.valore(.rip, nil)
         fatta = c.valore(.fatta, false)
         riscaldamento = c.valore(.riscaldamento, false)
+        fattaIl = c.valore(.fattaIl, nil)
     }
 
     // Serie che conta per volume e record: fatta, non di riscaldamento, con kg e ripetizioni
@@ -258,6 +260,17 @@ struct Allenamento: Codable, Hashable, Identifiable {
     var serieSpuntate: Int { esercizi.flatMap(\.serie).filter(\.siSalva).count }   // quelle che si salvano (anche il riscaldamento)
     var serieNonSpuntate: Int { esercizi.flatMap(\.serie).filter { !$0.fatta }.count }
     var durata: TimeInterval { (fine ?? Date()).timeIntervalSince(inizio) }
+    static let margineFine: TimeInterval = 30 * 60
+    static let tettoSenzaOrari: TimeInterval = 6 * 3600
+
+    // Fine verosimile di un allenamento ancora aperto: adesso, ma non oltre 30 minuti dopo l'ultima serie spuntata
+    // (o dall'inizio, se non ce ne sono). Per le serie vecchie senza orario, fino a 6 ore dall'inizio vale adesso
+    func fineVerosimile(adesso: Date = Date()) -> Date {
+        if let fine { return fine }
+        let ultima = esercizi.flatMap(\.serie).compactMap(\.fattaIl).max()
+        if ultima == nil && adesso.timeIntervalSince(inizio) <= Self.tettoSenzaOrari { return max(adesso, inizio) }
+        return min(adesso, (ultima ?? inizio).addingTimeInterval(Self.margineFine))
+    }
 }
 
 struct SessioneCardio: Codable, Hashable, Identifiable {
