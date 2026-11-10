@@ -19,8 +19,7 @@ struct AllenamentoInCorsoView: View {
     @State private var chiusure: [UUID: Task<Void, Never>] = [:]   // chiusura in attesa, per esercizio
     @State private var riferimento: UUID?   // l'ultima serie toccata (all'apertura nil: vale palestra.ultimaSerie): da lei si cerca la serie attiva
     @State private var visibili: Set<UUID> = []   // serie che si vedono per intero
-    @State private var passo: RichiestaPasso?   // ± della barra sopra la tastiera, per la serie che ha il cursore
-    @FocusState private var campo: PuntoDiFocus?
+    @State private var campo: PuntoDiFocus?   // il campo che ha la rotella aperta (kg o ripetizioni di una serie)
 
     var body: some View {
         NavigationStack {
@@ -34,7 +33,7 @@ struct AllenamentoInCorsoView: View {
                         ForEach(a.esercizi) { e in
                             Divider()
                             SezioneEsercizioInCorso(idEsercizio: e.id, attiva: attiva, campo: $campo, riaperti: $riaperti,
-                                                    riferimento: $riferimento, visibili: $visibili, passo: passo)
+                                                    riferimento: $riferimento, visibili: $visibili)
                                 .id(e.id)
                         }
                         Divider()
@@ -89,16 +88,16 @@ struct AllenamentoInCorsoView: View {
                 }
                 .navigationTitle(a.titolo)
                 .navigationBarTitleDisplayMode(.inline)
-                .scrollDismissesKeyboard(.interactively)
                 .toolbar { barra(a) }
                 .safeAreaInset(edge: .bottom) { TimerInAllenamento() }
                 .sheet(isPresented: $aggiungi) {
                     LibreriaView(modo: .scelta { ids in palestra.aggiungi(esercizi: ids) })
                         .tint(Colori.accento)   // il foglio è un'altra schermata: tiene il suo tema
                 }
-                .confirmationDialog("Finire l'allenamento?", isPresented: $chiediFine, titleVisibility: .visible) {
+                // Un avviso (non un popover): «Finisci e salva» e «Annulla» si vedono e VoiceOver li raggiunge
+                .alert("Finire l'allenamento?", isPresented: $chiediFine) {
                     Button("Finisci e salva") { finisci() }
-                    Button("Continua", role: .cancel) {}
+                    Button("Annulla", role: .cancel) {}
                 } message: {
                     Text("\(senzaSpunta) serie senza spunta non verranno salvate.")
                 }
@@ -160,17 +159,6 @@ struct AllenamentoInCorsoView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Colori.accento)
-        }
-        // Sopra la tastiera: ± del campo che ha il cursore e «Chiudi» (non «Fine», che è già nella barra in alto)
-        ToolbarItemGroup(placement: .keyboard) {
-            if let c = campo {
-                Button { passo = RichiestaPasso(punto: c, su: false) } label: { TestiPasso.etichetta(c.campo, su: false) }
-                    .accessibilityLabel(TestiPasso.voce(c.campo, su: false))
-                Button { passo = RichiestaPasso(punto: c, su: true) } label: { TestiPasso.etichetta(c.campo, su: true) }
-                    .accessibilityLabel(TestiPasso.voce(c.campo, su: true))
-            }
-            Spacer()
-            Button("Chiudi") { campo = nil }
         }
     }
 
@@ -238,13 +226,6 @@ struct AllenamentoInCorsoView: View {
             navigazione.riepilogo = salvato
         }
     }
-}
-
-// Un tocco su ± nella barra sopra la tastiera: lo esegue la riga che ha il cursore (i testi dei campi sono suoi)
-struct RichiestaPasso: Equatable {
-    let id = UUID()
-    let punto: PuntoDiFocus
-    let su: Bool
 }
 
 // Testi dei pulsanti ±: con l'unità sullo schermo, a parole per VoiceOver
@@ -377,11 +358,10 @@ struct SezioneEsercizioInCorso: View {
     @Environment(\.dynamicTypeSize) private var dimensione
     let idEsercizio: UUID
     let attiva: UUID?
-    var campo: FocusState<PuntoDiFocus?>.Binding
+    @Binding var campo: PuntoDiFocus?
     @Binding var riaperti: Set<UUID>
     @Binding var riferimento: UUID?
     @Binding var visibili: Set<UUID>
-    let passo: RichiestaPasso?
     @State private var chiediRimuovi = false
 
     private var indice: Int? { palestra.stato.inCorso?.esercizi.firstIndex { $0.id == idEsercizio } }
@@ -389,7 +369,7 @@ struct SezioneEsercizioInCorso: View {
     var body: some View {
         if let i = indice, let e = palestra.stato.inCorso?.esercizi[i] {
             let ex = palestra.esercizio(e.esercizio)
-            let inModifica = e.serie.first { $0.id == campo.wrappedValue?.serie }?.id != nil ? e.id : nil
+            let inModifica = e.serie.first { $0.id == campo?.serie }?.id != nil ? e.id : nil
             if PercorsoAllenamento.compresso(e, riaperti: riaperti, inModifica: inModifica) {
                 compresso(ex, e)
             } else {
@@ -421,7 +401,7 @@ struct SezioneEsercizioInCorso: View {
                     }
                     ForEach(e.serie) { s in
                         RigaSerie(idEsercizio: idEsercizio, idSerie: s.id, conPrecedente: conPrecedente, attiva: s.id == attiva,
-                                  campo: campo, riaperti: $riaperti, riferimento: $riferimento, passo: passo)
+                                  campo: $campo, riaperti: $riaperti, riferimento: $riferimento)
                             .id(s.id)
                             .onScrollVisibilityChange(threshold: 0.9) { visibile in
                                 if visibile { visibili.insert(s.id) } else { visibili.remove(s.id) }
@@ -526,10 +506,9 @@ struct RigaSerie: View {
     let idSerie: UUID
     let conPrecedente: Bool
     let attiva: Bool
-    var campo: FocusState<PuntoDiFocus?>.Binding
+    @Binding var campo: PuntoDiFocus?
     @Binding var riaperti: Set<UUID>
     @Binding var riferimento: UUID?
-    let passo: RichiestaPasso?
     @State private var kg = ""
     @State private var rip = ""
     @State private var caricato = false
@@ -568,13 +547,13 @@ struct RigaSerie: View {
                 } precedente: {
                     ultimaVolta(prec, fatta: s.fatta)
                 } kg: {
-                    cella(testo: $kg, segnaposto: prec?.kg.map { num($0) } ?? String(localized: "kg"), tastiera: .decimalPad, quale: .kg)
+                    cella(testo: kg, segnaposto: prec?.kg.map { num($0) } ?? String(localized: "kg"), quale: .kg, serie: numero + 1, riscaldamento: s.riscaldamento)
                         .onChange(of: kg) { _, v in
                             modifica { $0.kg = leggiNumero(v) }
                             if !v.isEmpty, manca == .kg { manca = nil }
                         }
                 } rip: {
-                    cella(testo: $rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), tastiera: .numberPad, quale: .rip)
+                    cella(testo: rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), quale: .rip, serie: numero + 1, riscaldamento: s.riscaldamento)
                         .onChange(of: rip) { _, v in
                             modifica { $0.rip = Int(v) }
                             if !v.isEmpty, manca == .rip { manca = nil }
@@ -582,7 +561,8 @@ struct RigaSerie: View {
                 } spunta: {
                     // La vibrazione la fa la riga (.success quando la serie diventa fatta)
                     CerchioSpunta(fatta: s.fatta,
-                                  etichetta: s.riscaldamento ? Text("Serie di riscaldamento") : Text("Serie \(numero + 1)"),
+                                  etichetta: s.riscaldamento ? Text("Segna la serie di riscaldamento")
+                                      : Text("Segna la serie \(numero + 1) di \(e.serie.filter { !$0.riscaldamento }.count)"),
                                   stati: ("fatta", "da fare"), vibra: false) {
                         segna(s, prec, e.recupero, titolo: ex.titolo, corpoLibero: ex.attrezzo == .corpoLibero)
                     }
@@ -609,9 +589,16 @@ struct RigaSerie: View {
             }
             .sensoryFeedback(.success, trigger: s.fatta) { _, nuovo in nuovo }
             .sensoryFeedback(.error, trigger: errore)
-            .onChange(of: passo) { _, richiesta in
-                guard let richiesta, richiesta.punto.serie == idSerie else { return }
-                applica(richiesta.punto.campo, su: richiesta.su, prec: prec)
+            // Rotella di kg o ripetizioni: un foglio basso che si apre toccando la casella
+            .sheet(isPresented: Binding(
+                get: { campo?.serie == idSerie },
+                set: { if !$0, campo?.serie == idSerie { campo = nil } }
+            )) {
+                if let quale = campo?.campo {
+                    RotellaSerie(quale: quale, serie: s.riscaldamento ? String(localized: "R") : "\(numero + 1)",
+                                 testo: quale == .kg ? $kg : $rip, base: quale == .kg ? prec?.kg : prec?.rip.map(Double.init))
+                        .tint(Colori.accento)
+                }
             }
             .onAppear {
                 guard !caricato else { return }
@@ -621,7 +608,7 @@ struct RigaSerie: View {
             }
             // Valori cambiati da fuori (serie spuntata dalla Live Activity): i campi si riallineano, se non si sta scrivendo
             // Si scrive con calma (anche cancellando per correggere): la spunta si toglie solo quando si esce dal campo lasciandolo vuoto
-            .onChange(of: campo.wrappedValue) { prima, ora in
+            .onChange(of: campo) { prima, ora in
                 if prima?.serie == idSerie, ora != prima { togliSpuntaSeSvuotata() }
             }
             .onChange(of: s.fatta) { riallinea(s) }
@@ -633,7 +620,7 @@ struct RigaSerie: View {
     // Il testo dei campi segue la serie salvata, tranne il campo che ha il cursore (la digitazione resta com'è)
     private func riallinea(_ s: SerieFatta) {
         guard caricato else { return }
-        let inFocus = campo.wrappedValue?.serie == idSerie ? campo.wrappedValue?.campo : nil
+        let inFocus = campo?.serie == idSerie ? campo?.campo : nil
         if inFocus != .kg, leggiNumero(kg) != s.kg { kg = s.kg.map { num($0) } ?? "" }
         if inFocus != .rip, Int(rip) != s.rip { rip = s.rip.map(String.init) ?? "" }
     }
@@ -678,9 +665,8 @@ struct RigaSerie: View {
                 .fixedSize(horizontal: !largo, vertical: false)
                 .padding(.horizontal, Spazio.m)
                 .frame(maxWidth: largo ? .infinity : nil)
-                .frame(minHeight: 36)
+                .frame(minWidth: Misure.tocco, minHeight: Misure.tocco)
                 .background(.fill.tertiary, in: .capsule)
-                .frame(minHeight: Misure.tocco)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -722,23 +708,39 @@ struct RigaSerie: View {
         }
     }
 
-    // Campo di kg o ripetizioni. A testo molto grande l'unità si scrive accanto (l'intestazione della tabella non c'è)
-    private func cella(testo: Binding<String>, segnaposto: String, tastiera: UIKeyboardType, quale: EsitoSpunta.Campo) -> some View {
-        HStack(spacing: Spazio.xs) {
-            TextField(segnaposto, text: testo)
-                .keyboardType(tastiera)
-                .multilineTextAlignment(.center)
-                .font(.numero(.callout))
-                .padding(.vertical, 6)
-                .padding(.horizontal, Spazio.xs)
-                .frame(minHeight: 36)
-                .background(.fill.tertiary, in: .rect(cornerRadius: 7))
-                .overlay {
-                    if manca == quale {
-                        RoundedRectangle(cornerRadius: 7).strokeBorder(Colori.oltre, lineWidth: 2)
+    // Casella di kg o ripetizioni: mostra il valore e, toccata, apre la rotella (niente tastiera).
+    // A testo molto grande l'unità si scrive accanto (l'intestazione della tabella non c'è)
+    private func cella(testo: String, segnaposto: String, quale: EsitoSpunta.Campo, serie: Int, riscaldamento: Bool) -> some View {
+        let vuota = testo.isEmpty
+        let nomeCampo = quale == .kg ? Text("Kg") : Text("Ripetizioni")
+        return HStack(spacing: Spazio.xs) {
+            Button {
+                riferimento = idSerie
+                campo = PuntoDiFocus(serie: idSerie, campo: quale)
+            } label: {
+                Text(verbatim: vuota ? segnaposto : testo)
+                    .font(.numero(.callout))
+                    .foregroundStyle(vuota ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, Spazio.xs)
+                    .frame(minHeight: 36)
+                    .background(.fill.tertiary, in: .rect(cornerRadius: 7))
+                    .overlay {
+                        if manca == quale {
+                            RoundedRectangle(cornerRadius: 7).strokeBorder(Colori.oltre, lineWidth: 2)
+                        }
                     }
-                }
-                .focused(campo, equals: PuntoDiFocus(serie: idSerie, campo: quale))
+                    .frame(minHeight: Misure.tocco)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(riscaldamento ? Text("\(nomeCampo), serie di riscaldamento") : Text("\(nomeCampo), serie \(serie)"))
+            // Campo vuoto: vale il valore proposto (quello dell'ultima volta), che la spunta userebbe
+            .accessibilityValue(!vuota ? Text(verbatim: testo) : segnaposto.first?.isNumber == true ? Text(verbatim: segnaposto) : Text("vuoto"))
+            .accessibilityHint(Text("Apre la rotella per scegliere il valore"))
             if dimensione.isAccessibilitySize {
                 Text(quale == .kg ? "kg" : "rip").font(.callout).foregroundStyle(.secondary).fixedSize()
             }
@@ -760,7 +762,7 @@ struct RigaSerie: View {
 
     private func elimina() {
         guard let p = posizione else { return }
-        if campo.wrappedValue?.serie == idSerie { campo.wrappedValue = nil }
+        if campo?.serie == idSerie { campo = nil }
         timer.fermaSeAvviatoDa(idSerie)
         palestra.stato.inCorso?.esercizi[p.0].serie.remove(at: p.1)
     }
@@ -779,7 +781,7 @@ struct RigaSerie: View {
         case .manca(let quale):
             errore += 1
             withAnimation(.smooth(duration: 0.2)) { manca = quale }
-            campo.wrappedValue = PuntoDiFocus(serie: idSerie, campo: quale)
+            campo = PuntoDiFocus(serie: idSerie, campo: quale)   // la rotella del campo da compilare
         case .segna(let k, let r):
             manca = nil
             modifica {
@@ -790,7 +792,7 @@ struct RigaSerie: View {
             }
             kg = num(k)
             rip = String(r)
-            campo.wrappedValue = nil
+            campo = nil
             // L'ultima serie spuntata non chiude subito l'esercizio: resta aperto finché la chiusura ritardata lo chiude
             if palestra.stato.inCorso?.esercizi.first(where: { $0.id == idEsercizio }).map(PercorsoAllenamento.completo) == true {
                 riaperti.insert(idEsercizio)
@@ -902,5 +904,80 @@ struct IconaEsercizio: View {
         }
         .frame(width: lato, height: lato)
         .background(Color.secondary.opacity(0.12), in: .circle)
+    }
+}
+
+// Rotella di kg o ripetizioni, in un foglio basso. I kg vanno da 0 a 300 a passi di 0,5, le ripetizioni da 0 a 50
+// (più il valore attuale se non ci cade). Il valore cambia mentre si gira; «Fine» chiude, «Svuota» toglie il valore
+// (e, se la serie era fatta, la spunta)
+struct RotellaSerie: View {
+    @Environment(\.dismiss) private var chiudi
+    let quale: EsitoSpunta.Campo
+    let serie: String
+    @Binding var testo: String
+    @State private var kgOpzioni: [Double]
+    @State private var ripOpzioni: [Int]
+    @State private var kgScelti: Double
+    @State private var ripScelte: Int
+
+    // Parte dal valore scritto; se il campo è vuoto, da quello dell'ultima volta (la base), poi da 0
+    init(quale: EsitoSpunta.Campo, serie: String, testo: Binding<String>, base: Double?) {
+        self.quale = quale
+        self.serie = serie
+        _testo = testo
+        let kg = max(0, ((leggiNumero(testo.wrappedValue) ?? base ?? 0) * 100).rounded() / 100)
+        let rip = max(0, Int(testo.wrappedValue.trimmingCharacters(in: .whitespaces)) ?? base.map { Int($0) } ?? 0)
+        _kgOpzioni = State(initialValue: quale == .kg ? PassoSerie.opzioniKg(attuale: kg) : [])
+        _ripOpzioni = State(initialValue: quale == .rip ? PassoSerie.opzioniRip(attuale: rip) : [])
+        _kgScelti = State(initialValue: kg)
+        _ripScelte = State(initialValue: rip)
+    }
+
+    private var nome: Text { quale == .kg ? Text("Kg") : Text("Ripetizioni") }
+
+    var body: some View {
+        VStack(spacing: Spazio.s) {
+            HStack {
+                Button("Svuota", role: .destructive) {
+                    testo = ""
+                    chiudi()
+                }
+                Spacer()
+                VStack(spacing: 0) {
+                    nome.font(.headline)
+                    Text("Serie \(serie)").font(.footnote).foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button("Fine") {
+                    scrivi()
+                    chiudi()
+                }
+                .fontWeight(.semibold)
+            }
+            .frame(minHeight: Misure.tocco)
+            if quale == .kg {
+                Picker(selection: $kgScelti) {
+                    ForEach(kgOpzioni, id: \.self) { Text(verbatim: num($0)).tag($0) }
+                } label: { Text("Kg") }
+                .pickerStyle(.wheel)
+                .onChange(of: kgScelti) { scrivi() }
+            } else {
+                Picker(selection: $ripScelte) {
+                    ForEach(ripOpzioni, id: \.self) { Text(verbatim: String($0)).tag($0) }
+                } label: { Text("Ripetizioni") }
+                .pickerStyle(.wheel)
+                .onChange(of: ripScelte) { scrivi() }
+            }
+        }
+        .padding(.horizontal, Spazio.l)
+        .padding(.top, Spazio.s)
+        .presentationDetents([.height(300), .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func scrivi() {
+        testo = quale == .kg ? num(kgScelti) : String(ripScelte)
     }
 }
