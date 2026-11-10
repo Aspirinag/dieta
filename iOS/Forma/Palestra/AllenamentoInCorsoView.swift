@@ -757,7 +757,7 @@ struct RigaSerie: View {
         riferimento = idSerie
         palestra.ultimaSerie = idSerie   // anche la Live Activity parte da questa serie
         if s.fatta {
-            modifica { $0.fatta = false }
+            modifica { $0.fatta = false; $0.fattaIl = nil }
             timer.fermaSeAvviatoDa(s.id)
             return
         }
@@ -772,6 +772,7 @@ struct RigaSerie: View {
                 $0.kg = k
                 $0.rip = r
                 $0.fatta = true
+                $0.fattaIl = Date()
             }
             kg = num(k)
             rip = String(r)

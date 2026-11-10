@@ -149,6 +149,7 @@ final class Palestra {
         stato.inCorso?.esercizi[i].serie[j].kg = k
         stato.inCorso?.esercizi[i].serie[j].rip = r
         stato.inCorso?.esercizi[i].serie[j].fatta = true
+        stato.inCorso?.esercizi[i].serie[j].fattaIl = Date()
         ultimaSerie = id
         timer.avvia(e.recupero, serie: id, esercizio: ex.titolo)
         salvaOra()
@@ -172,7 +173,7 @@ final class Palestra {
     @discardableResult
     func termina() -> Allenamento? {
         guard var a = stato.inCorso else { return nil }
-        a.fine = a.fine ?? Date()
+        a.fine = a.fineVerosimile()
         a.esercizi = a.esercizi.compactMap { e in
             var e = e
             e.serie = e.serie.filter { $0.fatta && ($0.rip ?? 0) > 0 }
@@ -189,6 +190,13 @@ final class Palestra {
         stato.allenamenti.sort { $0.inizio < $1.inizio }
         stato.saltati.removeAll { $0 == a.giorno }
         return a
+    }
+
+    // «Annullalo e inizia il nuovo»: annulla davvero quello vecchio (sessione Watch tenuta, recupero fermato)
+    func annullaEInizia(_ routine: Routine?, timer: TimerRecupero) {
+        timer.ferma()
+        annulla()
+        inizia(routine)
     }
 
     // Annullando, se il Watch aveva registrato la sessione resta quella (senza esercizi)
@@ -264,7 +272,7 @@ final class Palestra {
     }
 
     static func sovrapposti(_ a: Allenamento, _ b: Allenamento) -> Bool {
-        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fine ?? Date()
+        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fineVerosimile()
         return a.inizio < fb && b.inizio < fa
     }
 
