@@ -9,7 +9,7 @@ Dieta e palestra in un'unica app per iPhone, in SwiftUI. I dati restano sul tele
 - **Impostazioni:** un foglio aperto dall'icona in alto (profili, promemoria, backup).
 - **Promemoria:** mattino, pasti, acqua e pagamento, agli orari che scegli.
 
-Serve iOS 18 o successivo (su iOS 26 con l'aspetto Liquid Glass). La web app (`index.html`, su GitHub Pages) è la versione per browser della parte dieta. I dati passano da una all'altra con **Esporta backup** / **Importa backup**: il file è lo stesso.
+Serve iOS 18 o successivo (su iOS 26 con l'aspetto Liquid Glass). La web app (`index.html`, su GitHub Pages) è la versione per browser della parte dieta. I dati passano da una all'altra con **Esporta backup** / **Importa backup**: il file di Forma contiene anche la palestra, che la web app ignora; quello della web app si importa in Forma, e quello di Forma si importa nella web app (viene usata solo la parte dieta).
 
 ## Installare sull'iPhone
 

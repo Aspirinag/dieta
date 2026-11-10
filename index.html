@@ -539,13 +539,22 @@ function parseSchema(righe) {
   }
   // Spunte della lista: valgono per la settimana in corso, poi ripartono da zero
   // Toglie le spunte della spesa e tiene il resto (es. le voci aggiunte a mano in Forma)
+  // Forma tiene due settimane: `spesa` (la più vecchia) e `spesa_prossima` (la più recente, se ce ne sono due)
   function azzeraSpesa() {
     if (prof().spesa) prof().spesa.presi = {};
+    if (prof().spesa_prossima) prof().spesa_prossima.presi = {};
   }
   function spuntaSpesa() {
     const lun = lunediDi(todayISO());
-    if (!prof().spesa || prof().spesa.settimana !== lun) prof().spesa = { settimana: lun, presi: {} };
-    return prof().spesa.presi;
+    const p = prof();
+    const sett = [p.spesa, p.spesa_prossima].filter(Boolean);
+    let questa = sett.find((s) => s.settimana === lun);
+    // Una settimana diversa non cancella quella già salvata (es. la prossima spuntata in Forma)
+    if (!questa) { questa = { settimana: lun, presi: {} }; sett.push(questa); }
+    const ultime = sett.sort((a, b) => (a.settimana < b.settimana ? -1 : 1)).slice(-2);
+    p.spesa = ultime[0];
+    if (ultime[1]) p.spesa_prossima = ultime[1]; else delete p.spesa_prossima;
+    return questa.presi;
   }
   function listaSpesa() {
     const voci = vociSpesa();
@@ -1063,6 +1072,12 @@ function parseSchema(righe) {
     }
   });
 
+  // Il backup della web app ha `profili` in cima; quello di Forma è { forma, dieta, palestra }: se ne usa la parte `dieta`
+  function datiDaBackup(parsed) {
+    if (parsed && parsed.forma && parsed.dieta && typeof parsed.dieta.profili === 'object') return parsed.dieta;
+    return parsed;
+  }
+
   // Importa un backup: sostituisce i dati attuali con quelli del file
   document.addEventListener('change', async (e) => {
     if (e.target.id !== 'importFile') return;
@@ -1070,7 +1085,7 @@ function parseSchema(righe) {
     e.target.value = '';
     if (!file) return;
     try {
-      const parsed = JSON.parse(await file.text());
+      const parsed = datiDaBackup(JSON.parse(await file.text()));
       if (!parsed || typeof parsed.profili !== 'object') throw new Error('formato');
       if (!confirm('Il backup sostituisce tutti i dati attuali. Continuo?')) return;
       state = { ...structuredClone(DEFAULT), ...parsed };
@@ -1078,7 +1093,7 @@ function parseSchema(righe) {
       render();
       alert('Backup importato.');
     } catch (err) {
-      alert('Backup non importato: scegli un file esportato da questa app.');
+      alert('Backup non importato: scegli un file esportato da questa app o da Forma.');
     }
   });
 

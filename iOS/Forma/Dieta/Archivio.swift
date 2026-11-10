@@ -352,23 +352,36 @@ extension Profilo {
         salvaSettimane(settimane)
     }
 
+    // Legge il numero all'inizio di una quantità. Regola: un punto seguito da esattamente tre cifre
+    // (e preceduto da 1-9) è il separatore italiano delle migliaia ("1.000" = 1000, "1.250.000"); altrimenti
+    // il punto e la virgola sono decimali ("1.5", "1,5", "0.250" = 0,25)
+    static func numeroQuantita(_ testo: String) -> Double? {
+        let migliaia = testo.wholeMatch(of: #/[1-9]\d{0,2}(?:\.\d{3})+(?:,\d+)?/#) != nil
+        let pulito = migliaia ? testo.replacing(".", with: "") : testo
+        return leggiNumero(pulito)
+    }
+
     // Quantità somma di grammi/millilitri (kg e l si convertono), sempre a numeri interi nelle unità piccole;
-    // senza quantità in g o ml l'alimento è «a piacere» (non si compra a porzioni)
+    // le altre quantità (pezzi, vasetti...) si sommano per parola: «100 g + 1 vasetto»;
+    // senza nessuna quantità con numero l'alimento è «a piacere»
     // Le unità restano metriche in ogni lingua; cambiano solo il separatore decimale e le parole
-    private static func testoQuantita(_ unita: [String: Double], porzioni: Int, locale: Locale) -> String {
+    private static func testoQuantita(_ unita: [String: Double], pezzi: [String: Double], locale: Locale) -> String {
         var parti: [String] = []
         if let g = unita["g"] { parti.append(g >= 1000 ? "\(num(g / 1000, locale: locale)) kg" : "\(num(g.rounded(), locale: locale)) g") }
         if let ml = unita["ml"] { parti.append(ml >= 1000 ? "\(num(ml / 1000, locale: locale)) L" : "\(num(ml.rounded(), locale: locale)) ml") }
+        for (parola, n) in pezzi.sorted(by: { $0.key < $1.key }) {
+            parti.append(parola.isEmpty ? num(n, locale: locale) : "\(num(n, locale: locale)) \(parola)")
+        }
         if !parti.isEmpty { return parti.joined(separator: " + ") }
         return String(localized: "a piacere", locale: locale)
     }
 
     // Alimenti della settimana: per ogni pasto vale l'alternativa scelta, altrimenti la prima.
-    // Le quantità in g, ml, kg o l si sommano, le altre si contano come porzioni
+    // Le quantità in g, ml, kg o l si sommano; le altre (pezzi, vasetti...) si sommano per parola
     func vociSpesa(lunedi lun: String, locale: Locale = .current) -> [VoceSpesa] {
-        struct Somma { var unita: [String: Double] = [:]; var volte = 0 }
+        struct Somma { var unita: [String: Double] = [:]; var pezzi: [String: Double] = [:] }
         var voci: [String: (nome: String, tot: Somma, giorni: [Int: Somma])] = [:]
-        let regex = #/^(\d+(?:[.,]\d+)?)\s*(g|gr|ml|kg|l)\b/#.ignoresCase()
+        let regex = #/^([1-9]\d{0,2}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)(?![\d\/])\s*(\p{L}+)?/#
         for i in 0..<7 {
             let iso = Giorni.aggiungi(lun, i)
             guard let p = piano(per: iso) else { continue }
@@ -385,15 +398,18 @@ extension Profilo {
                     let k = nome.lowercased()
                     var v = voci[k] ?? (nome: nome, tot: Somma(), giorni: [:])
                     var g = v.giorni[i] ?? Somma()
-                    v.tot.volte += 1
-                    g.volte += 1
-                    if let m = a.quantita.firstMatch(of: regex), var n = leggiNumero(String(m.1)) {
-                        var u = m.2.lowercased()
+                    if let m = a.quantita.trimmingCharacters(in: .whitespaces).firstMatch(of: regex), var n = Self.numeroQuantita(String(m.1)) {
+                        var u = m.2.map { String($0).lowercased() } ?? ""
                         if u == "gr" { u = "g" }
                         if u == "kg" { u = "g"; n *= 1000 }
                         if u == "l" { u = "ml"; n *= 1000 }
-                        v.tot.unita[u, default: 0] += n
-                        g.unita[u, default: 0] += n
+                        if u == "g" || u == "ml" {
+                            v.tot.unita[u, default: 0] += n
+                            g.unita[u, default: 0] += n
+                        } else {
+                            v.tot.pezzi[u, default: 0] += n
+                            g.pezzi[u, default: 0] += n
+                        }
                     }
                     v.giorni[i] = g
                     voci[k] = v
@@ -404,9 +420,9 @@ extension Profilo {
             .sorted { $0.value.nome.localizedCompare($1.value.nome) == .orderedAscending }
             .map { k, v in
                 VoceSpesa(chiave: k, nome: v.nome,
-                          quanto: Self.testoQuantita(v.tot.unita, porzioni: v.tot.volte, locale: locale),
+                          quanto: Self.testoQuantita(v.tot.unita, pezzi: v.tot.pezzi, locale: locale),
                           reparto: reparto(di: k),
-                          giorni: v.giorni.sorted { $0.key < $1.key }.map { (Giorni.sigla($0.key), Self.testoQuantita($0.value.unita, porzioni: $0.value.volte, locale: locale)) },
+                          giorni: v.giorni.sorted { $0.key < $1.key }.map { (Giorni.sigla($0.key), Self.testoQuantita($0.value.unita, pezzi: $0.value.pezzi, locale: locale)) },
                           aggiunta: false)
             }
         if let sett = settimaneSpesa.first(where: { $0.settimana == lun }) {
