@@ -34,6 +34,10 @@ nonisolated struct AttivitaAllenamento: ActivityAttributes {
 enum AzioniLive {
     @MainActor static var segna: ((UUID) async -> Void)?
     @MainActor static var segnaRiscaldamento: ((Int) async -> Void)?
+    @MainActor static var cambiaRecupero: ((Int) async -> Void)?     // ±15 s
+    @MainActor static var saltaRecupero: (() async -> Void)?
+    @MainActor static var saltaRiscaldamento: (() async -> Void)?
+    @MainActor static var ancora30: (() async -> Void)?              // dalla notifica di fine recupero
 }
 
 // «Fatta» sulla Live Activity: segna la serie mostrata e fa partire il recupero (gira nel processo dell'app)
@@ -74,6 +78,52 @@ struct SegnaRiscaldamentoIntent: LiveActivityIntent {
 
     func perform() async throws -> some IntentResult {
         await AzioniLive.segnaRiscaldamento?(movimento)
+        return .result()
+    }
+}
+
+// «−15 s» / «+15 s» sul recupero (gira nel processo dell'app)
+struct CambiaRecuperoIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Cambia il recupero"
+    static let isDiscoverable = false
+
+    @Parameter(title: "Secondi")
+    var secondi: Int
+
+    init() {}
+
+    init(secondi: Int) {
+        self.secondi = secondi
+    }
+
+    func perform() async throws -> some IntentResult {
+        await AzioniLive.cambiaRecupero?(secondi)
+        return .result()
+    }
+}
+
+// «Salta» sul recupero: finisce subito (gira nel processo dell'app)
+struct SaltaRecuperoIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Salta il recupero"
+    static let isDiscoverable = false
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        await AzioniLive.saltaRecupero?()
+        return .result()
+    }
+}
+
+// «Salta» sul riscaldamento: salta i movimenti rimasti (gira nel processo dell'app)
+struct SaltaRiscaldamentoIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Salta il riscaldamento"
+    static let isDiscoverable = false
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        await AzioniLive.saltaRiscaldamento?()
         return .result()
     }
 }

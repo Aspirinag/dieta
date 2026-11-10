@@ -2108,6 +2108,22 @@
         }
       }
     },
+    "Ancora 30 s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 s more"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 s more"
+          }
+        }
+      }
+    },
     "Ancora nessun allenamento con i pesi nelle ultime %lld settimane.": {
       "localizations": {
         "en": {
@@ -2796,6 +2812,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Active calories"
+          }
+        }
+      }
+    },
+    "Cambia il recupero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change rest"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change rest"
           }
         }
       }
@@ -10096,6 +10128,38 @@
         }
       }
     },
+    "Salta il recupero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip rest"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip rest"
+          }
+        }
+      }
+    },
+    "Salta il riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip warm-up"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip warm-up"
+          }
+        }
+      }
+    },
     "saltato": {
       "localizations": {
         "en": {
@@ -10405,6 +10469,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Seated row"
+          }
+        }
+      }
+    },
+    "Secondi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seconds"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seconds"
           }
         }
       }

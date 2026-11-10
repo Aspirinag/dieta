@@ -43,13 +43,7 @@ struct RecuperoLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 8) {
                         if let recupero {
-                            HStack(alignment: .firstTextBaseline) {
-                                Label("Recupero", systemImage: "timer")
-                                    .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                                Spacer(minLength: 0)
-                                ContoRecupero(stato: recupero, stile: .title2)
-                            }
-                            BarraRecupero(stato: recupero)
+                            RigaRecupero(stato: recupero, stile: .title2, compatto: true)
                         } else if stato.recupero != nil {
                             Label("Recupero finito", systemImage: "timer")
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
@@ -61,7 +55,11 @@ struct RecuperoLiveActivity: Widget {
                             if !stato.puoSpuntare {
                                 Text("Apri Forma per i kg").font(.footnote).foregroundStyle(.secondary)
                             }
-                            RigaPoi(prossimo: stato.prossimo)
+                            HStack(alignment: .center, spacing: 8) {
+                                RigaPoi(prossimo: stato.prossimo)
+                                Spacer(minLength: 0)
+                                if stato.movimento != nil { PulsanteSaltaRiscaldamento(compatto: true) }
+                            }
                         }
                     }
                     .padding(.horizontal, 4)
@@ -132,7 +130,11 @@ struct VistaAllenamentoBloccata: View {
                     }
                     Spacer(minLength: 0)
                     if stato.puoSpuntare {
-                        PulsanteFatta(stato: stato)
+                        // «Fatta» è il principale; durante il riscaldamento sotto c'è «Salta», secondario
+                        VStack(alignment: .trailing, spacing: 6) {
+                            PulsanteFatta(stato: stato)
+                            if stato.movimento != nil { PulsanteSaltaRiscaldamento(compatto: false) }
+                        }
                     } else {
                         Text("Apri Forma per i kg")
                             .font(.caption).foregroundStyle(.secondary)
@@ -147,18 +149,11 @@ struct VistaAllenamentoBloccata: View {
                 }
             }
             if let recupero {
-                VStack(spacing: 6) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Label("Recupero", systemImage: "timer")
-                            .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                        Spacer(minLength: 0)
-                        ContoRecupero(stato: recupero, stile: .largeTitle)
-                    }
-                    BarraRecupero(stato: recupero)
-                }
+                RigaRecupero(stato: recupero, stile: .title, compatto: false)
             }
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 
@@ -211,12 +206,73 @@ struct PulsanteFatta: View {
 struct ContoRecupero: View {
     let stato: StatoRecupero
     let stile: Font.TextStyle
+    var allineato: Alignment = .trailing
 
     var body: some View {
         Text(timerInterval: stato.intervallo, countsDown: true)
             .font(.numero(stile))
-            .multilineTextAlignment(.trailing)
-            .frame(maxWidth: 140, alignment: .trailing)
+            .multilineTextAlignment(allineato == .leading ? .leading : .trailing)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .frame(maxWidth: 140, alignment: allineato)
+    }
+}
+
+// Il recupero: timer e conto alla rovescia a sinistra, «−15 s», «+15 s» e «Salta» a destra sulla stessa riga
+// (nessuna riga in più: il conto non si taglia), la barra sotto
+struct RigaRecupero: View {
+    let stato: StatoRecupero
+    let stile: Font.TextStyle
+    let compatto: Bool
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
+                Image(systemName: "timer").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                ContoRecupero(stato: stato, stile: stile, allineato: .leading)
+                    .accessibilityLabel("Recupero")
+                Spacer(minLength: 0)
+                HStack(spacing: compatto ? 5 : 8) {
+                    PulsanteSecondario(titolo: "−15 s", voce: "Togli 15 secondi", intent: CambiaRecuperoIntent(secondi: -15), compatto: compatto)
+                    PulsanteSecondario(titolo: "+15 s", voce: "Aggiungi 15 secondi", intent: CambiaRecuperoIntent(secondi: 15), compatto: compatto)
+                    PulsanteSecondario(titolo: "Salta", voce: "Salta il recupero", intent: SaltaRecuperoIntent(), compatto: compatto)
+                }
+            }
+            BarraRecupero(stato: stato)
+        }
+    }
+}
+
+// «Salta» sul riscaldamento: salta i movimenti rimasti
+struct PulsanteSaltaRiscaldamento: View {
+    let compatto: Bool
+
+    var body: some View {
+        PulsanteSecondario(titolo: "Salta", voce: "Salta il riscaldamento", intent: SaltaRiscaldamentoIntent(), compatto: compatto)
+    }
+}
+
+// Pulsante secondario: capsula chiara, testo normale. Solo «Fatta» è pieno e verde
+struct PulsanteSecondario<I: AppIntent>: View {
+    let titolo: LocalizedStringKey
+    let voce: LocalizedStringKey
+    let intent: I
+    let compatto: Bool
+
+    var body: some View {
+        Button(intent: intent) {
+            Text(titolo)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .padding(.horizontal, compatto ? 8 : 11)
+                .padding(.vertical, 8)
+                .background(Color.primary.opacity(0.14), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+        .accessibilityLabel(voce)
     }
 }
 
@@ -293,7 +349,16 @@ private extension StatoAllenamentoLive {
     StatoAllenamentoLive.esempio(recupero: StatoRecupero(inizio: .now, fine: .now.addingTimeInterval(90), esercizio: "Panca piana con manubri"))
     StatoAllenamentoLive.esempio(valori: false)
     StatoAllenamentoLive.esempio(fatte: true)
+    StatoAllenamentoLive.esempio(recupero: StatoRecupero(inizio: .now, fine: .now.addingTimeInterval(605), esercizio: "Panca piana con manubri"), valori: false)
     StatoAllenamentoLive(titolo: "Gambe", inizio: .now, esercizio: "Squat a corpo libero (10 lenti)", serie: 4, totaleSerie: 6,
                          riscaldamento: true, prossimo: "Squat", movimento: 3,
                          spiegazione: "Piedi alla larghezza delle spalle, scendi lentamente e risali. Scalda ginocchia e caviglie.")
+}
+
+#Preview("Isola espansa", as: .dynamicIsland(.expanded), using: AttivitaAllenamento()) {
+    RecuperoLiveActivity()
+} contentStates: {
+    StatoAllenamentoLive.esempio(recupero: StatoRecupero(inizio: .now, fine: .now.addingTimeInterval(90), esercizio: "Panca piana con manubri"))
+    StatoAllenamentoLive(titolo: "Gambe", inizio: .now, esercizio: "Squat a corpo libero (10 lenti)", serie: 4, totaleSerie: 6,
+                         riscaldamento: true, prossimo: "Squat", movimento: 3)
 }

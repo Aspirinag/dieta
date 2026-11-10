@@ -220,6 +220,7 @@ struct Allenamento: Codable, Hashable, Identifiable {
     var esercizi: [EsercizioFatto] = []
     var routine: UUID?
     var riscaldamento: [String: Bool] = [:]
+    var riscaldamentoSaltato = false            // «Salta» dalla Live Activity: i movimenti rimasti non si fanno più
     var watch: DatiWatch?                       // dati dell'allenamento registrato sull'Apple Watch
     var ultimaSerie: UUID?                      // l'ultima serie spuntata: da lei si cerca la serie attiva, anche dopo un riavvio
 
@@ -239,6 +240,7 @@ struct Allenamento: Codable, Hashable, Identifiable {
         esercizi = c.valore(.esercizi, [])
         routine = c.valore(.routine, nil)
         riscaldamento = c.valore(.riscaldamento, [:])
+        riscaldamentoSaltato = c.valore(.riscaldamentoSaltato, false)
         watch = c.valore(.watch, nil)
         ultimaSerie = c.valore(.ultimaSerie, nil)
     }

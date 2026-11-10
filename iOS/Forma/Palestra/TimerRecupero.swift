@@ -17,7 +17,8 @@ final class TimerRecupero {
     private let cancellaNotifica: () -> Void
 
     init(aggiungiNotifica: @escaping (Int) async -> Void = { secondi in
-             await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi)
+             await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi,
+                                        categoria: Notifiche.categoriaRecupero)
          },
          cancellaNotifica: @escaping () -> Void = { Notifiche.cancella(["recupero"]) }) {
         self.aggiungiNotifica = aggiungiNotifica
@@ -74,6 +75,11 @@ final class TimerRecupero {
         }
     }
 
+    // «Ancora 30 s» dalla notifica di fine recupero: riparte un recupero di 30 s
+    func ancora30() {
+        avvia(30)
+    }
+
     // Aspetta che la notifica di fine recupero sia stata aggiunta (per l'intent: iOS può sospendere l'app appena ritorna)
     func attendiNotifica() async {
         await compitoNotifica?.value
@@ -88,8 +94,8 @@ final class TimerRecupero {
         avviatoDa = nil
         compito?.cancel()
         compito = nil
+        // L'aggiunta in corso si annulla ma si tiene: chi aspetta (`attendiNotifica`) la vede finita e già tolta
         compitoNotifica?.cancel()
-        compitoNotifica = nil
         fine = nil
         inizio = nil
         esercizio = nil
