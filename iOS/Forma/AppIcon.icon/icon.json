@@ -1,14 +1,24 @@
 {
   "fill" : {
-    "automatic-gradient" : "srgb:0.24706,0.41961,0.29020,1.00000"
+    "solid" : "srgb:0.95294,0.93725,0.90196,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
           "glass" : true,
-          "image-name" : "F.svg",
-          "name" : "F"
+          "image-name" : "triangolo.svg",
+          "name" : "triangolo"
+        },
+        {
+          "glass" : true,
+          "image-name" : "cerchio.svg",
+          "name" : "cerchio"
+        },
+        {
+          "glass" : true,
+          "image-name" : "quadrato.svg",
+          "name" : "quadrato"
         }
       ],
       "shadow" : {
@@ -16,7 +26,7 @@
         "opacity" : 0.5
       },
       "translucency" : {
-        "enabled" : true,
+        "enabled" : false,
         "value" : 0.4
       }
     }
