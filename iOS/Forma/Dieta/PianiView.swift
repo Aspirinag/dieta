@@ -178,7 +178,7 @@ struct PianiDietaView: View {
             get: { pianoDaEliminare != nil }, set: { if !$0 { pianoDaEliminare = nil } }
         ), titleVisibility: .visible, presenting: pianoDaEliminare) { p in
             Button("Elimina \(p.nome)", role: .destructive) {
-                archivio.profilo.piani.removeAll { $0.id == p.id }
+                archivio.profilo.eliminaPiano(p)
             }
         } message: { _ in
             Text("I pasti già segnati restano.")

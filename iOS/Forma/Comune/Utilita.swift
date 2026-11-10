@@ -45,12 +45,14 @@ enum Giorni {
         }
     }
 
-    static let calendario: Calendar = {
+    // Creato a ogni uso: segue il fuso e la lingua attuali anche se cambiano con l'app aperta
+    static var calendario: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.locale = .current
+        c.timeZone = .autoupdatingCurrent
         c.firstWeekday = 2
         return c
-    }()
+    }
 
     static func iso(_ data: Date) -> String {
         let c = calendario.dateComponents([.year, .month, .day], from: data)
