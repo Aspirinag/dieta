@@ -157,6 +157,14 @@ final class Palestra {
         salvaOra()
     }
 
+    // «Salta» sul riscaldamento dalla Live Activity: i movimenti rimasti non si fanno, la Live passa alla prima serie.
+    // Quelli non fatti restano non fatti (l'app dice «Saltato»)
+    func saltaRiscaldamentoDaLive() {
+        guard stato.inCorso != nil else { return }
+        stato.inCorso?.riscaldamentoSaltato = true
+        salvaOra()
+    }
+
     func aggiungi(esercizi ids: [String]) {
         for id in ids {
             stato.inCorso?.esercizi.append(EsercizioFatto(esercizio: id, serie: (0..<3).map { _ in SerieFatta() }))

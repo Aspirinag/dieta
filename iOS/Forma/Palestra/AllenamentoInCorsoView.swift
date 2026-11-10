@@ -276,7 +276,10 @@ struct RigaRiscaldamento: View {
 
     var body: some View {
         let fatti = palestra.stato.inCorso?.riscaldamento ?? [:]
-        let conteggio = "\(fatti.values.filter { $0 }.count)/\(Libreria.riscaldamento.count)"
+        let nFatti = fatti.values.filter { $0 }.count
+        // Saltato dalla Live Activity e nessun movimento fatto: «Saltato» invece di «0/6»
+        let saltato = palestra.stato.inCorso?.riscaldamentoSaltato == true && nFatti == 0
+        let conteggio = saltato ? String(localized: "Saltato") : "\(nFatti)/\(Libreria.riscaldamento.count)"
         VStack(alignment: .leading, spacing: 0) {
             Button {
                 withAnimation(.smooth) { aperto.toggle() }
