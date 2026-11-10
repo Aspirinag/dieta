@@ -31,6 +31,12 @@ final class Archivio {
         stato = s
     }
 
+    // Senza file dati: parte dallo stato dato e non salva (per i test)
+    init(stato: Stato) {
+        demo = true
+        self.stato = stato
+    }
+
     // ---------- File ----------
 
     // Salvataggio raggruppato: più modifiche ravvicinate (es. digitare i kg) scrivono il file una volta sola
@@ -80,16 +86,17 @@ final class Archivio {
         guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
-            try backup().write(to: Self.fileDati, options: .atomic)
+            // Se la codifica fallisce o i dati sono vuoti non si scrive niente: il file vecchio resta com'è
+            try FileDati.scrivi(backup(), su: Self.fileDati)
         } catch {
             print("Salvataggio non riuscito: \(error)")
         }
     }
 
-    func backup() -> Data {
+    func backup() throws -> Data {
         let e = JSONEncoder()
         e.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return (try? e.encode(stato)) ?? Data()
+        return try e.encode(stato)
     }
 
     func importa(_ dati: Data) throws {
@@ -173,8 +180,11 @@ final class Archivio {
     // così non restano promemoria con orari vecchi
     @ObservationIgnored private var programmazione: Task<Void, Never>?
 
+    // Con i dati non leggibili `stato` è quello di fabbrica: i promemoria scelti dall'utente non vanno toccati
+    static func promemoriaProgrammabili(demo: Bool, bloccato: Bool) -> Bool { !demo && !bloccato }
+
     func programmaPromemoria() async {
-        guard !demo else { return }
+        guard Self.promemoriaProgrammabili(demo: demo, bloccato: salvataggioBloccato) else { return }
         let precedente = programmazione
         let t = Task { await precedente?.value; await eseguiProgrammazione() }
         programmazione = t
