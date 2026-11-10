@@ -608,7 +608,7 @@ struct RigaSerie: View {
             }
             // Valori cambiati da fuori (serie spuntata dalla Live Activity): i campi si riallineano, se non si sta scrivendo
             // Si scrive con calma (anche cancellando per correggere): la spunta si toglie solo quando si esce dal campo lasciandolo vuoto
-            .onChange(of: campo.wrappedValue) { prima, ora in
+            .onChange(of: campo) { prima, ora in
                 if prima?.serie == idSerie, ora != prima { togliSpuntaSeSvuotata() }
             }
             .onChange(of: s.fatta) { riallinea(s) }
