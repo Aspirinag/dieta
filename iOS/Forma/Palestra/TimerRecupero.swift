@@ -1,6 +1,6 @@
 import SwiftUI
 
-// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity
+// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity dell'allenamento
 
 // Timer di recupero tra le serie: parte da solo quando segni una serie; a fine recupero vibra
 // e, con l'app chiusa o il telefono bloccato, arriva una notifica.
@@ -72,6 +72,11 @@ final class TimerRecupero {
             inizio = nil
             esercizio = nil
         }
+    }
+
+    // Aspetta che la notifica di fine recupero sia stata aggiunta (per l'intent: iOS può sospendere l'app appena ritorna)
+    func attendiNotifica() async {
+        await compitoNotifica?.value
     }
 
     // Se la serie tolta è quella che ha fatto partire il recupero, lo ferma (e toglie la notifica)

@@ -78,6 +78,10 @@ struct AllenamentoInCorsoView: View {
                 .onChange(of: campo) { _, c in
                     if let c { riferimento = c.serie }
                 }
+                // «Fatta» dalla Live Activity: la serie attiva dell'app segue l'ultima spuntata
+                .onChange(of: palestra.ultimaSerie) { _, id in
+                    if let id, id != riferimento { riferimento = id }
+                }
                 .task {
                     // All'apertura: se la prossima serie da fare è fuori dalla vista (testo grande), ci si va
                     try? await Task.sleep(for: .milliseconds(350))
@@ -612,7 +616,19 @@ struct RigaSerie: View {
                 kg = s.kg.map { num($0) } ?? ""
                 rip = s.rip.map(String.init) ?? ""
             }
+            // Valori cambiati da fuori (serie spuntata dalla Live Activity): i campi si riallineano, se non si sta scrivendo
+            .onChange(of: s.fatta) { riallinea(s) }
+            .onChange(of: s.kg) { riallinea(s) }
+            .onChange(of: s.rip) { riallinea(s) }
         }
+    }
+
+    // Il testo dei campi segue la serie salvata, tranne il campo che ha il cursore (la digitazione resta com'è)
+    private func riallinea(_ s: SerieFatta) {
+        guard caricato else { return }
+        let inFocus = campo.wrappedValue?.serie == idSerie ? campo.wrappedValue?.campo : nil
+        if inFocus != .kg, leggiNumero(kg) != s.kg { kg = s.kg.map { num($0) } ?? "" }
+        if inFocus != .rip, Int(rip) != s.rip { rip = s.rip.map(String.init) ?? "" }
     }
 
     // ± senza tastiera sotto la serie attiva: kg a sinistra, ripetizioni a destra (su due righe se non ci stanno)
@@ -739,6 +755,7 @@ struct RigaSerie: View {
     // se manca qualcosa lo dice sotto la riga e il cursore va nel campo da compilare. Togliere la spunta ferma il recupero che aveva fatto partire
     private func segna(_ s: SerieFatta, _ prec: SerieFatta?, _ recupero: Int, titolo: String, corpoLibero: Bool) {
         riferimento = idSerie
+        palestra.ultimaSerie = idSerie   // anche la Live Activity parte da questa serie
         if s.fatta {
             modifica { $0.fatta = false }
             timer.fermaSeAvviatoDa(s.id)
