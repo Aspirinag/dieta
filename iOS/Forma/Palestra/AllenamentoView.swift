@@ -8,6 +8,7 @@ struct ApriScheda: Hashable { let id: UUID }
 struct AllenamentoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
+    @Environment(TimerRecupero.self) private var timer
     @Environment(\.dynamicTypeSize) private var dimensione
     @State private var percorso = NavigationPath()
     @State private var daAvviare: Routine??
@@ -64,7 +65,11 @@ struct AllenamentoView: View {
             daAvviare = .some(r)
             return
         }
-        palestra.inizia(r)
+        if palestra.stato.inCorso != nil {
+            palestra.annullaEInizia(r, timer: timer)
+        } else {
+            palestra.inizia(r)
+        }
         navigazione.allenamentoAperto = true
     }
 
