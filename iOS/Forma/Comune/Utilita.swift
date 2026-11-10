@@ -140,7 +140,10 @@ func leggiNumero(_ testo: String) -> Double? {
             latino.append(c)
         }
     }
-    return Double(latino)
+    // Solo cifre, segno e separatore: niente "nan", "inf", "1e5" o esadecimali; e mai un risultato non finito
+    guard !latino.isEmpty, latino.allSatisfy({ "0123456789.+-".contains($0) }),
+          let v = Double(latino), v.isFinite else { return nil }
+    return v
 }
 
 // Argomenti di avvio usati per le schermate di prova nel simulatore (es. -tab andamento -demo)

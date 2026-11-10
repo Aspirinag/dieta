@@ -75,11 +75,14 @@ final class Palestra {
         }
     }
 
+    func datiDaSalvare() throws -> Data { try JSONEncoder().encode(stato) }
+
     private func salva() {
         guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
-            try JSONEncoder().encode(stato).write(to: Self.fileDati, options: .atomic)
+            // Se la codifica fallisce o i dati sono vuoti non si scrive niente: il file vecchio resta com'è
+            try FileDati.scrivi(datiDaSalvare(), su: Self.fileDati)
         } catch {
             print("Salvataggio non riuscito: \(error)")
         }
@@ -391,7 +394,7 @@ final class Palestra {
 
     // Una sola notifica, il primo giorno utile (giorno scelto o il successivo, all'ora scelta) di un mese non pagato
     func programmaPagamento() async {
-        guard !demo else { return }
+        guard !demo, !salvataggioBloccato else { return }
         Notifiche.cancella(["pagamento"])
         guard stato.pagamentoAttivo,
               let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)
