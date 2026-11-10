@@ -175,6 +175,7 @@ struct SerieFatta: Codable, Hashable, Identifiable {
     mutating func togliSpuntaSeIncompleta() -> Bool {
         guard fatta, kg == nil || (rip ?? 0) <= 0 else { return false }
         fatta = false
+        fattaIl = nil
         return true
     }
     // Massimale stimato (formula di Epley)

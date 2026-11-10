@@ -119,6 +119,23 @@ struct LogicaAllenamentoTests {
         #expect(!toltavuota)
     }
 
+    // Togliendo la spunta per un campo svuotato si azzera anche l'orario in cui era stata spuntata
+    @Test func togliSpuntaAzzeraFattaIl() {
+        var s = SerieFatta(kg: 60, rip: 8, fatta: true)
+        s.fattaIl = Date()
+        s.kg = nil
+        let tolta = s.togliSpuntaSeIncompleta()
+        #expect(tolta)
+        #expect(s.fattaIl == nil)
+        // serie completa: l'orario resta
+        var ok = SerieFatta(kg: 60, rip: 8, fatta: true)
+        let quando = Date()
+        ok.fattaIl = quando
+        let toltaok = ok.togliSpuntaSeIncompleta()
+        #expect(!toltaok)
+        #expect(ok.fattaIl == quando)
+    }
+
     // Correggere un numero (cancello, riscrivo) non toglie la spunta: il controllo si fa solo uscendo dal campo
     @Test func svuotaERiscrivoMantieneLaSpunta() {
         var s = SerieFatta(kg: 100, rip: 8, fatta: true)
