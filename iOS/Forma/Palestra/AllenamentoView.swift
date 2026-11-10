@@ -95,7 +95,7 @@ struct AllenamentoView: View {
 
     private var prossima: some View {
         let oggi = Giorni.oggi()
-        let riepilogo = riepilogoAllenamenti(palestra.stato.allenamentiSettimana(oggi), durata: palestra.stato.durataSettimana(oggi))
+        let riepilogo = riepilogoAllenamenti(palestra.stato.riepilogoSettimana(oggi: oggi).allenamenti, durata: palestra.stato.durataSettimana(oggi))
         return Section {
             riquadroPrincipale
                 .listRowInsets(EdgeInsets())

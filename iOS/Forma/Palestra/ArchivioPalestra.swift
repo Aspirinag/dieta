@@ -140,8 +140,7 @@ final class Palestra {
         let s = e.serie[j]
         guard !s.fatta else { return }
         let ex = esercizio(e.esercizio)
-        let numero = e.serie[..<j].filter { !$0.riscaldamento }.count
-        guard case .segna(let k, let r) = EsitoSpunta.valuta(kg: s.kg, rip: s.rip, precedente: precedente(e.esercizio, numero),
+        guard case .segna(let k, let r) = EsitoSpunta.valuta(kg: s.kg, rip: s.rip, precedente: precedente(e.esercizio, in: e.serie, posizione: j),
                                                            corpoLibero: ex.attrezzo == .corpoLibero) else { return }
         stato.inCorso?.esercizi[i].serie[j].kg = k
         stato.inCorso?.esercizi[i].serie[j].rip = r
@@ -172,7 +171,7 @@ final class Palestra {
         a.fine = a.fine ?? Date()
         a.esercizi = a.esercizi.compactMap { e in
             var e = e
-            e.serie = e.serie.filter { $0.fatta && ($0.rip ?? 0) > 0 }
+            e.serie = e.serie.filter(\.siSalva)
             return e.serie.isEmpty ? nil : e
         }
         stato.inCorso = nil
@@ -265,6 +264,26 @@ final class Palestra {
         return a.inizio < fb && b.inizio < fa
     }
 
+    // La serie attiva: da quella toccata nell'app o, se non ce n'è (vista appena aperta), dall'ultima serie spuntata,
+    // la stessa da cui parte la Live Activity
+    func serieAttiva(riferimento: UUID?) -> UUID? {
+        SerieAttiva.trova(in: stato.inCorso?.esercizi ?? [], riferimento: riferimento ?? ultimaSerie)
+    }
+
+    // La serie dell'ultima volta che corrisponde a quella in posizione j: il riscaldamento guarda i riscaldamenti,
+    // le serie di lavoro quelle di lavoro
+    func precedente(_ esercizio: String, in serie: [SerieFatta], posizione j: Int) -> SerieFatta? {
+        serie[j].riscaldamento ? precedenteRiscaldamento(esercizio, serie.quantePrima(j)) : precedente(esercizio, serie.quantePrima(j))
+    }
+
+    // Il riscaldamento numero `indice` dell'ultima volta; nil se l'ultima volta non ne aveva abbastanza
+    func precedenteRiscaldamento(_ esercizio: String, _ indice: Int) -> SerieFatta? {
+        guard let ultimo = stato.allenamenti.last(where: { $0.esercizi.contains { $0.esercizio == esercizio } }),
+              let e = ultimo.esercizi.first(where: { $0.esercizio == esercizio }) else { return nil }
+        let caldo = e.serie.filter(\.riscaldamento)
+        return caldo.indices.contains(indice) ? caldo[indice] : nil
+    }
+
     // Serie corrispondente (stessa posizione tra quelle valide) nell'ultimo allenamento con quell'esercizio
     func precedente(_ esercizio: String, _ indice: Int) -> SerieFatta? {
         guard let ultimo = stato.allenamenti.last(where: { $0.esercizi.contains { $0.esercizio == esercizio } }),
@@ -274,6 +293,9 @@ final class Palestra {
     }
 
     // ---------- Record e storico ----------
+
+    // A corpo libero (nessun peso, né oggi né prima) il record sono le ripetizioni
+    static func contaRipetizioni(peso: Double, pesoMax: Double) -> Bool { peso == 0 && pesoMax == 0 }
 
     struct Record {
         var pesoMax = 0.0
@@ -306,8 +328,10 @@ final class Palestra {
             guard !valide.isEmpty, prima.pesoMax > 0 || stato.allenamenti.contains(where: { $0.inizio < a.inizio && $0.esercizi.contains { $0.esercizio == e.esercizio } }) else { continue }
             let peso = valide.compactMap(\.kg).max() ?? 0
             let massimale = valide.map(\.massimale).max() ?? 0
+            let rip = valide.compactMap(\.rip).max() ?? 0
             if peso > prima.pesoMax { testi.append(String(localized: "\(nome(e.esercizio)): peso massimo \(num(peso)) kg")) }
             else if massimale > prima.massimale + 0.01 { testi.append(String(localized: "\(nome(e.esercizio)): massimale stimato \(num((massimale * 10).rounded() / 10)) kg")) }
+            else if Self.contaRipetizioni(peso: peso, pesoMax: prima.pesoMax), rip > prima.ripMax { testi.append(String(localized: "\(nome(e.esercizio)): ripetizioni massime \(rip)")) }
         }
         return testi
     }
@@ -475,7 +499,7 @@ extension StatoPalestra {
 
     // Record battuti da ogni allenamento (come Palestra.nuoviRecord), in una sola passata
     func conteggioRecord() -> [UUID: Int] {
-        var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:]
+        var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:], ripMax: [String: Int] = [:]
         var visti: Set<String> = []          // esercizi già comparsi, anche senza serie valide
         var risultato: [UUID: Int] = [:]
         for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
@@ -486,13 +510,16 @@ extension StatoPalestra {
                 guard !valide.isEmpty, visti.contains(e.esercizio) || (pesoMax[e.esercizio] ?? 0) > 0 else { continue }
                 let peso = valide.compactMap(\.kg).max() ?? 0
                 let mass = valide.map(\.massimale).max() ?? 0
-                if peso > pesoMax[e.esercizio] ?? 0 || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
+                let rip = valide.compactMap(\.rip).max() ?? 0
+                if peso > pesoMax[e.esercizio] ?? 0 || mass > (massimale[e.esercizio] ?? 0) + 0.01
+                    || (Palestra.contaRipetizioni(peso: peso, pesoMax: pesoMax[e.esercizio] ?? 0) && rip > ripMax[e.esercizio] ?? 0) { n += 1 }
             }
             for e in a.esercizi {
                 let valide = e.serie.filter(\.valida)
                 visti.insert(e.esercizio)
                 pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, valide.compactMap(\.kg).max() ?? 0)
                 massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, valide.map(\.massimale).max() ?? 0)
+                ripMax[e.esercizio] = max(ripMax[e.esercizio] ?? 0, valide.compactMap(\.rip).max() ?? 0)
             }
             risultato[a.id] = n
         }
@@ -514,13 +541,6 @@ extension StatoPalestra {
         let lun = Giorni.lunedi(iso)
         let giorni = Set(allenamenti.map(\.giorno) + cardio.map(\.data))
         return Set((0..<7).filter { giorni.contains(Giorni.aggiungi(lun, $0)) })
-    }
-
-    // Quanti allenamenti (pesi più cardio) nella settimana di una data
-    func allenamentiSettimana(_ iso: String) -> Int {
-        let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
-        return allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }.count
-            + cardio.filter { $0.data >= lun && $0.data <= dom }.count
     }
 
     // Tempo totale di pesi e cardio nella settimana di una data

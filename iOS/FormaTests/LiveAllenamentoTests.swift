@@ -181,7 +181,7 @@ struct LiveAllenamentoTests {
         let live = try #require(stato(a))
         #expect(live.riscaldamento)
         #expect(live.serie == 1)
-        #expect(live.totaleSerie == 2)
+        #expect(live.totaleSerie == 1)   // il riscaldamento ha la sua numerazione, come nell'app («R»)
     }
 
     @Test func prossimoEsercizioConSerieAperte() throws {

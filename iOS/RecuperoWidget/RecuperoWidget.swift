@@ -251,7 +251,7 @@ extension StatoAllenamentoLive {
     var rigaSerie: String {
         // Movimento del riscaldamento: «Riscaldamento 2 di 6»
         if movimento != nil { return String(localized: "Riscaldamento \(serie) di \(totaleSerie)") }
-        // Il riscaldamento conta come le altre serie: «Riscaldamento · Serie 1 di 4 · 20 kg × 10»
+        // Il riscaldamento ha la sua numerazione, come nell'app (R): «Riscaldamento · Serie 1 di 2 · 20 kg × 10»
         var parti = riscaldamento
             ? [String(localized: "Riscaldamento"), String(localized: "Serie \(serie) di \(totaleSerie)")]
             : [String(localized: "Serie \(serie) di \(totaleSerie)")]

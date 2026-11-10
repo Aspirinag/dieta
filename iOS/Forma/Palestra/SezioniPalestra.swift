@@ -122,8 +122,8 @@ struct PianoSettimanaleView: View {
                     Section(palestra.stato.usaAB ? LocalizedStringKey("Settimana \(w)") : LocalizedStringKey("Ogni settimana")) {
                         ForEach(0..<7, id: \.self) { i in
                             Picker(Giorni.nomeGiorno(i), selection: Binding(
-                                get: { palestra.stato.piani[w]?[i] ?? .riposo },
-                                set: { palestra.stato.piani[w]?[i] = $0 }
+                                get: { palestra.stato.piani[w].flatMap { $0.indices.contains(i) ? $0[i] : nil } ?? .riposo },
+                                set: { if palestra.stato.piani[w]?.indices.contains(i) == true { palestra.stato.piani[w]?[i] = $0 } }
                             )) {
                                 ForEach(TipoGiorno.allCases) { t in Label(t.nome, systemImage: t.simbolo).tag(t) }
                             }

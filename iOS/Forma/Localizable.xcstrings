@@ -360,6 +360,22 @@
         }
       }
     },
+    "%@: ripetizioni massime %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: max reps %2$lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: max reps %2$lld"
+          }
+        }
+      }
+    },
     "%lld": {
       "shouldTranslate": false
     },

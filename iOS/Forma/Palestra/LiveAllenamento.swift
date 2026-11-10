@@ -9,9 +9,11 @@ extension StatoAllenamentoLive {
     // Lo stato da mostrare per l'allenamento in corso (nil se non c'è).
     // - `ultimaSerie`: l'ultima serie spuntata (dall'app o dalla Live Activity), da cui si cerca la serie attiva
     // - `libreria`: per il titolo localizzato dell'esercizio e per sapere se è a corpo libero
-    // - `precedente`: la serie corrispondente dell'ultima volta, come nella spunta dell'app (esercizio, posizione tra quelle di lavoro)
+    // - `precedente`: la serie di lavoro corrispondente dell'ultima volta, come nella spunta dell'app (esercizio, posizione tra quelle di lavoro)
+    // - `precedenteRiscaldamento`: lo stesso per le serie di riscaldamento (esercizio, posizione tra i riscaldamenti)
     static func da(allenamento: Allenamento?, ultimaSerie: UUID?, recupero: StatoRecupero?, libreria: [Esercizio],
-                   precedente: (String, Int) -> SerieFatta? = { _, _ in nil }) -> StatoAllenamentoLive? {
+                   precedente: (String, Int) -> SerieFatta? = { _, _ in nil },
+                   precedenteRiscaldamento: (String, Int) -> SerieFatta? = { _, _ in nil }) -> StatoAllenamentoLive? {
         guard let a = allenamento else { return nil }
         var stato = StatoAllenamentoLive(titolo: a.titolo, inizio: a.inizio, recupero: recupero)
         // Prima il riscaldamento: il primo movimento da fare, finché non si è spuntata nessuna serie
@@ -36,12 +38,13 @@ extension StatoAllenamentoLive {
         let s = e.serie[j]
         let ex = libreria.first { $0.id == e.esercizio } ?? Esercizio(id: e.esercizio, nome: e.esercizio, muscolo: .altro, attrezzo: .altro)
         let corpoLibero = ex.attrezzo == .corpoLibero
-        // Come nell'app, la posizione per la serie dell'ultima volta non conta il riscaldamento
-        let prec = precedente(e.esercizio, e.serie[..<j].filter { !$0.riscaldamento }.count)
+        // Come nell'app: il riscaldamento ha la sua numerazione (e il suo «precedente»), le serie di lavoro la loro
+        let numero = e.serie.quantePrima(j)
+        let prec = s.riscaldamento ? precedenteRiscaldamento(e.esercizio, numero) : precedente(e.esercizio, numero)
 
         stato.esercizio = ex.titolo
-        stato.serie = j + 1
-        stato.totaleSerie = e.serie.count
+        stato.serie = numero + 1
+        stato.totaleSerie = e.serie.filter { $0.riscaldamento == s.riscaldamento }.count
         stato.riscaldamento = s.riscaldamento
         stato.corpoLibero = corpoLibero
         stato.idSerie = s.id
@@ -155,7 +158,8 @@ final class CollegamentoLive {
     private func costruisci() -> StatoAllenamentoLive? {
         StatoAllenamentoLive.da(allenamento: palestra.stato.inCorso, ultimaSerie: palestra.ultimaSerie,
                                 recupero: timer.stato, libreria: palestra.stato.esercizi,
-                                precedente: { palestra.precedente($0, $1) })
+                                precedente: { palestra.precedente($0, $1) },
+                                precedenteRiscaldamento: { palestra.precedenteRiscaldamento($0, $1) })
     }
 }
 

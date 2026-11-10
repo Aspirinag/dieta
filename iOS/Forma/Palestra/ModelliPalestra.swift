@@ -164,8 +164,28 @@ struct SerieFatta: Codable, Hashable, Identifiable {
     // Serie che conta per volume e record: fatta, non di riscaldamento, con kg e ripetizioni
     var valida: Bool { fatta && !riscaldamento && (kg ?? -1) >= 0 && (rip ?? 0) > 0 }
     var volume: Double { valida ? (kg ?? 0) * Double(rip ?? 0) : 0 }
+    // Serie che si salva finendo l'allenamento: spuntata e con ripetizioni (anche il riscaldamento)
+    var siSalva: Bool { fatta && (rip ?? 0) > 0 }
+
+    // Una serie spuntata a cui si svuota un campo non è più «fatta»: perde la spunta (vale per kg e ripetizioni).
+    // Dice se l'ha tolta
+    @discardableResult
+    mutating func togliSpuntaSeIncompleta() -> Bool {
+        guard fatta, kg == nil || (rip ?? 0) <= 0 else { return false }
+        fatta = false
+        return true
+    }
     // Massimale stimato (formula di Epley)
     var massimale: Double { valida ? (kg ?? 0) * (1 + Double(rip ?? 0) / 30) : 0 }
+}
+
+extension Array where Element == SerieFatta {
+    // Quante serie dello stesso tipo (lavoro o riscaldamento) di quella in posizione j ci sono prima di lei:
+    // è la numerazione dell'app (il riscaldamento è «R», le serie di lavoro partono da 1), usata anche dalla Live Activity
+    func quantePrima(_ j: Int) -> Int {
+        let riscaldamento = self[j].riscaldamento
+        return self[..<j].filter { $0.riscaldamento == riscaldamento }.count
+    }
 }
 
 struct EsercizioFatto: Codable, Hashable, Identifiable {
@@ -234,7 +254,9 @@ struct Allenamento: Codable, Hashable, Identifiable {
     var giorno: String { Giorni.iso(inizio) }
     var soloWatch: Bool { esercizi.isEmpty && watch != nil }
     var volume: Double { esercizi.flatMap(\.serie).reduce(0) { $0 + $1.volume } }
-    var serieFatte: Int { esercizi.flatMap(\.serie).filter(\.valida).count }
+    var serieFatte: Int { esercizi.flatMap(\.serie).filter(\.valida).count }   // quelle che contano per volume e record
+    var serieSpuntate: Int { esercizi.flatMap(\.serie).filter(\.siSalva).count }   // quelle che si salvano (anche il riscaldamento)
+    var serieNonSpuntate: Int { esercizi.flatMap(\.serie).filter { !$0.fatta }.count }
     var durata: TimeInterval { (fine ?? Date()).timeIntervalSince(inizio) }
 }
 
@@ -321,7 +343,10 @@ struct StatoPalestra: Codable, Hashable {
         allenamenti = c.valore(.allenamenti, [])
         inCorso = c.valore(.inCorso, nil)
         cardio = c.valore(.cardio, [])
-        piani = c.valore(.piani, base.piani)
+        // Ogni settimana ha 7 giorni (lunedì = 0): un piano più corto si completa con «Riposo», uno più lungo si taglia,
+        // e la settimana che manca prende quella di base
+        let letti: [String: [TipoGiorno]] = c.valore(.piani, base.piani)
+        piani = base.piani.merging(letti) { _, letto in letto }.mapValues { Array(($0 + Array(repeating: .riposo, count: 7)).prefix(7)) }
         scambia = c.valore(.scambia, false)
         saltati = c.valore(.saltati, [])
         pagamenti = c.valore(.pagamenti, [:])
@@ -340,7 +365,7 @@ struct StatoPalestra: Codable, Hashable {
 struct RiepilogoSettimana: Equatable {
     let inizio: String          // lunedì
     let fine: String            // domenica
-    let allenamenti: Int        // allenamenti con i pesi
+    let allenamenti: Int        // allenamenti: pesi più cardio, come l'elenco di «Tutti gli allenamenti»
     let kg: Double              // kg totali (kg × ripetizioni)
 
     // «2–8 novembre»: la scritta da mettere accanto al totale
@@ -354,6 +379,7 @@ extension StatoPalestra {
     func riepilogoSettimana(oggi: String) -> RiepilogoSettimana {
         let lun = Giorni.lunedi(oggi), dom = Giorni.aggiungi(lun, 6)
         let della = allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }
-        return RiepilogoSettimana(inizio: lun, fine: dom, allenamenti: della.count, kg: della.reduce(0) { $0 + $1.volume })
+        let corse = cardio.filter { $0.data >= lun && $0.data <= dom }
+        return RiepilogoSettimana(inizio: lun, fine: dom, allenamenti: della.count + corse.count, kg: della.reduce(0) { $0 + $1.volume })
     }
 }
