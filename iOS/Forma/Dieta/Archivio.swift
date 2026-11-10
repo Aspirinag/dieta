@@ -210,17 +210,17 @@ extension Profilo {
     var testoNote: String { note ?? Archivio.notePredefinite }
 
     // Piano valido in una data: se più piani la coprono vince quello iniziato più di recente
-    // (a parità di data, l'ultimo aggiunto)
+    // (a parità di data, il primo dell'elenco: la stessa regola della web app)
     func piano(per iso: String) -> Piano? {
         var scelto: Piano?
         for p in piani where p.dal <= iso && (p.al.isEmpty || iso <= p.al) && p.giorni.count == 7 {
-            if scelto == nil || p.dal >= scelto!.dal { scelto = p }
+            if scelto == nil || p.dal > scelto!.dal { scelto = p }
         }
         return scelto
     }
 
-    // Un nuovo piano chiude quelli aperti il giorno prima della sua data di inizio e sostituisce
-    // quelli che iniziano lo stesso giorno. Le spunte dei giorni già segnati da lì in poi
+    // Un nuovo piano senza data di fine chiude quelli aperti il giorno prima della sua data di inizio e
+    // sostituisce quelli che iniziano lo stesso giorno (uno a termine non chiude nessuno). Le spunte dei giorni già segnati da lì in poi
     // seguono il nome del pasto (le spunte sono salvate per posizione)
     mutating func aggiungiPiano(_ p: Piano) {
         cambiaPiani(giorniDa: p.dal, al: p.al) { Self.inserisci(p, in: $0) }
@@ -235,10 +235,24 @@ extension Profilo {
         }
     }
 
+    // Elimina un piano e riapre quelli che si chiudevano il giorno prima del suo inizio (cioè chiusi da lui)
+    mutating func eliminaPiano(_ p: Piano) {
+        let prima = Giorni.aggiungi(p.dal, -1)
+        cambiaPiani(giorniDa: p.dal, al: p.al) { piani in
+            var nuovi = piani.filter { $0.id != p.id }
+            for i in nuovi.indices where nuovi[i].dal < p.dal && nuovi[i].al == prima { nuovi[i].al = "" }
+            return nuovi
+        }
+    }
+
     private static func inserisci(_ p: Piano, in piani: [Piano]) -> [Piano] {
         var nuovi = piani.filter { $0.dal != p.dal }
-        for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
-            nuovi[i].al = Giorni.aggiungi(p.dal, -1)
+        // Solo un piano senza fine chiude i precedenti: uno a termine non li accorcia, perché
+        // `piano(per:)` sceglie già quello iniziato più di recente e, finito il nuovo, torna il vecchio
+        if p.al.isEmpty {
+            for i in nuovi.indices where nuovi[i].dal < p.dal && (nuovi[i].al.isEmpty || nuovi[i].al >= p.dal) {
+                nuovi[i].al = Giorni.aggiungi(p.dal, -1)
+            }
         }
         nuovi.append(p)
         return nuovi
