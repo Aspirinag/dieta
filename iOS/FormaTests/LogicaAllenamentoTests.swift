@@ -119,6 +119,16 @@ struct LogicaAllenamentoTests {
         #expect(!toltavuota)
     }
 
+    // Correggere un numero (cancello, riscrivo) non toglie la spunta: il controllo si fa solo uscendo dal campo
+    @Test func svuotaERiscrivoMantieneLaSpunta() {
+        var s = SerieFatta(kg: 100, rip: 8, fatta: true)
+        s.kg = nil                                  // a metà correzione: nessun controllo
+        s.kg = 97.5                                 // riscritto
+        let tolta = s.togliSpuntaSeIncompleta()     // si esce dal campo
+        #expect(!tolta)
+        #expect(s.fatta)
+    }
+
     // 4. Con solo riscaldamenti spuntati, «Fine» propone di salvare
     @Test func soloRiscaldamentoSiSalva() {
         let a = Allenamento(nome: "Push", esercizi: [

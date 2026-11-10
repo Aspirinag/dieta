@@ -167,8 +167,8 @@ struct SerieFatta: Codable, Hashable, Identifiable {
     // Serie che si salva finendo l'allenamento: spuntata e con ripetizioni (anche il riscaldamento)
     var siSalva: Bool { fatta && (rip ?? 0) > 0 }
 
-    // Una serie spuntata a cui si svuota un campo non è più «fatta»: perde la spunta (vale per kg e ripetizioni).
-    // Dice se l'ha tolta
+    // Una serie spuntata lasciata con un campo vuoto non è più «fatta»: perde la spunta (vale per kg e ripetizioni).
+    // Si chiama quando si esce dal campo, non a ogni battuta. Dice se l'ha tolta
     @discardableResult
     mutating func togliSpuntaSeIncompleta() -> Bool {
         guard fatta, kg == nil || (rip ?? 0) <= 0 else { return false }
