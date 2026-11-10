@@ -509,6 +509,27 @@ final class Palestra {
 }
 
 extension StatoPalestra {
+    // Schede ed esercizi di una scheda si cercano per id, mai per posizione: una posizione
+    // tenuta da una vista può non esistere più se nel frattempo la scheda viene eliminata
+    func scheda(_ id: UUID) -> Routine? { routine.first { $0.id == id } }
+
+    func voce(_ id: UUID, in idScheda: UUID) -> VoceRoutine? {
+        scheda(idScheda)?.voci.first { $0.id == id }
+    }
+
+    // Se la scheda non c'è più, non fa niente
+    mutating func modificaScheda(_ id: UUID, _ modifica: (inout Routine) -> Void) {
+        guard let i = routine.firstIndex(where: { $0.id == id }) else { return }
+        modifica(&routine[i])
+    }
+
+    mutating func modificaVoce(_ id: UUID, in idScheda: UUID, _ modifica: (inout VoceRoutine) -> Void) {
+        modificaScheda(idScheda) { r in
+            guard let j = r.voci.firstIndex(where: { $0.id == id }) else { return }
+            modifica(&r.voci[j])
+        }
+    }
+
     // Scheda da proporre: quella dopo l'ultima fatta (a giro); senza storico la prima
     func prossimaRoutine() -> Routine? {
         guard let ultima = allenamenti.sorted(by: { $0.inizio < $1.inizio }).last(where: { a in routine.contains { $0.id == a.routine } }),

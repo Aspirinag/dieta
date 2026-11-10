@@ -141,3 +141,99 @@ final class PalestraCompattaUITests: XCTestCase {
         XCTAssertLessThan(schede.frame.maxY, app.frame.height * 0.75, "Le altre schede devono vedersi nella prima schermata")
     }
 }
+
+// Eliminare una scheda non deve far chiudere l'app
+final class EliminaSchedaUITests: XCTestCase {
+    private func avvia() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-demo", "-tab", "allenamento"]
+        app.launch()
+        return app
+    }
+
+    private func apriEditorTirata(_ app: XCUIApplication) {
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        let nome = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tirata' AND NOT label BEGINSWITH 'Inizia'")).firstMatch
+        for _ in 0..<4 where !nome.isHittable { app.swipeUp() }
+        nome.tap()
+        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 5), "Non si apre l'editor")
+    }
+
+    // Dall'editor: «Elimina scheda» → conferma → si torna alla lista senza crash
+    func testEliminaDallEditor() {
+        continueAfterFailure = false
+        let app = avvia()
+        apriEditorTirata(app)
+        app.buttons["Elimina scheda"].tap()
+        app.buttons["Elimina Tirata"].tap()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 5), "Dopo l'eliminazione l'app non è tornata alla lista")
+        XCTAssertEqual(app.state, .runningForeground, "L'app si è chiusa")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tirata'")).firstMatch.exists, "La scheda è ancora in lista")
+    }
+
+    // Con un esercizio aperto e la modifica attiva (i campi leggono la scheda mentre sparisce)
+    func testEliminaConEsercizioAperto() {
+        continueAfterFailure = false
+        let app = avvia()
+        apriEditorTirata(app)
+        app.buttons["Modifica"].tap()
+        app.buttons["Fine"].tap()
+        let riga = app.buttons.matching(NSPredicate(format: "label CONTAINS 'recupero'")).firstMatch
+        if riga.waitForExistence(timeout: 3) { riga.tap() }
+        XCTAssertTrue(app.steppers.firstMatch.waitForExistence(timeout: 3), "L'esercizio non si apre")
+        for _ in 0..<5 where !app.buttons["Elimina scheda"].isHittable { app.swipeUp() }
+        app.buttons["Elimina scheda"].tap()
+        app.buttons["Elimina Tirata"].tap()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.state, .runningForeground, "L'app si è chiusa")
+    }
+
+    // Si elimina la scheda dell'allenamento in corso: l'allenamento resta e l'app non si chiude
+    func testEliminaLaSchedaDellAllenamentoInCorso() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        app.buttons["Inizia"].firstMatch.tap()   // avvia «Spinta»
+        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5))
+        app.buttons["Nascondi"].tap()
+        XCTAssertTrue(app.buttons["Riprendi"].waitForExistence(timeout: 5))
+        let nome = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Spinta' AND NOT label BEGINSWITH 'Inizia'")).firstMatch
+        for _ in 0..<4 where !nome.isHittable { app.swipeUp() }
+        nome.tap()
+        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 5))
+        app.buttons["Elimina scheda"].tap()
+        app.buttons["Elimina Spinta"].tap()
+        XCTAssertTrue(app.buttons["Riprendi"].firstMatch.waitForExistence(timeout: 5), "Dopo l'eliminazione l'app non è tornata alla lista")
+        XCTAssertEqual(app.state, .runningForeground, "L'app si è chiusa")
+        app.buttons["Riprendi"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5), "L'allenamento in corso non si riapre")
+    }
+
+    // Scheda appena creata (vuota): «Nuova scheda» → Elimina scheda → conferma
+    func testEliminaSchedaAppenaCreata() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        app.buttons["Nuova scheda"].tap()
+        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 5), "Non si apre l'editor")
+        app.buttons["Elimina scheda"].tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Elimina Nuova scheda'")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.state, .runningForeground, "L'app si è chiusa")
+    }
+
+    // Dalla lista: tenere premuto → Elimina → conferma
+    func testEliminaDallaLista() {
+        continueAfterFailure = false
+        let app = avvia()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        let nome = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tirata' AND NOT label BEGINSWITH 'Inizia'")).firstMatch
+        for _ in 0..<4 where !nome.isHittable { app.swipeUp() }
+        nome.press(forDuration: 1.2)
+        app.buttons["Elimina"].tap()
+        app.buttons["Elimina Tirata"].tap()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.state, .runningForeground, "L'app si è chiusa")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tirata'")).firstMatch.exists, "La scheda è ancora in lista")
+    }
+}
