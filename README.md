@@ -59,3 +59,15 @@ xcodebuild test -project Forma.xcodeproj -scheme Forma \
 ```
 
 Per vedere l'app con i dati di prova, avvia con l'argomento `-demo` (eventualmente `-tab oggi|dieta|allenamento|progressi|inCorso|impostazioni`; `-vista spesa` apre la Spesa dentro Dieta). Per provare l'inglese: `-AppleLanguages "(en)" -AppleLocale en_US`.
+
+## Avvertenza
+
+Forma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.
+
+## Privacy
+
+I dati restano sul telefono, senza tracciamento: vedi [privacy.html](privacy.html) (online: https://aspirinag.github.io/dieta/privacy.html).
+
+## Licenza
+
+Tutti i diritti riservati. Il codice è pubblico per consultazione, ma non è concesso alcun permesso di copiarlo, modificarlo o ridistribuirlo.
