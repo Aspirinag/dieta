@@ -166,6 +166,7 @@ struct Radice: View {
             if await Notifiche.consentite() {
                 await palestra.programmaPagamento()
                 await archivio.programmaPromemoria()
+                await ScadenzaApp.programma()
             }
             if Salute.attivo, await Salute.shared.chiediPermesso() {
                 Salute.shared.avvia(palestra)

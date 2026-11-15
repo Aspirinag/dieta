@@ -4,6 +4,7 @@ import Foundation
 extension StatoPalestra {
     static var demo: StatoPalestra {
         var s = StatoPalestra()
+        s.pagamentoAttivo = true   // nelle schermate di prova si vede anche l'abbonamento
         s.routine += [Libreria.modelli[1], Libreria.modelli[2], Libreria.modelli[3]]
         let scheda = s.routine[0]
         let base: [String: Double] = ["Leg press": 70, "Chest press": 30, "Lat machine": 35, "Leg curl": 25,
