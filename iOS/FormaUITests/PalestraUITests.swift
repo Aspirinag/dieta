@@ -216,9 +216,14 @@ final class EliminaSchedaUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
         app.buttons["Nuova scheda"].tap()
         XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 5), "Non si apre l'editor")
-        app.buttons["Elimina scheda"].tap()
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Elimina Nuova scheda'")).firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 5))
+        let elimina = app.buttons["Elimina scheda"]
+        XCTAssertTrue(elimina.waitForExistence(timeout: 5) && elimina.isHittable, "Il tasto Elimina scheda non è toccabile")
+        elimina.tap()
+        // Attese esplicite: la conferma compare con un'animazione, su un simulatore lento può tardare
+        let conferma = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Elimina Nuova scheda'")).firstMatch
+        XCTAssertTrue(conferma.waitForExistence(timeout: 8), "Non compare la conferma")
+        conferma.tap()
+        XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
         XCTAssertEqual(app.state, .runningForeground, "L'app si è chiusa")
     }
 

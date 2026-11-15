@@ -15,18 +15,21 @@ final class TimerRecupero {
     private var compitoNotifica: Task<Void, Never>?   // l'aggiunta della notifica (è asincrona)
     private let aggiungiNotifica: (Int) async -> Void
     private let cancellaNotifica: () -> Void
+    private let adesso: () -> Date   // l'orologio: nei test è fermo, così i secondi non dipendono da quanto è lenta la macchina
 
     init(aggiungiNotifica: @escaping (Int) async -> Void = { secondi in
              await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi,
                                         categoria: Notifiche.categoriaRecupero)
          },
-         cancellaNotifica: @escaping () -> Void = { Notifiche.cancella(["recupero"]) }) {
+         cancellaNotifica: @escaping () -> Void = { Notifiche.cancella(["recupero"]) },
+         adesso: @escaping () -> Date = { Date() }) {
         self.aggiungiNotifica = aggiungiNotifica
         self.cancellaNotifica = cancellaNotifica
+        self.adesso = adesso
     }
     var finiti = 0     // cambia a ogni recupero concluso (per la vibrazione)
 
-    var attivo: Bool { fine.map { $0 > Date() } ?? false }
+    var attivo: Bool { fine.map { $0 > adesso() } ?? false }
 
     var stato: StatoRecupero? {
         guard let fine, let inizio else { return nil }
@@ -38,22 +41,22 @@ final class TimerRecupero {
     func avvia(_ secondi: Int, serie: UUID? = nil, esercizio: String? = nil) {
         avviatoDa = serie
         durata = secondi
-        inizio = Date()
+        inizio = adesso()
         self.esercizio = esercizio
-        programma(Date().addingTimeInterval(TimeInterval(secondi)))
+        programma(adesso().addingTimeInterval(TimeInterval(secondi)))
     }
 
     // Aggiunge o toglie secondi al recupero in corso
     func cambia(_ secondi: Int) {
         guard let f = fine else { return }
         let nuova = f.addingTimeInterval(TimeInterval(secondi))
-        if nuova <= Date() { ferma() } else { programma(nuova) }
+        if nuova <= adesso() { ferma() } else { programma(nuova) }
     }
 
     private func programma(_ f: Date) {
         compito?.cancel()
         fine = f
-        let secondi = Int(f.timeIntervalSinceNow.rounded())
+        let secondi = Int(f.timeIntervalSince(adesso()).rounded())
         cancellaNotifica()
         // Le aggiunte vanno una dopo l'altra; se nel frattempo il recupero è stato fermato, la notifica appena aggiunta si toglie
         let precedente = compitoNotifica
@@ -68,7 +71,7 @@ final class TimerRecupero {
             try? await Task.sleep(for: .seconds(max(secondi, 0)))
             guard !Task.isCancelled else { return }
             // Se l'app era in background la notifica è già arrivata: niente vibrazione in ritardo
-            if Date().timeIntervalSince(f) < 2 { finiti += 1 }
+            if adesso().timeIntervalSince(f) < 2 { finiti += 1 }
             fine = nil
             inizio = nil
             esercizio = nil
