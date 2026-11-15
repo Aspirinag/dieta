@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Dieta</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <style>
   /* Aspetto di Forma: elenchi iOS «a gruppi», chiaro e scuro automatici */
@@ -143,15 +144,18 @@
   // Valori iniziali di ogni profilo, modificabili in Impostazioni
   const OLIO_DEF = 6;   // cucchiaini al giorno
   const ACQUA_DEF = 2;  // litri al giorno
-  const NOTE_DEF = 'Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti.';
+  // Nota predefinita: vuota. Compatibilità: chi usava la web app con i vecchi profili predefiniti
+  // (id «raffaele» / «alessandra») e non ha mai modificato la nota continua a vedere quella di prima.
+  const ID_VECCHI = ['raffaele', 'alessandra'];
+  const NOTE_VECCHIA = 'Pane e olio puoi distribuirli come preferisci nella giornata. Puoi sostituire la frutta mantenendo la stessa porzione, ma non con la banana. Puoi invertire giornate intere, non singoli pasti.';
   const KEY = 'dieta:v1';
 
   const DEFAULT = {
     profili: {
-      raffaele: { nome: 'Raffaele', piani: [], bia: [], dieta: {} },
-      alessandra: { nome: 'Alessandra', piani: [], bia: [], dieta: {} },
+      profilo1: { nome: 'Profilo 1', piani: [], bia: [], dieta: {} },
+      profilo2: { nome: 'Profilo 2', piani: [], bia: [], dieta: {} },
     },
-    attivo: 'raffaele',
+    attivo: 'profilo1',
   };
 
   let state = load();
@@ -166,7 +170,10 @@
   function load() {
     try {
       const s = { ...structuredClone(DEFAULT), ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+      if (!s.profili || typeof s.profili !== 'object' || !Object.keys(s.profili).length) return structuredClone(DEFAULT);
       if (s.preferito && s.profili[s.preferito]) s.attivo = s.preferito;
+      // Dati salvati senza «attivo» (o con un profilo che non c'è più): primo profilo disponibile
+      if (!s.profili[s.attivo]) s.attivo = Object.keys(s.profili)[0];
       return s;
     } catch (e) {
       return structuredClone(DEFAULT);
@@ -176,6 +183,52 @@
     const json = JSON.stringify(state);
     localStorage.setItem(KEY, json);
     if (NATIVO) Plugin('Preferences').set({ key: KEY, value: json });
+  }
+
+  // ---------- CONTROLLO DEL BACKUP ----------
+  // Un backup è accettato solo se ha la forma giusta; altrimenti i dati attuali restano intatti.
+  const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const oggettoSemplice = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  function validaBackup(parsed) {
+    const errore = (m) => { throw new Error(m); };
+    if (!oggettoSemplice(parsed)) errore('formato');
+    if (!oggettoSemplice(parsed.profili)) errore('profili');
+    const ids = Object.keys(parsed.profili);
+    if (!ids.length) errore('nessun profilo');
+    for (const id of ids) {
+      const p = parsed.profili[id];
+      if (!oggettoSemplice(p)) errore('profilo ' + id);
+      if (p.nome != null && typeof p.nome !== 'string') errore('nome');
+      if (p.piani != null && !Array.isArray(p.piani)) errore('piani');
+      if (p.bia != null && !Array.isArray(p.bia)) errore('bia');
+      if (p.dieta != null && !oggettoSemplice(p.dieta)) errore('dieta');
+      if (p.note != null && typeof p.note !== 'string') errore('note');
+      for (const k of ['olio_tot', 'acqua_tot']) if (p[k] != null && !(typeof p[k] === 'number' && isFinite(p[k]))) errore(k);
+      for (const piano of p.piani || []) {
+        if (!oggettoSemplice(piano) || !Array.isArray(piano.giorni)) errore('piano');
+        if (piano.nome != null && typeof piano.nome !== 'string') errore('piano.nome');
+        if (typeof piano.dal !== 'string' || !ISO_RE.test(piano.dal)) errore('piano.dal');
+        if (piano.al != null && piano.al !== '' && !(typeof piano.al === 'string' && ISO_RE.test(piano.al))) errore('piano.al');
+      }
+      for (const m of p.bia || []) {
+        if (!oggettoSemplice(m) || typeof m.data !== 'string' || !ISO_RE.test(m.data)) errore('bia.data');
+        for (const k of Object.keys(m)) if (k !== 'data' && m[k] != null && !(typeof m[k] === 'number' && isFinite(m[k]))) errore('bia.' + k);
+      }
+    }
+    if (parsed.attivo != null && typeof parsed.attivo !== 'string') errore('attivo');
+    if (parsed.preferito != null && typeof parsed.preferito !== 'string') errore('preferito');
+    // Copia pulita: campi mancanti completati, «attivo» e «preferito» riportati su profili che esistono
+    const out = structuredClone(parsed);
+    for (const id of ids) {
+      const p = out.profili[id];
+      p.nome = p.nome || id;
+      p.piani = p.piani || [];
+      p.bia = p.bia || [];
+      p.dieta = p.dieta || {};
+    }
+    if (!out.profili[out.attivo]) out.attivo = ids[0];
+    if (out.preferito && !out.profili[out.preferito]) delete out.preferito;
+    return out;
   }
 
   // ---------- APP PER IPHONE (Capacitor) ----------
@@ -215,6 +268,7 @@
   const titoloAlt = (o, j) => o.titolo || 'Alternativa ' + (j + 1);
 
   const prof = () => state.profili[state.attivo];
+  const noteProfilo = () => prof().note ?? (ID_VECCHI.includes(state.attivo) ? NOTE_VECCHIA : '');
   const olioTot = () => prof().olio_tot ?? OLIO_DEF;
   const acquaTot = () => prof().acqua_tot ?? ACQUA_DEF;
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -223,7 +277,7 @@
   const todayISO = () => isoOf(new Date());
   const parseISO = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
   const dayIdx = (iso) => (parseISO(iso).getDay() + 6) % 7; // Lunedì = 0
-  const fmtDate = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+  const fmtDate = (iso) => esc(`${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`);
   const addDays = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDate() + n); return isoOf(d); };
   const num = (v) => (v === '' || v == null || isNaN(Number(v)) ? null : Number(v));
 
@@ -460,7 +514,7 @@ function parseSchema(righe) {
         </div>
         <p class="muted">Un bicchiere d'acqua è circa 0,25 L.</p>
       </div>
-      ${(prof().note ?? NOTE_DEF) ? `<p class="muted">${esc(prof().note ?? NOTE_DEF)}</p>` : ''}`;
+      ${noteProfilo() ? `<p class="muted">${esc(noteProfilo())}</p>` : ''}`;
   }
 
   // ---------- SETTIMANA ----------
@@ -663,7 +717,7 @@ function parseSchema(righe) {
       { k: 'addome_cm', nome: 'Addome', u: 'cm', verso: -1 },
       { k: 'fianchi_cm', nome: 'Fianchi', u: 'cm', verso: -1 },
     ];
-    const val = (m, k) => (m[k] == null ? '–' : String(m[k]).replace('.', ','));
+    const val = (m, k) => (m[k] == null ? '–' : esc(String(m[k]).replace('.', ',')));
     const diff = (a, b, k) => (a && b && a[k] != null && b[k] != null ? +(b[k] - a[k]).toFixed(1) : null);
     const fmtD = (d, u, verso) => {
       if (d == null) return '–';
@@ -697,8 +751,8 @@ function parseSchema(righe) {
     const righe = [...bia].reverse().map((m) => `
       <tr>
         <td style="white-space: nowrap">${fmtDate(m.data)}<br>
-          <button class="small mini" data-editbia="${m.data}" aria-label="Modifica">✎</button>
-          <button class="small mini" data-delbia="${m.data}" aria-label="Elimina">✕</button>
+          <button class="small mini" data-editbia="${esc(m.data)}" aria-label="Modifica">✎</button>
+          <button class="small mini" data-delbia="${esc(m.data)}" aria-label="Elimina">✕</button>
         </td>
         <td>${val(m, 'peso')}</td>
         <td>${val(m, 'grasso_kg')}</td>
@@ -758,9 +812,9 @@ function parseSchema(righe) {
       <div class="between" style="padding: 6px 0">
         <span><strong>${esc(state.profili[id].nome)}</strong>${id === state.preferito ? ' <span class="muted">· si apre all\'avvio</span>' : ''}</span>
         <span style="white-space: nowrap">
-          <button class="small mini" data-prefprofilo="${id}" aria-label="Apri all'avvio">${id === state.preferito ? '★' : '☆'}</button>
-          <button class="small mini" data-rinomina="${id}" aria-label="Rinomina">✎</button>
-          ${ids.length > 1 ? `<button class="small mini" data-delprofilo="${id}" aria-label="Elimina">✕</button>` : ''}
+          <button class="small mini" data-prefprofilo="${esc(id)}" aria-label="Apri all'avvio">${id === state.preferito ? '★' : '☆'}</button>
+          <button class="small mini" data-rinomina="${esc(id)}" aria-label="Rinomina">✎</button>
+          ${ids.length > 1 ? `<button class="small mini" data-delprofilo="${esc(id)}" aria-label="Elimina">✕</button>` : ''}
         </span>
       </div>`).join('');
     return `
@@ -776,7 +830,7 @@ function parseSchema(righe) {
           <label class="muted">Olio (cucchiaini al giorno)<input inputmode="numeric" id="s_olio" value="${olioTot()}"></label>
           <label class="muted">Acqua (litri al giorno)<input inputmode="decimal" id="s_acqua" value="${String(acquaTot()).replace('.', ',')}"></label>
         </div>
-        <label class="muted">Note (in fondo a Oggi)<textarea id="s_note" rows="4">${esc(prof().note ?? NOTE_DEF)}</textarea></label>
+        <label class="muted">Note (in fondo a Oggi)<textarea id="s_note" rows="4">${esc(noteProfilo())}</textarea></label>
         <button class="primary" data-salvaimpost="1">Salva impostazioni</button>
       </div>
       <h2>Promemoria</h2>
@@ -850,11 +904,11 @@ function parseSchema(righe) {
         <button class="primary" data-biaup="1">Carica la BIA (PDF)</button>
         <input type="file" id="biaFile" accept="application/pdf,.pdf" style="display: none">
       </div>
-      <h2 id="formBia">${biaEdit ? `Modifica la misurazione del ${fmtDate(biaEdit)}` : 'Aggiungi una misurazione (BIA)'}</h2>
+      <h2 id="formBia">${biaEdit ? `Modifica la misurazione del ${esc(fmtDate(biaEdit))}` : 'Aggiungi una misurazione (BIA)'}</h2>
       <div class="card">
         <div class="grid2">
-          <input type="date" id="b_data" value="${biaEdit || oggiIso}" ${biaEdit ? 'disabled' : ''}>
-          ${CAMPI_BIA.map(([id, k, ph, mode]) => `<input inputmode="${mode}" id="${id}" placeholder="${ph}" value="${ed && ed[k] != null ? String(ed[k]).replace('.', ',') : ''}">`).join('')}
+          <input type="date" id="b_data" value="${esc(biaEdit || oggiIso)}" ${biaEdit ? 'disabled' : ''}>
+          ${CAMPI_BIA.map(([id, k, ph, mode]) => `<input inputmode="${mode}" id="${id}" placeholder="${ph}" value="${ed && ed[k] != null ? esc(String(ed[k]).replace('.', ',')) : ''}">`).join('')}
         </div>
         <button class="primary" data-savebia="1">Salva misurazione</button>
         ${biaEdit ? '<button class="small" data-annullabia="1">Annulla modifica</button>' : ''}
@@ -880,7 +934,7 @@ function parseSchema(righe) {
     const y = window.scrollY;
     const ordine = Object.keys(state.profili).sort((a, b) => (a === state.preferito ? -1 : b === state.preferito ? 1 : 0));
     const profili = ordine.length > 1
-      ? `<div class="profili">${ordine.map((id) => `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${id}">${esc(state.profili[id].nome)}</button>`).join('')}</div>`
+      ? `<div class="profili">${ordine.map((id) => `<button class="chip ${id === state.attivo ? 'on' : ''}" data-profilo="${esc(id)}">${esc(state.profili[id].nome)}</button>`).join('')}</div>`
       : '';
     const corpo = tab === 'oggi' ? oggi() : tab === 'settimana' ? settimana() : tab === 'andamento' ? andamento() : dati();
     document.getElementById('app').innerHTML = `${profili}${corpo}`;
@@ -1074,7 +1128,7 @@ function parseSchema(righe) {
 
   // Il backup della web app ha `profili` in cima; quello di Forma è { forma, dieta, palestra }: se ne usa la parte `dieta`
   function datiDaBackup(parsed) {
-    if (parsed && parsed.forma && parsed.dieta && typeof parsed.dieta.profili === 'object') return parsed.dieta;
+    if (parsed && parsed.forma && parsed.dieta && oggettoSemplice(parsed.dieta.profili)) return parsed.dieta;
     return parsed;
   }
 
@@ -1085,15 +1139,14 @@ function parseSchema(righe) {
     e.target.value = '';
     if (!file) return;
     try {
-      const parsed = datiDaBackup(JSON.parse(await file.text()));
-      if (!parsed || typeof parsed.profili !== 'object') throw new Error('formato');
+      const parsed = validaBackup(datiDaBackup(JSON.parse(await file.text())));
       if (!confirm('Il backup sostituisce tutti i dati attuali. Continuo?')) return;
       state = { ...structuredClone(DEFAULT), ...parsed };
       save();
       render();
       alert('Backup importato.');
     } catch (err) {
-      alert('Backup non importato: scegli un file esportato da questa app o da Forma.');
+      alert('Backup non importato: il file non è valido (profili mancanti o dati di tipo sbagliato). I tuoi dati attuali non sono stati toccati. Scegli un file esportato da questa app o da Forma.');
     }
   });
 

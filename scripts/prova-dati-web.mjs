@@ -18,7 +18,7 @@ function tratto(da, a) {
 // Funzioni dei dati: costanti, load/save e funzioni di aiuto (piano del giorno, spunte)
 const codice = [
   tratto('const OLIO_DEF', 'let state = load()'),
-  tratto('function load()', '// ---------- APP PER IPHONE'),
+  tratto('function load()', '// ---------- APP PER IPHONE'),  // include validaBackup
   tratto('const prof = ()', '// ---------- SCHEMA DIETETICO'),
   tratto('function addPiano(p)', '\n  }\n') + '\n  }\n',
   tratto('function azzeraSpesa()', '\n  }\n') + '\n  }\n',
@@ -33,7 +33,7 @@ function apri(salvato) {
   const f = new Function('localStorage', 'NATIVO', 'Plugin', `
     ${codice}
     let state = load();
-    return { get state() { return state; }, set state(s) { state = s; }, load, save, planFor, slotState, addPiano, azzeraSpesa, DEFAULT };
+    return { get state() { return state; }, set state(s) { state = s; }, load, save, validaBackup, noteProfilo, planFor, slotState, addPiano, azzeraSpesa, DEFAULT };
   `);
   return { app: f(localStorage, false, () => ({})), memoria };
 }
@@ -51,11 +51,11 @@ function prova(nome, fn) { fn(); prove++; console.log(`ok  ${nome}`); }
 prova('salvataggio della vecchia web app ritrovato uguale', () => {
   const vecchio = {
     profili: {
-      raffaele: { nome: 'Raffaele', piani: [], bia: [], dieta: {} },
-      alessandra: { nome: 'Alessandra', piani: [piano], bia: [{ data: '2026-10-01', peso: 60 }],
+      profilo1: { nome: 'Profilo 1', piani: [], bia: [], dieta: {} },
+      profilo2: { nome: 'Profilo 2', piani: [piano], bia: [{ data: '2026-10-01', peso: 60 }],
         dieta: { '2026-11-02': { slot: { 0: { opt: 1, fatto: true } }, olio: 3, acqua: 1.5 } }, olio_tot: 5 },
     },
-    attivo: 'alessandra',
+    attivo: 'profilo2',
   };
   const { app, memoria } = apri(JSON.stringify(vecchio));
   assert.deepEqual(app.state, vecchio);
@@ -105,6 +105,37 @@ prova('«Togli le spunte» tiene le voci aggiunte a mano in Forma', () => {
   app.azzeraSpesa();
   assert.deepEqual(app.state.profili.a.spesa.presi, {});
   assert.deepEqual(app.state.profili.a.spesa.extra, ['Detersivo']);
+});
+
+prova('backup malformati rifiutati', () => {
+  const { app } = apri(null);
+  const cattivi = [null, [], 'x', 5, {}, { profili: null }, { profili: [] }, { profili: {} }, { profili: { a: null } },
+    { profili: { a: {} , b: 'x' } }, { profili: { a: { nome: 5 } } }, { profili: { a: { piani: {} } } },
+    { profili: { a: { bia: [{ data: '"><img src=x onerror=alert(1)>' }] } } },
+    { profili: { a: { bia: [{ data: '2026-10-01', peso: '<b>' }] } } },
+    { profili: { a: { piani: [{ dal: '2026-10-01', giorni: 'x' }] } } },
+    { profili: { a: { piani: [{ dal: '<x>', giorni: [] }] } } }, { profili: { a: {} }, attivo: 7 }];
+  for (const c of cattivi) assert.throws(() => app.validaBackup(c), undefined, JSON.stringify(c));
+});
+
+prova('backup valido: campi completati e «attivo» corretto', () => {
+  const { app } = apri(null);
+  const r = app.validaBackup({ profili: { a: { nome: 'A' }, b: { piani: [piano], bia: [{ data: '2026-10-01', peso: 60 }] } }, attivo: 'zzz', preferito: 'qq' });
+  assert.equal(r.attivo, 'a');
+  assert.equal(r.preferito, undefined);
+  assert.deepEqual(r.profili.a, { nome: 'A', piani: [], bia: [], dieta: {} });
+  assert.equal(r.profili.b.nome, 'b');
+  // un profilo «id» ostile ma con dati ben formati è accettato: poi passa da esc() nel render
+  assert.ok(app.validaBackup({ profili: { '"><img src=x onerror=1>': { nome: 'X' } } }));
+});
+
+prova('compatibilità: id vecchi tengono la nota di prima, i nuovi no', () => {
+  const vecchio = apri(JSON.stringify({ profili: { raffaele: { nome: 'X', piani: [], bia: [], dieta: {} } }, attivo: 'raffaele' })).app;
+  assert.ok(vecchio.noteProfilo().length > 0);
+  const nuovo = apri(null).app;
+  assert.equal(nuovo.noteProfilo(), '');
+  const senzaAttivo = apri(JSON.stringify({ profili: { raffaele: { nome: 'X', piani: [], bia: [], dieta: {} } } })).app;
+  assert.equal(senzaAttivo.state.attivo, 'raffaele');
 });
 
 console.log(`${prove} prove passate`);

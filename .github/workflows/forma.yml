@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -45,6 +45,8 @@ jobs:
           path: Forma.ipa
 
   pubblica:
+    permissions:
+      contents: write   # crea la release
     # Su main la release esce solo se i test sono passati
     needs: test
     if: github.ref == 'refs/heads/main'
@@ -83,6 +85,8 @@ jobs:
           path: risultati.xcresult
 
   schermate:
+    permissions:
+      contents: write   # aggiorna il branch schermate-forma
     # Dopo i test: con un solo Mac libero alla volta, due job insieme restavano in coda e venivano annullati
     needs: test
     if: github.ref != 'refs/heads/main'

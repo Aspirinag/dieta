@@ -21,7 +21,7 @@
 
 ## Review Focus
 
-1. Dati già salvati con il vecchio `index.html` (profili `raffaele`/`alessandra`, spunte, BIA): dopo l'aggiornamento tutto ricompare uguale.
+1. Dati già salvati con il vecchio `index.html` (profili con gli id vecchi (poi resi neutri), spunte, BIA): dopo l'aggiornamento tutto ricompare uguale.
 2. Backup di Forma importato nella web app e riesportato: nessun campo perso (`spesa_prossima`, `promemoria` con orari, profili con chiavi diverse da quelle predefinite).
 3. Tema scuro di iOS: testi e cerchi di spunta leggibili, niente sfondi chiari rimasti.
 4. Piano con un pasto a più alternative: tutte visibili, l'alternativa scelta resta scelta dopo un ricaricamento.
@@ -44,7 +44,7 @@
 - [ ] **Step 2:** `node scripts/controlla-lettore.mjs` — Expected: exit 1, segnala la differenza su `PASTI`.
 - [ ] **Step 3:** copia in `index.html` il blocco di `lettore.html` (PASTI senza maiuscole con `ePasto`, soglia al 40% della pagina). Adatta nel resto di `index.html` gli usi di `PASTI.includes` se ce ne sono.
 - [ ] **Step 4:** `node scripts/controlla-lettore.mjs` — Expected: exit 0.
-- [ ] **Step 5:** prova locale con il PDF dell'utente (fuori dal repo): estrai il blocco da ciascun file, eseguilo con `vendor/pdf.min.js` in Node su `/Users/rl/Downloads/Schema Dietetico Liguori Raffaele.pdf` — Expected: stesso JSON, 7 giorni × 4 pasti.
+- [ ] **Step 5:** prova locale con il PDF dell'utente (fuori dal repo): estrai il blocco da ciascun file, eseguilo con `vendor/pdf.min.js` in Node su `un PDF di schema dietetico di prova (fuori dal repo)` — Expected: stesso JSON, 7 giorni × 4 pasti.
 - [ ] **Step 6:** `.github/workflows/web.yml`: su `push`/`pull_request` con `paths: [index.html, iOS/Forma/Risorse/lettore.html, scripts/controlla-lettore.mjs, .github/workflows/web.yml]`, job `ubuntu-latest`, `actions/setup-node` 20, `node scripts/controlla-lettore.mjs`.
 - [ ] **Step 7:** commit «Web app: stesso lettore dei PDF di Forma, controllo in CI».
 
