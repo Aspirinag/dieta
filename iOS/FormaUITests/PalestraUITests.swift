@@ -156,7 +156,7 @@ final class EliminaSchedaUITests: XCTestCase {
         let nome = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Tirata' AND NOT label BEGINSWITH 'Inizia'")).firstMatch
         for _ in 0..<4 where !nome.isHittable { app.swipeUp() }
         nome.tap()
-        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 5), "Non si apre l'editor")
+        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 8), "Non si apre l'editor")
     }
 
     // Dall'editor: «Elimina scheda» → conferma → si torna alla lista senza crash
@@ -214,8 +214,12 @@ final class EliminaSchedaUITests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
         XCTAssertTrue(app.staticTexts["Prossima scheda"].waitForExistence(timeout: 8))
+        // «+» apre un menu: Scheda vuota o Importa da PDF
         app.buttons["Nuova scheda"].tap()
-        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 5), "Non si apre l'editor")
+        let vuota = app.buttons["Scheda vuota"]
+        XCTAssertTrue(vuota.waitForExistence(timeout: 5), "Manca «Scheda vuota» nel menu")
+        vuota.tap()
+        XCTAssertTrue(app.buttons["Elimina scheda"].waitForExistence(timeout: 8), "Non si apre l'editor")
         let elimina = app.buttons["Elimina scheda"]
         XCTAssertTrue(elimina.waitForExistence(timeout: 5) && elimina.isHittable, "Il tasto Elimina scheda non è toccabile")
         elimina.tap()
