@@ -450,7 +450,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Forma;
+				INFOPLIST_KEY_CFBundleDisplayName = inForma;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Forma legge gli allenamenti dell'Apple Watch (palestra, camminate, corsa, bici, nuoto) per registrarli da sola.";
@@ -482,7 +482,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Forma;
+				INFOPLIST_KEY_CFBundleDisplayName = inForma;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Forma legge gli allenamenti dell'Apple Watch (palestra, camminate, corsa, bici, nuoto) per registrarli da sola.";
@@ -577,7 +577,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RecuperoWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Forma;
+				INFOPLIST_KEY_CFBundleDisplayName = inForma;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -600,7 +600,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RecuperoWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Forma;
+				INFOPLIST_KEY_CFBundleDisplayName = inForma;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
