@@ -12,11 +12,14 @@ struct RecuperoLiveTests {
     final class Registro {
         var eventi: [Evento] = []
         var aggiunte: [Int] { eventi.compactMap { if case .aggiunta(let s) = $0 { s } else { nil } } }
+        // Orologio fermo: i secondi della notifica non dipendono da quanto è lenta la macchina
+        let ora = Date(timeIntervalSinceReferenceDate: 800_000_000)
         func timer() -> TimerRecupero {
             TimerRecupero(aggiungiNotifica: { s in
                 try? await Task.sleep(for: .milliseconds(20))
                 self.eventi.append(.aggiunta(s))
-            }, cancellaNotifica: { self.eventi.append(.cancella) })
+            }, cancellaNotifica: { self.eventi.append(.cancella) },
+               adesso: { self.ora })
         }
     }
 
