@@ -255,7 +255,7 @@ struct BackupImpostazioni: View {
             Group {
                 Section {
                     ShareLink(
-                        item: FileBackup(dati: Backup.esporta(archivio: archivio, palestra: palestra), nome: "forma-backup-\(Giorni.oggi()).json"),
+                        item: FileBackup(dati: { [archivio, palestra] in Backup.esporta(archivio: archivio, palestra: palestra) }, nome: "forma-backup-\(Giorni.oggi()).json"),
                         preview: SharePreview("Backup Forma")
                     ) {
                         Label("Esporta backup", systemImage: "square.and.arrow.up")
@@ -330,5 +330,30 @@ struct FoglioNuovoPiano: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+}
+
+// Avvertenza (non è un dispositivo medico) e collegamento alla pagina privacy
+struct InformazioniImpostazioni: View {
+    var body: some View {
+        List {
+            Group {
+                Section {
+                    Text("Forma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.")
+                }
+                Section {
+                    Text("I tuoi dati restano sul telefono: niente account, niente server, nessun tracciamento.")
+                    if let url = URL(string: "https://aspirinag.github.io/dieta/privacy.html") {
+                        Link(destination: url) {
+                            Label("Informativa sulla privacy", systemImage: "hand.raised")
+                        }
+                    }
+                }
+            }
+            .righeTema()
+        }
+        .sfondoTema()
+        .navigationTitle("Informazioni e privacy")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

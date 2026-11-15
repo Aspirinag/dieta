@@ -2,7 +2,7 @@ import SwiftUI
 
 // Pagine delle Impostazioni, aperte per valore: le destinazioni stanno sulla radice del foglio
 enum PaginaImpostazioni: Hashable {
-    case olioAcqua, pagamento, watch, promemoria, backup, profili
+    case olioAcqua, pagamento, watch, promemoria, backup, profili, informazioni
 }
 
 // Foglio aperto dall'ingranaggio di Oggi: sette voci in tre gruppi
@@ -28,6 +28,9 @@ struct ImpostazioniView: View {
                         riga("Backup", "externaldrive", .backup)
                         riga("Profili", "person.2", .profili)
                     }
+                    Section {
+                        riga("Informazioni e privacy", "info.circle", .informazioni)
+                    }
                 }
                 .righeTema()
             }
@@ -48,6 +51,7 @@ struct ImpostazioniView: View {
                 case .promemoria: PromemoriaImpostazioni()
                 case .backup: BackupImpostazioni()
                 case .profili: ProfiliImpostazioni()
+                case .informazioni: InformazioniImpostazioni()
                 }
             }
         }

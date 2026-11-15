@@ -12984,6 +12984,70 @@
           }
         }
       }
+    },
+    "Informazioni e privacy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About and privacy"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About and privacy"
+          }
+        }
+      }
+    },
+    "Forma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma is not a medical device and does not replace the advice of your nutritionist or doctor."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma is not a medical device and does not replace the advice of your nutritionist or doctor."
+          }
+        }
+      }
+    },
+    "I tuoi dati restano sul telefono: niente account, niente server, nessun tracciamento.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data stays on your phone: no account, no server, no tracking."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data stays on your phone: no account, no server, no tracking."
+          }
+        }
+      }
+    },
+    "Informativa sulla privacy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy policy"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy policy"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

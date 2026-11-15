@@ -239,12 +239,13 @@ struct MenuProfilo: View {
 }
 
 // Backup condivisibile come file .json
+// I dati si codificano solo quando si condivide, non a ogni ridisegno
 struct FileBackup: Transferable {
-    let dati: Data
+    let dati: @MainActor @Sendable () -> Data
     let nome: String
 
     static var transferRepresentation: some TransferRepresentation {
-        DataRepresentation(exportedContentType: .json) { $0.dati }
+        DataRepresentation(exportedContentType: .json) { item in await item.dati() }
             .suggestedFileName { $0.nome }
     }
 }
