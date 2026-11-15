@@ -6,24 +6,24 @@
     {
       "layers" : [
         {
-          "glass" : true,
+          "glass" : false,
           "image-name" : "triangolo.svg",
           "name" : "triangolo"
         },
         {
-          "glass" : true,
+          "glass" : false,
           "image-name" : "cerchio.svg",
           "name" : "cerchio"
         },
         {
-          "glass" : true,
+          "glass" : false,
           "image-name" : "quadrato.svg",
           "name" : "quadrato"
         }
       ],
       "shadow" : {
         "kind" : "neutral",
-        "opacity" : 0.5
+        "opacity" : 0.2
       },
       "translucency" : {
         "enabled" : false,
