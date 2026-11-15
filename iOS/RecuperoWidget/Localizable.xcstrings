@@ -188,34 +188,34 @@
     "%lld/%lld" : {
       "shouldTranslate" : false
     },
-    "Apri Forma per finire l'allenamento" : {
+    "Apri inForma per finire l'allenamento" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Forma to finish the workout"
+            "value" : "Open inForma to finish the workout"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Forma to finish the workout"
+            "value" : "Open inForma to finish the workout"
           }
         }
       }
     },
-    "Apri Forma per i kg" : {
+    "Apri inForma per i kg" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Forma to enter the kg"
+            "value" : "Open inForma to enter the kg"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Forma to enter the kg"
+            "value" : "Open inForma to enter the kg"
           }
         }
       }

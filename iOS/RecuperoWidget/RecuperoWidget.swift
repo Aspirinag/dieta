@@ -49,11 +49,11 @@ struct RecuperoLiveActivity: Widget {
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                         }
                         if stato.esercizio == nil {
-                            Text("Apri Forma per finire l'allenamento")
+                            Text("Apri inForma per finire l'allenamento")
                                 .font(.footnote).foregroundStyle(.secondary)
                         } else {
                             if !stato.puoSpuntare {
-                                Text("Apri Forma per i kg").font(.footnote).foregroundStyle(.secondary)
+                                Text("Apri inForma per i kg").font(.footnote).foregroundStyle(.secondary)
                             }
                             HStack(alignment: .center, spacing: 8) {
                                 RigaPoi(prossimo: stato.prossimo)
@@ -136,7 +136,7 @@ struct VistaAllenamentoBloccata: View {
                             if stato.movimento != nil { PulsanteSaltaRiscaldamento(compatto: false) }
                         }
                     } else {
-                        Text("Apri Forma per i kg")
+                        Text("Apri inForma per i kg")
                             .font(.caption).foregroundStyle(.secondary)
                             .multilineTextAlignment(.trailing)
                             .frame(maxWidth: 90, alignment: .trailing)
@@ -145,7 +145,7 @@ struct VistaAllenamentoBloccata: View {
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Tutte le serie fatte").font(.title2.weight(.bold))
-                    Text("Apri Forma per finire l'allenamento").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Apri inForma per finire l'allenamento").font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             if let recupero {

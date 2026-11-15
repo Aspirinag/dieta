@@ -197,7 +197,7 @@ struct PromemoriaImpostazioni: View {
                 if !prima.pasti { q.pasti = false }
                 if !prima.acqua { q.acqua = false }
                 archivio.stato.promemoria = q
-                errore = String(localized: "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma.")
+                errore = String(localized: "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → inForma.")
             }
             await archivio.programmaPromemoria()
         }
@@ -237,11 +237,11 @@ struct BackupImpostazioni: View {
                             await archivio.programmaPromemoria()
                             await palestra.programmaPagamento()
                         }
-                    } catch { errore = String(localized: "File non valido: scegli un backup di Forma, Dieta o Palestra.") }
+                    } catch { errore = String(localized: "File non valido: scegli un backup di inForma, Dieta o Palestra.") }
                 }
                 Button("Annulla", role: .cancel) {}
             } message: { _ in
-                Text("Un backup di Forma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
+                Text("Un backup di inForma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.")
             }
             .alert("Backup non importato", isPresented: Binding(get: { errore != nil }, set: { if !$0 { errore = nil } })) {
                 Button("OK") {}
@@ -256,7 +256,7 @@ struct BackupImpostazioni: View {
                 Section {
                     ShareLink(
                         item: FileBackup(dati: { [archivio, palestra] in Backup.esporta(archivio: archivio, palestra: palestra) }, nome: "forma-backup-\(Giorni.oggi()).json"),
-                        preview: SharePreview("Backup Forma")
+                        preview: SharePreview("Backup inForma")
                     ) {
                         Label("Esporta backup", systemImage: "square.and.arrow.up")
                     }
@@ -273,7 +273,7 @@ struct BackupImpostazioni: View {
                         }
                     }
                 } footer: {
-                    Text("Importa qui i backup delle web app o delle app Dieta e Palestra per portare tutti i dati in Forma.")
+                    Text("Importa qui i backup delle web app o delle app Dieta e Palestra per portare tutti i dati in inForma.")
                 }
             }
             .righeTema()
@@ -339,7 +339,7 @@ struct InformazioniImpostazioni: View {
         List {
             Group {
                 Section {
-                    Text("Forma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.")
+                    Text("inForma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.")
                 }
                 Section {
                     Text("I tuoi dati restano sul telefono: niente account, niente server, nessun tracciamento.")
