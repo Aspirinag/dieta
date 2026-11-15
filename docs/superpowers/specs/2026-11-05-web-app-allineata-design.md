@@ -8,7 +8,7 @@ L'app per iPhone Forma nelle ultime settimane è cambiata molto (nuovo aspetto, 
 
 ## Obiettivi
 
-1. **Lettura del PDF uguale a Forma.** La web app usa lo stesso codice di `iOS/Forma/Risorse/lettore.html` (`parseSchema`, `leggiSchemaPdf`, `parseBia`, `leggiBiaPdf`, con `PASTI` senza maiuscole e soglia della colonna al 40% della larghezza della pagina). Lo schema di prova (`Schema Dietetico Liguori Raffaele.pdf`, simile al suo) deve dare lo stesso risultato nei due lettori.
+1. **Lettura del PDF uguale a Forma.** La web app usa lo stesso codice di `iOS/Forma/Risorse/lettore.html` (`parseSchema`, `leggiSchemaPdf`, `parseBia`, `leggiBiaPdf`, con `PASTI` senza maiuscole e soglia della colonna al 40% della larghezza della pagina). Lo schema di prova (uno schema dietetico di prova, simile al suo) deve dare lo stesso risultato nei due lettori.
 2. **Niente più divergenze.** Un controllo automatico (test in CI) fallisce se il codice di lettura in `index.html` e in `lettore.html` è diverso.
 3. **Aspetto di Forma.** Stile iOS «a gruppi» (sfondo grigio di sistema, riquadri arrotondati), tema chiaro e scuro automatici, colore d'accento di Forma (`Colori.accento`), cerchi di spunta come in Forma, caratteri di sistema. Riferimento: le viste SwiftUI della dieta (`HomeView.swift`, `Dieta/DietaView.swift`, `Dieta/DettaglioPastoView.swift`, `Dieta/SpesaView.swift`, `Dieta/PianiView.swift`).
 4. **Testi di Forma.** Stesse parole dell'app per le stesse cose (vedi `docs/revisione-testi.md` e `iOS/Forma/Localizable.xcstrings`): «piano alimentare», «Piani e misure», «Non riesco a leggere il PDF», ecc. Solo italiano.
