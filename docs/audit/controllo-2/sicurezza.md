@@ -1,0 +1,76 @@
+# Controllo sicurezza di Forma (15/11/2026)
+
+Codice letto: `/Users/rl/app-iphone/dieta-controllo` (commit `45bcb35`). Niente build, niente simulatore: tutto verificato leggendo il codice fino all'effetto e interrogando GitHub in sola lettura.
+
+## In breve
+- **L'app iOS è solida**: non parla con la rete, legge backup e PDF con controlli seri, i dati restano sul telefono. Nessun punto grave.
+- **Il punto debole è la web app** (`index.html`): si fida del file di backup. Un backup costruito apposta può far girare codice nella pagina, e un backup sbagliato può lasciarla bianca per sempre.
+- Il repository pubblico non contiene segreti né dati di salute; restano pubblici l'email personale (nei commit) e i nomi (in `index.html`).
+- I workflow GitHub sono a posto nella sostanza (nessun `pull_request_target`, nessun secret); solo rifiniture sui permessi.
+- Totale: **0 alta, 3 media, 5 bassa**.
+
+## Cosa non va
+
+### 1. Web app: un backup costruito apposta fa girare codice nella pagina (XSS) — gravità media
+- **Dove:** `index.html:1088-1092` (importazione: l'unico controllo è `typeof parsed.profili === 'object'`), poi i valori finiscono nell'HTML senza `esc()`: `index.html:883` (`data-profilo="${id}"`, il nome-chiave del profilo), `:761-763` (`data-prefprofilo`, `data-rinomina`, `data-delprofilo`), `:700-701` (`data-editbia="${m.data}"`), `:703-708` e `:690-693` (`val(m, 'peso')` ecc.: se nel backup `peso` è un testo, entra così com'è), `:857` (`value="${ed[k]}"`). Tutto passa da `innerHTML` in `:886`.
+- **Cosa succede:** qualcuno manda un file «backup» (per esempio «ti passo il piano già pronto», scenario realistico quando l'app andrà a nutrizionisti e pazienti). Chi lo importa nella web app esegue il codice nascosto nel file: basta un profilo il cui identificativo sia `"><img src=x onerror=...>` e il codice parte **subito**, alla prima schermata. Il codice resta salvato nei dati, quindi riparte a ogni apertura e può leggere e spedire fuori tutto quello che la persona scrive dopo (peso, BIA, pasti), di tutti i profili. Su Forma iOS lo stesso file è innocuo (SwiftUI non interpreta HTML).
+- **Prova:** lettura riga per riga: `state = {...DEFAULT, ...parsed}` (`:1091`) → `render()` → `Object.keys(state.profili)` messo in `data-profilo="${id}"` senza `esc` (`:883`) → `innerHTML` (`:886`). Per la BIA: `val = String(m[k]).replace('.', ',')` (`:666`) non filtra niente. I testi che arrivano dal PDF (nomi di pasti e alimenti, nome del file) passano invece tutti da `esc()`: lì non c'è il problema.
+- **Correzione:** all'importazione ricostruire i dati campo per campo (come fa Forma con `valore(...)`): identificativi dei profili solo lettere/numeri, numeri convertiti con `Number`, date controllate con `^\d{4}-\d{2}-\d{2}$`; in più mettere `esc()` su ogni `${id}`, `${m.data}` e in `val()`. **Sforzo:** medio.
+
+### 2. Web app: un backup sbagliato lascia la pagina bianca per sempre, e i dati di prima sono già persi — gravità media
+- **Dove:** `index.html:1089-1093` (controllo, `save()` **prima** di `render()`), `:217` (`prof()`), `:880` (`Object.keys(state.profili)`), `:166-172` (`load()`), `:1101` (avvio).
+- **Cosa succede:** si importa un file JSON che ha `profili` ma non della forma giusta (esempi: `"profili": null`, che passa il controllo perché in JavaScript `typeof null` è `'object'`; `"profili": {}`; un profilo senza `bia` o `piani`; `attivo` che indica un profilo che non c'è). L'app salva subito il file al posto dei dati veri, poi va in errore nel disegnare la pagina. Da lì in poi a ogni apertura la pagina resta bianca: non si arriva più nemmeno a «Importa backup». Si esce solo cancellando i dati del sito dal browser, e i dati di prima non ci sono più. Non serve un malintenzionato: basta un backup ritoccato a mano o tagliato.
+- **Prova:** lettura: `typeof null === 'object'` → `state.profili = null` → `save()` → `render()` lancia `TypeError` su `Object.keys(null)`. Al riavvio `load()` restituisce lo stesso stato (il `try` non scatta perché `s.preferito` è vuoto) e `render()` in `:1101` fallisce di nuovo; non c'è nessun `window.onerror` né ripristino. Con `profili: {}` l'errore è in `prof()` (`undefined.piani`). Forma iOS questi casi li gestisce (`Modelli.swift:364-374`: profili vuoti rifiutati, `attivo` corretto).
+- **Correzione:** validare e completare i dati prima di sostituirli (profili non vuoti, `piani`/`bia`/`dieta` presenti, `attivo` esistente), provare `render()` con i dati nuovi **prima** di `save()` e, se fallisce, tenere i vecchi; all'avvio, se il disegno fallisce, mostrare una schermata «dati non leggibili» con Esporta/Importa. **Sforzo:** piccolo-medio (si fa insieme al punto 1).
+
+### 3. Email personale del proprietario pubblica nei commit — gravità media
+- **Dove:** metadati dei commit su `origin/main` (29 commit su `main`, 31 contando tutti i branch; dal 25/10/2026 fino a `45bcb35` del 10/11/2026; autore con indirizzo personale Gmail, committer «GitHub»: sono le unioni delle PR fatte dal sito/`gh`).
+- **Cosa succede:** chiunque apra il repository pubblico (o chiami l'API dei commit) legge l'indirizzo email personale, legato al nome utente e al nome di battesimo presente in `index.html`. Serve solo un browser. Continua a succedere a ogni PR unita.
+- **Prova:** `git log --all --format='%ae' | sort | uniq -c` (31 commit in tutto, ricontati il 15/11); `gh api repos/Aspirinag/dieta/commits?per_page=100` ne restituisce 19 negli ultimi 100 con quell'indirizzo.
+- **Correzione:** su GitHub → Settings → Emails attivare «Keep my email addresses private» e «Block command line pushes that expose my email» (da lì in poi le unioni usano l'indirizzo `noreply`). Per i commit già pubblici serve riscrivere la storia (`git filter-repo --mailmap`) e forzare il push di main, branch e tag: decisione dell'utente. **Sforzo:** piccolo (impostazione) / medio (riscrittura).
+
+### 4. Nomi veri e nota del nutrizionista scritti nella web app pubblica — gravità bassa
+- **Dove:** `index.html:146` (`NOTE_DEF`, la nota personale del piano), `index.html:149-154` (due profili predefiniti con i nomi di battesimo), `scripts/prova-dati-web.mjs:54`, `docs/superpowers/specs/2026-11-05-web-app-allineata-design.md:5` e `plans/2026-11-05-web-app-allineata.md:24` (dicono chi usa la web app).
+- **Cosa succede:** chi apre `https://aspirinag.github.io/dieta/` vede due profili con i nomi di due persone reali e le indicazioni della loro dieta; insieme all'email dei commit si identifica la coppia. Nessun dato di peso/BIA è nel repository.
+- **Prova:** lettura dei file; ricerca in tutta la storia (`git rev-list --all | git grep`) di email, chiavi, token: nessun altro dato.
+- **Correzione:** profilo predefinito «Profilo 1» senza nota; i nomi restano solo nel `localStorage` di chi li ha già. **Sforzo:** piccolo (attenzione a non rinominare gli id `raffaele`/`alessandra` dei dati già salvati).
+
+### 5. Web app senza Content-Security-Policy, e tre siti sulla stessa «origine» — gravità bassa
+- **Dove:** `index.html:3-12` (nessun `<meta http-equiv="Content-Security-Policy">`); GitHub Pages dell'account: `Aspirinag.github.io`, `dieta`, `Palestra` (tutti sotto `https://aspirinag.github.io`).
+- **Cosa succede:** il browser considera i tre siti un unico sito: qualunque script di `/Palestra/` o della pagina principale può leggere `localStorage['dieta:v1']` (pesi, BIA, pasti) e viceversa. Oggi sono tutti siti dell'utente, quindi non è un attacco di per sé, ma un difetto in uno qualsiasi dei tre espone i dati di tutti. E senza CSP il punto 1 non ha nessun freno: il codice iniettato può spedire i dati dove vuole.
+- **Prova:** `gh api users/Aspirinag/repos` (tre repository con Pages attivo); `gh api repos/Aspirinag/dieta/pages` (pubblicata da `main`, cartella `/`); nessuna CSP nel file. Il contenuto degli altri due siti non è stato letto.
+- **Correzione:** aggiungere in `index.html` una CSP con `connect-src 'none'` (la web app non ha bisogno della rete), `script-src 'self' 'unsafe-inline'`, `worker-src 'self' blob:`, `object-src 'none'`, `base-uri 'none'`: anche con un XSS i dati non escono. Per separare davvero i siti servirebbe un dominio proprio. **Sforzo:** piccolo (CSP).
+
+### 6. Lettore PDF: libreria pdf.js vecchia con una falla nota — gravità bassa
+- **Dove:** `vendor/pdf.min.js`, `iOS/Forma/Risorse/pdf.min.js` e relativi worker (versione **3.11.174**); chiamate in `index.html:314,366` e `iOS/Forma/Risorse/lettore.html:78,130` (`getDocument({ data })` senza `isEvalSupported: false`).
+- **Cosa succede:** questa versione ha la falla CVE-2024-4367 (un PDF costruito apposta esegue codice nella pagina; corretta dalla 4.2.67). **Oggi non è raggiungibile**: la falla scatta solo quando la pagina del PDF viene disegnata, e sia la web app sia Forma leggono solo il testo (`getTextContent`, mai `render`). Diventa un problema vero il giorno in cui si aggiunge un'anteprima del PDF, perché un piano in PDF ricevuto da altri è proprio il file «non fidato» tipico.
+- **Prova:** `grep` della versione nei file; `grep` di `.render(` / `getOperatorList` in `index.html` e `lettore.html`: nessun risultato; nel file c'è il `new Function` usato dalla falla.
+- **Correzione:** aggiungere `isEvalSupported: false` alle quattro `getDocument` (una riga ciascuna, nessun effetto sulla lettura) oppure aggiornare pdf.js a una versione ≥ 4.2.67 (va riprovata la lettura dei PDF, `scripts/controlla-lettore.mjs`). **Sforzo:** piccolo (opzione) / medio (aggiornamento).
+
+### 7. Workflow «Forma iOS»: permesso di scrittura a tutti i job — gravità bassa
+- **Dove:** `.github/workflows/forma.yml:17-18` (`permissions: contents: write` per l'intero file); `actions/checkout@v4`, `upload-artifact@v4`, `download-artifact@v4` (e `setup-node@v4` in `web.yml`) indicati per etichetta e non per commit.
+- **Cosa succede:** anche i job che non ne hanno bisogno (`build`, `test`) girano con un token che può scrivere nel repository e creare release. Se un giorno si aggiunge un'azione di terzi o uno script scaricato in quei job, può modificare `main` o pubblicare una `.ipa` alterata. Oggi il rischio è basso: il workflow parte solo su `push` (non dalle PR di estranei), non usa secrets e le azioni sono solo quelle ufficiali di GitHub.
+- **Prova:** lettura dei due workflow; `gh api repos/Aspirinag/dieta/actions/permissions/workflow` → predefinito `read`, quindi basta togliere il blocco in alto.
+- **Correzione:** spostare `permissions: contents: write` solo nei job `pubblica` e `schermate`; in cima `contents: read`. **Sforzo:** piccolo.
+
+### 8. `main` non protetto: ogni push va subito online sulla web app — gravità bassa
+- **Dove:** impostazioni GitHub del repository (Pages pubblicata dal ramo `main`, cartella `/`; nessuna protezione del ramo).
+- **Cosa succede:** qualunque push su `main` (anche diretto, anche con i controlli di `web.yml` falliti) diventa in pochi minuti la web app che tiene i dati di salute nel browser. Un errore, o chi entrasse nell'account o mettesse le mani su un token con permesso di scrittura (vedi punto 7), cambia il codice che gira sui dati delle persone senza nessun passaggio di controllo.
+- **Prova:** `gh api repos/Aspirinag/dieta/branches/main/protection` → «Branch not protected»; `gh api repos/Aspirinag/dieta/pages` → `source: main /`, `build_type: legacy`.
+- **Correzione:** regola sul ramo `main`: niente push diretti, unione solo da PR con il controllo «Web app» verde (per un solo proprietario non serve la revisione). **Sforzo:** piccolo.
+
+## Da verificare
+- **PDF enorme o costruito per bloccare la lettura (Forma iOS).** `PianiView.swift:35` legge tutto il file in memoria e `LettorePDF.swift:74-78` lo passa in base64 alla pagina nascosta, senza limite di dimensione; il tempo massimo di 20 secondi (`LettorePDF.swift:40-43`) vale solo per l'avvio della pagina, non per la lettura. Sospetto: con un PDF di centinaia di MB l'app viene chiusa da iOS per memoria, e con un PDF che manda pdf.js in ciclo resta il riquadro «Lettura del PDF…» senza uscita. Non provato (servirebbe il simulatore). Nessuna perdita di dati in ogni caso.
+- **Backup in iCloud.** `dieta.json` e `palestra.json` stanno in Application Support (`Archivio.swift:63`, `ArchivioPalestra.swift:63`) e quindi entrano nel backup iCloud del telefono: è normale e voluto, ma è cifrato da capo a capo solo se l'utente ha attivato la «Protezione avanzata dei dati». Da decidere se dirlo nell'informativa (area legale), non è un difetto del codice.
+- **Altri due siti sulla stessa origine** (`Aspirinag.github.io`, `Palestra`): non letti; se hanno lo stesso schema di importazione, valgono anche lì i punti 1 e 2.
+
+## Cosa funziona bene
+- **Forma iOS non usa la rete**: nessun `URLSession` né indirizzo web nel codice dell'app; i dati escono solo se l'utente esporta il backup dal pannello Condividi.
+- **Importazione del backup su iOS robusta**: ogni campo mancante o sbagliato prende un valore predefinito (`valore(...)`, `Modelli.swift:379-383`), i profili vuoti sono rifiutati, `attivo` viene corretto, un piano senza 7 giorni è ignorato (`Archivio.swift:216`) invece di far cadere l'app; date malformate non fanno danni (`Utilita.swift:62-66`). File aperti con accesso limitato (`startAccessingSecurityScopedResource`) e solo dopo conferma.
+- **PDF su iOS**: letti in una pagina locale invisibile, e il risultato torna come JSON decodificato in tipi rigidi (`[GiornoPiano]`, `Misura`): testo strano nel PDF resta testo.
+- **Dati a riposo**: nessun App Group (il widget/Live Activity riceve solo nome dell'esercizio, kg e ripetizioni tramite ActivityKit, niente dati di dieta o peso), niente in `UserDefaults` salvo la lettura dei dati della vecchia app. La protezione dei file è quella predefinita di iOS (cifrati fino al primo sblocco dopo l'accensione): è la scelta giusta, perché una protezione più stretta impedirebbe a Forma di salvare gli allenamenti del Watch a telefono bloccato.
+- **Web app**: i testi letti dai PDF e i nomi scritti dall'utente passano sempre da `esc()`; pdf.js è servito dal repository (nessuno script da siti esterni); HTTPS forzato su Pages.
+- **Workflow**: nessun `pull_request_target`, nessun secret; `web.yml` gira sulle PR con permessi di sola lettura; `forma.yml` parte solo su `push`, quindi una PR da un fork non ottiene mai il token di scrittura; nei comandi non entrano testi controllabili da fuori (solo `github.sha`, `run_number`, `repository`).
+- **Repository pubblico senza dati sanitari né segreti.** Cercato in tutti i 250 commit di branch, tag e `schermate-forma`: nessun `dieta.json`, backup, PDF reale, chiave, token, certificato o profilo di firma. Il PDF `iOS/FormaTests/SchedaAllenamentoForma.pdf` (branch `importa-scheda-pdf`) è finto (creato con ReportLab, autore «Forma»). Le schermate del branch `schermate-forma` sono fatte in CI con `-demo` (dati di esempio). La cartella `iOS/build-dd` committata per errore esiste solo in locale (`refs/original/...grafica-p9`), su GitHub non c'è (verificato con `gh api .../commits/<sha>` → 422).
+- Il Team ID Apple (`DEVELOPMENT_TEAM` in `project.pbxproj:392,426`) è pubblico ma non è un segreto: da solo non permette di firmare niente.
+- GitHub: secret scanning e push protection attivi; permessi predefiniti dei workflow in sola lettura.
