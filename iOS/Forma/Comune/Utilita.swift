@@ -45,12 +45,14 @@ enum Giorni {
         }
     }
 
-    static let calendario: Calendar = {
+    // Creato a ogni uso: segue il fuso e la lingua attuali anche se cambiano con l'app aperta
+    static var calendario: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.locale = .current
+        c.timeZone = .autoupdatingCurrent
         c.firstWeekday = 2
         return c
-    }()
+    }
 
     static func iso(_ data: Date) -> String {
         let c = calendario.dateComponents([.year, .month, .day], from: data)
@@ -63,7 +65,17 @@ enum Giorni {
         return calendario.date(from: DateComponents(year: p[0], month: p[1], day: p[2])) ?? Date()
     }
 
-    static func oggi() -> String { iso(Date()) }
+    static func oggi() -> String { oggi(argomenti: Avvio.argomenti) }
+
+    // Con `-demo -oggi AAAA-MM-GG` la data è fissa: serve ai test dell'interfaccia, che altrimenti
+    // dipenderebbero dal giorno della settimana in cui girano. Fuori dalla demo conta solo l'orologio
+    static func oggi(argomenti: [String]) -> String {
+        if argomenti.contains("-demo"), let i = argomenti.firstIndex(of: "-oggi"), i + 1 < argomenti.count {
+            let v = argomenti[i + 1]
+            if v.count == 10, iso(data(v)) == v { return v }
+        }
+        return iso(Date())
+    }
 
     static func aggiungi(_ iso: String, _ giorni: Int) -> String {
         Self.iso(calendario.date(byAdding: .day, value: giorni, to: data(iso)) ?? Date())
@@ -130,7 +142,10 @@ func leggiNumero(_ testo: String) -> Double? {
             latino.append(c)
         }
     }
-    return Double(latino)
+    // Solo cifre, segno e separatore: niente "nan", "inf", "1e5" o esadecimali; e mai un risultato non finito
+    guard !latino.isEmpty, latino.allSatisfy({ "0123456789.+-".contains($0) }),
+          let v = Double(latino), v.isFinite else { return nil }
+    return v
 }
 
 // Argomenti di avvio usati per le schermate di prova nel simulatore (es. -tab andamento -demo)

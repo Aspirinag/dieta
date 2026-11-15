@@ -15,7 +15,9 @@ final class LettorePDF: NSObject, WKNavigationDelegate {
     private var attesa: [CheckedContinuation<Void, Never>] = []
     private var pronto = false
 
-    private func prepara() async {
+    var haPagina: Bool { web != nil }
+
+    func prepara() async {
         if pronto { return }
         if web == nil {
             let w = WKWebView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
@@ -32,17 +34,33 @@ final class LettorePDF: NSObject, WKNavigationDelegate {
                 w.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
             }
         }
+        // Tempo massimo: se la pagina non risponde si butta via, e il tentativo dopo ne crea una nuova
+        let pagina = web
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(20))
+            if let self, !self.pronto, self.web === pagina { self.reimposta() }
+        }
         await withCheckedContinuation { attesa.append($0) }
     }
+
+    // Butta via la pagina nascosta: la lettura successiva ne crea una nuova
+    func reimposta() {
+        web?.removeFromSuperview()
+        web = nil
+        pronto = false
+        sblocca()
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { reimposta() }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         pronto = true
         sblocca()
     }
 
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { sblocca() }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { reimposta() }
 
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { sblocca() }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { reimposta() }
 
     private func sblocca() {
         attesa.forEach { $0.resume() }

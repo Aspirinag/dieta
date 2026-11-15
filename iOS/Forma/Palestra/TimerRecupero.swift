@@ -1,6 +1,6 @@
 import SwiftUI
 
-// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity
+// `StatoRecupero` (inizio, fine, esercizio) sta in Condiviso/AttivitaRecupero.swift: lo legge anche la Live Activity dell'allenamento
 
 // Timer di recupero tra le serie: parte da solo quando segni una serie; a fine recupero vibra
 // e, con l'app chiusa o il telefono bloccato, arriva una notifica.
@@ -17,7 +17,8 @@ final class TimerRecupero {
     private let cancellaNotifica: () -> Void
 
     init(aggiungiNotifica: @escaping (Int) async -> Void = { secondi in
-             await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi)
+             await Notifiche.traSecondi(id: "recupero", titolo: String(localized: "Recupero finito"), testo: String(localized: "Puoi iniziare la prossima serie."), secondi: secondi,
+                                        categoria: Notifiche.categoriaRecupero)
          },
          cancellaNotifica: @escaping () -> Void = { Notifiche.cancella(["recupero"]) }) {
         self.aggiungiNotifica = aggiungiNotifica
@@ -74,6 +75,16 @@ final class TimerRecupero {
         }
     }
 
+    // «Ancora 30 s» dalla notifica di fine recupero: riparte un recupero di 30 s
+    func ancora30() {
+        avvia(30)
+    }
+
+    // Aspetta che la notifica di fine recupero sia stata aggiunta (per l'intent: iOS può sospendere l'app appena ritorna)
+    func attendiNotifica() async {
+        await compitoNotifica?.value
+    }
+
     // Se la serie tolta è quella che ha fatto partire il recupero, lo ferma (e toglie la notifica)
     func fermaSeAvviatoDa(_ serie: UUID) {
         if avviatoDa == serie { ferma() }
@@ -83,8 +94,8 @@ final class TimerRecupero {
         avviatoDa = nil
         compito?.cancel()
         compito = nil
+        // L'aggiunta in corso si annulla ma si tiene: chi aspetta (`attendiNotifica`) la vede finita e già tolta
         compitoNotifica?.cancel()
-        compitoNotifica = nil
         fine = nil
         inizio = nil
         esercizio = nil

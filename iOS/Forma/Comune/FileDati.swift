@@ -13,9 +13,19 @@ enum FileDati {
 
     static let marcaCopia = ".illeggibile-"
 
+    struct DatiVuoti: Error {}
+
+    // Scrive i dati sul file, ma mai dati vuoti: un file buono non va sostituito con uno vuoto
+    static func scrivi(_ dati: Data, su url: URL) throws {
+        guard !dati.isEmpty else { throw DatiVuoti() }
+        try dati.write(to: url, options: .atomic)
+    }
+
     static func leggi<T: Decodable>(_ url: URL, come: T.Type) -> Esito<T> {
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return .assente }
         guard let dati = try? Data(contentsOf: url) else { return .bloccato }
+        // Un file vuoto non contiene niente da salvare: niente copia (e niente copia vuota da confondere con quelle buone)
+        if dati.isEmpty { return .assente }
         if let valore = try? JSONDecoder().decode(T.self, from: dati) { return .ok(valore) }
         let nomeFile = url.deletingPathExtension().lastPathComponent
         // Stesso contenuto già messo da parte a un'apertura precedente: niente copia nuova

@@ -240,6 +240,70 @@
         }
       }
     },
+    "%@, bicchiere %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, glass %lld of %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, glass %lld of %lld"
+          }
+        }
+      }
+    },
+    "%@, cucchiaino %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, teaspoon %lld of %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, teaspoon %lld of %lld"
+          }
+        }
+      }
+    },
+    "%@, serie %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, set %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, set %lld"
+          }
+        }
+      }
+    },
+    "%@, serie di riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, warm-up set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, warm-up set"
+          }
+        }
+      }
+    },
     "%@: %lld serie fatte": {
       "localizations": {
         "it": {
@@ -356,6 +420,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@: max weight %2$@ kg"
+          }
+        }
+      }
+    },
+    "%@: ripetizioni massime %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: max reps %2$lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: max reps %2$lld"
           }
         }
       }
@@ -2092,6 +2172,22 @@
         }
       }
     },
+    "Ancora 30 s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 s more"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 s more"
+          }
+        }
+      }
+    },
     "Ancora nessun allenamento con i pesi nelle ultime %lld settimane.": {
       "localizations": {
         "en": {
@@ -2296,6 +2392,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Opens the measurement to edit it"
+          }
+        }
+      }
+    },
+    "Apre la rotella per scegliere il valore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a wheel to choose the value"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a wheel to choose the value"
           }
         }
       }
@@ -2780,6 +2892,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Active calories"
+          }
+        }
+      }
+    },
+    "Cambia il recupero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change rest"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change rest"
           }
         }
       }
@@ -7376,6 +7504,22 @@
         }
       }
     },
+    "Movimento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movement"
+          }
+        }
+      }
+    },
     "Multipower": {
       "localizations": {
         "en": {
@@ -10064,6 +10208,38 @@
         }
       }
     },
+    "Salta il recupero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip rest"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip rest"
+          }
+        }
+      }
+    },
+    "Salta il riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip warm-up"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip warm-up"
+          }
+        }
+      }
+    },
     "saltato": {
       "localizations": {
         "en": {
@@ -10377,6 +10553,22 @@
         }
       }
     },
+    "Secondi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seconds"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seconds"
+          }
+        }
+      }
+    },
     "Segna %@": {
       "localizations": {
         "en": {
@@ -10421,6 +10613,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mark as paid"
+          }
+        }
+      }
+    },
+    "Segna la serie": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log set"
+          }
+        }
+      }
+    },
+    "Segna il riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log warm-up"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log warm-up"
+          }
+        }
+      }
+    },
+    "Segna la serie %lld di %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark set %lld of %lld"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark set %lld of %lld"
+          }
+        }
+      }
+    },
+    "Segna la serie di riscaldamento": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark warm-up set"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark warm-up set"
           }
         }
       }
@@ -10501,6 +10757,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sets"
+          }
+        }
+      }
+    },
+    "Serie %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %@"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %@"
           }
         }
       }
@@ -11498,6 +11770,22 @@
         }
       }
     },
+    "Svuota": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
     "Tapis roulant": {
       "extractionState": "manual",
       "comment": "Nome di un esercizio della libreria o dell'app: la chiave italiana resta salvata nei dati, il testo si mostra nella lingua del telefono",
@@ -12328,6 +12616,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rowing machine"
+          }
+        }
+      }
+    },
+    "vuoto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "empty"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "empty"
           }
         }
       }

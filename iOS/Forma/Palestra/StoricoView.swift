@@ -141,7 +141,7 @@ struct StoricoAllenamenti: View {
     @ViewBuilder private func statistiche(_ sett: RiepilogoSettimana) -> some View {
         statistica("Allenamenti", "\(sett.allenamenti)")
         statistica("Kg totali", volumeTesto(sett.kg))
-        statistica("Allenamenti in tutto", "\(palestra.stato.allenamenti.count)")
+        statistica("Allenamenti in tutto", "\(palestra.stato.allenamenti.count + palestra.stato.cardio.count)")
     }
 
     private func statistica(_ titolo: LocalizedStringKey, _ valore: String) -> some View {

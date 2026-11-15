@@ -17,6 +17,9 @@ struct HomeView: View {
     @State private var cardioAperto = false
     @State private var sceltaScheda = false
     @Environment(\.dynamicTypeSize) private var dimensione
+    @Environment(\.scenePhase) private var fase
+    // Il giorno mostrato: si aggiorna a mezzanotte e quando l'app torna in primo piano
+    @State private var ultimoOggi = Giorni.oggi()
 
     private var titolo: String {
         Testi.data(Date())
@@ -28,7 +31,7 @@ struct HomeView: View {
                 pagamento
                 pasti
                 allenamento
-                if archivio.profilo.piano(per: Giorni.oggi()) != nil {
+                if archivio.profilo.piano(per: ultimoOggi) != nil {
                     olioEAcqua
                 }
                 peso
@@ -37,13 +40,20 @@ struct HomeView: View {
             .sfondoTema()
             .navigationTitle("Oggi")
             .navigationSubtitleSePossibile(titolo)
+            // Se l'app resta aperta oltre la mezzanotte (o cambia l'ora o il fuso), passa al nuovo giorno
+            .onChange(of: fase) { _, nuova in
+                if nuova == .active { aggiornaOggi() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+                aggiornaOggi()
+            }
             .importaPDF($richiesta)
             .sheet(isPresented: $cardioAperto) { NuovoCardioView() }
             .confirmationDialog("Schede", isPresented: $sceltaScheda, titleVisibility: .visible) { schedeDaScegliere }
             .sheet(isPresented: $pesoVeloce, onDismiss: {
                 if apriModulo {
                     apriModulo = false
-                    misuraDiOggi = archivio.profilo.bia.contains { $0.data == Giorni.oggi() } ? Giorni.oggi() : nil
+                    misuraDiOggi = archivio.profilo.bia.contains { $0.data == ultimoOggi } ? ultimoOggi : nil
                     nuovaMisura = true
                 }
             }) {
@@ -117,10 +127,15 @@ struct HomeView: View {
         }
     }
 
+    private func aggiornaOggi() {
+        let oggi = Giorni.oggi()
+        if oggi != ultimoOggi { ultimoOggi = oggi }
+    }
+
     // ---------- Pasti ----------
 
     @ViewBuilder private var pasti: some View {
-        let oggi = Giorni.oggi()
+        let oggi = ultimoOggi
         if let piano = archivio.profilo.piano(per: oggi) {
             let elenco = piano.giorni[Giorni.indice(oggi)].pasti
             if elenco.isEmpty {
@@ -158,7 +173,7 @@ struct HomeView: View {
     // ---------- Allenamento ----------
 
     @ViewBuilder private var allenamento: some View {
-        let oggi = Giorni.oggi()
+        let oggi = ultimoOggi
         let tipo = palestra.programmato(oggi)
         let fatti = palestra.allenamenti(del: oggi)
         let cardio = palestra.cardio(del: oggi)
@@ -274,7 +289,7 @@ struct HomeView: View {
     // ---------- Olio e acqua ----------
 
     @ViewBuilder private var olioEAcqua: some View {
-        let oggi = Giorni.oggi()
+        let oggi = ultimoOggi
         let r = archivio.registro(oggi)
         let p = archivio.profilo
         Section { rigaRiquadro { Riquadro {
@@ -304,7 +319,7 @@ struct HomeView: View {
     @ViewBuilder private var peso: some View {
         let bia = archivio.profilo.bia.filter { $0.peso != nil }.sorted { $0.data < $1.data }
         if let ultimo = PesoVeloce.ultimo(bia), let kg = ultimo.peso {
-            let quando = PesoVeloce.etichetta(ultimo.data, oggi: Giorni.oggi())
+            let quando = PesoVeloce.etichetta(ultimo.data, oggi: ultimoOggi)
             let variazione = PesoVeloce.variazione(bia, ultimo: ultimo)
             let testoVariazione = variazione.map { String(localized: "\(Testi.conSegno($0, unita: "kg")) in 30 giorni") }
             Section { rigaRiquadro { Button { pesoVeloce = true } label: {

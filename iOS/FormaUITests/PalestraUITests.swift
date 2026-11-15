@@ -107,13 +107,14 @@ final class RecuperoVisibileUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-demo", "-tab", "inCorso"]
         app.launch()
-        let serie = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Serie ' AND value == 'da fare'")).firstMatch
+        let serie = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Segna la serie ' AND value == 'da fare'")).firstMatch
         XCTAssertTrue(serie.waitForExistence(timeout: 8), "Manca una serie da segnare")
         app.swipeUp()   // la serie in fondo resta sotto il bordo dello schermo
-        // Se mancano kg o ripetizioni il cursore va nel campo vuoto: si scrive un valore e si ritocca la spunta
+        // Se mancano kg o ripetizioni si apre la rotella del campo: «Fine» la chiude e si ritocca la spunta
         for _ in 0..<3 {
             serie.tap()
-            if app.keyboards.firstMatch.waitForExistence(timeout: 1) { app.typeText("10") } else { break }
+            guard app.pickerWheels.firstMatch.waitForExistence(timeout: 1) else { break }
+            app.buttons.matching(identifier: "Fine").allElementsBoundByIndex.last?.tap()   // quello del foglio, l'ultimo
         }
         app.buttons["Nascondi"].tap()
         let barra = app.buttons["Riapri allenamento"]
