@@ -25,7 +25,7 @@ struct SezioniPalestra: View {
                 Label("Allenamenti dall'Apple Watch", systemImage: "applewatch")
             }
         } footer: {
-            Text("Le sessioni di palestra registrate sul Watch entrano da sole in Forma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno \(Salute.minutiCardio) minuti diventano cardio. Forma legge da Salute, non scrive niente.")
+            Text("Le sessioni di palestra registrate sul Watch entrano da sole in inForma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno \(Salute.minutiCardio) minuti diventano cardio. inForma legge da Salute, non scrive niente.")
         }
     }
 
@@ -92,7 +92,7 @@ struct SezioniPalestra: View {
             if palestra.stato.pagamentoAttivo {
                 Text("Una settimana prima compare un avviso in Oggi. Il giorno del pagamento arriva una notifica alle \(PromemoriaImpostazioni.orario(palestra.stato.oraPagamento)), se non hai già segnato il mese come pagato.")
                 if senzaPermesso {
-                    Text("Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.")
+                    Text("Le notifiche di inForma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → inForma.")
                         .foregroundStyle(.orange)
                 }
             }

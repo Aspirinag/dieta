@@ -38,7 +38,7 @@ enum ScadenzaApp {
         guard let scadenza, let quando = momentoAvviso(scadenza: scadenza, adesso: adesso, calendario: calendario) else { return }
         let c = calendario.dateComponents([.year, .month, .day, .hour, .minute, .second], from: quando)
         await Notifiche.una(id: idAvviso,
-                            titolo: String(localized: "Forma sta per scadere"),
+                            titolo: String(localized: "inForma sta per scadere"),
                             testo: String(localized: "Collega l'iPhone al Mac e rinnova l'app: i dati restano."),
                             quando: c)
     }

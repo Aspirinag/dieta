@@ -152,7 +152,7 @@ struct PianiDietaView: View {
                 } header: {
                     Text("Piani alimentari")
                 } footer: {
-                    Text("Forma legge il PDF e ricava i pasti di ogni giorno. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.")
+                    Text("inForma legge il PDF e ricava i pasti di ogni giorno. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.")
                 }
                 Section {
                     Button("Carica la BIA (PDF)", systemImage: "doc.text.magnifyingglass") { richiesta = .bia }

@@ -22,7 +22,7 @@ struct BenvenutoView: View {
                 Group {
                     Section {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Ti presento Forma").font(.largeTitle.bold())
+                            Text("Ti presento inForma").font(.largeTitle.bold())
                             Text("Dieta e palestra in un posto solo. I dati restano sul tuo iPhone.")
                                 .foregroundStyle(.secondary)
                         }
@@ -50,7 +50,7 @@ struct BenvenutoView: View {
                                 Label("Allenamenti dall'Apple Watch", systemImage: "applewatch")
                             }
                         } footer: {
-                            Text("Forma legge da Salute gli allenamenti registrati sul Watch (palestra, camminate, corsa, bici, nuoto). Non scrive niente.")
+                            Text("inForma legge da Salute gli allenamenti registrati sul Watch (palestra, camminate, corsa, bici, nuoto). Non scrive niente.")
                         }
                     }
                 }

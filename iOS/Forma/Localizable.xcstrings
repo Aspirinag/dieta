@@ -2526,18 +2526,18 @@
         }
       }
     },
-    "Backup Forma": {
+    "Backup inForma": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma backup"
+            "value": "inForma backup"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma backup"
+            "value": "inForma backup"
           }
         }
       }
@@ -4706,18 +4706,18 @@
         }
       }
     },
-    "File non valido: scegli un backup di Forma, Dieta o Palestra.": {
+    "File non valido: scegli un backup di inForma, Dieta o Palestra.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid file: choose a Forma, Diet or Gym backup."
+            "value": "Invalid file: choose a inForma, Diet or Gym backup."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Invalid file: choose a Forma, Diet or Gym backup."
+            "value": "Invalid file: choose a inForma, Diet or Gym backup."
           }
         }
       }
@@ -4821,34 +4821,34 @@
         }
       }
     },
-    "Forma legge da Salute gli allenamenti registrati sul Watch (palestra, camminate, corsa, bici, nuoto). Non scrive niente.": {
+    "inForma legge da Salute gli allenamenti registrati sul Watch (palestra, camminate, corsa, bici, nuoto). Non scrive niente.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma reads workouts recorded on your Watch (gym, walking, running, cycling, swimming) from Health. It doesn't write anything."
+            "value": "inForma reads workouts recorded on your Watch (gym, walking, running, cycling, swimming) from Health. It doesn't write anything."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma reads workouts recorded on your Watch (gym, walking, running, cycling, swimming) from Health. It doesn't write anything."
+            "value": "inForma reads workouts recorded on your Watch (gym, walking, running, cycling, swimming) from Health. It doesn't write anything."
           }
         }
       }
     },
-    "Forma legge il PDF e ricava i pasti di ogni giorno. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.": {
+    "inForma legge il PDF e ricava i pasti di ogni giorno. Tocca un piano per correggerlo, scorri a sinistra per eliminarlo.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma reads the PDF and picks out each day's meals. Tap a plan to edit it, swipe left to delete it."
+            "value": "inForma reads the PDF and picks out each day's meals. Tap a plan to edit it, swipe left to delete it."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma reads the PDF and picks out each day's meals. Tap a plan to edit it, swipe left to delete it."
+            "value": "inForma reads the PDF and picks out each day's meals. Tap a plan to edit it, swipe left to delete it."
           }
         }
       }
@@ -5357,34 +5357,34 @@
         }
       }
     },
-    "I dati non si aprono, di solito perché l'iPhone è bloccato. Sblocca, chiudi e riapri Forma. Fino ad allora Forma non salva niente, così non perdi dati.": {
+    "I dati non si aprono, di solito perché l'iPhone è bloccato. Sblocca, chiudi e riapri inForma. Fino ad allora inForma non salva niente, così non perdi dati.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your data can't be opened, usually because the iPhone is locked. Unlock it, close Forma and open it again. Until then Forma won't save anything, so you won't lose data."
+            "value": "Your data can't be opened, usually because the iPhone is locked. Unlock it, close inForma and open it again. Until then inForma won't save anything, so you won't lose data."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your data can't be opened, usually because the iPhone is locked. Unlock it, close Forma and open it again. Until then Forma won't save anything, so you won't lose data."
+            "value": "Your data can't be opened, usually because the iPhone is locked. Unlock it, close inForma and open it again. Until then inForma won't save anything, so you won't lose data."
           }
         }
       }
     },
-    "I dati salvati sono danneggiati: Forma è ripartita da zero, ma ha tenuto una copia. La trovi in Impostazioni → Backup → Copie dei dati non letti.": {
+    "I dati salvati sono danneggiati: inForma è ripartita da zero, ma ha tenuto una copia. La trovi in Impostazioni → Backup → Copie dei dati non letti.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The saved data is damaged: Forma started from scratch but kept a copy. You'll find it in Settings → Backup → Copies of unreadable data."
+            "value": "The saved data is damaged: inForma started from scratch but kept a copy. You'll find it in Settings → Backup → Copies of unreadable data."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "The saved data is damaged: Forma started from scratch but kept a copy. You'll find it in Settings → Backup → Copies of unreadable data."
+            "value": "The saved data is damaged: inForma started from scratch but kept a copy. You'll find it in Settings → Backup → Copies of unreadable data."
           }
         }
       }
@@ -5581,18 +5581,18 @@
         }
       }
     },
-    "Importa qui i backup delle web app o delle app Dieta e Palestra per portare tutti i dati in Forma.": {
+    "Importa qui i backup delle web app o delle app Dieta e Palestra per portare tutti i dati in inForma.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import backups from the web apps or the Diet and Gym apps here to bring all your data into Forma."
+            "value": "Import backups from the web apps or the Diet and Gym apps here to bring all your data into inForma."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import backups from the web apps or the Diet and Gym apps here to bring all your data into Forma."
+            "value": "Import backups from the web apps or the Diet and Gym apps here to bring all your data into inForma."
           }
         }
       }
@@ -6730,18 +6730,18 @@
         }
       }
     },
-    "Le notifiche di Forma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → Forma.": {
+    "Le notifiche di inForma sono spente: il promemoria non può arrivare. Attivale in Impostazioni → Notifiche → inForma.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifications for Forma are off, so the reminder can't arrive. Turn them on in Settings → Notifications → Forma."
+            "value": "Notifications for inForma are off, so the reminder can't arrive. Turn them on in Settings → Notifications → inForma."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifications for Forma are off, so the reminder can't arrive. Turn them on in Settings → Notifications → Forma."
+            "value": "Notifications for inForma are off, so the reminder can't arrive. Turn them on in Settings → Notifications → inForma."
           }
         }
       }
@@ -6794,18 +6794,18 @@
         }
       }
     },
-    "Le sessioni di palestra registrate sul Watch entrano da sole in Forma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno %lld minuti diventano cardio. Forma legge da Salute, non scrive niente.": {
+    "Le sessioni di palestra registrate sul Watch entrano da sole in inForma, con una notifica per aggiungere esercizi e pesi. Camminate, corsa, bici e nuoto di almeno %lld minuti diventano cardio. inForma legge da Salute, non scrive niente.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gym sessions recorded on your Watch come into Forma by themselves, with a notification to add exercises and weights. Walks, runs, rides and swims of at least %lld minutes become cardio. Forma reads from Health and doesn't write anything."
+            "value": "Gym sessions recorded on your Watch come into inForma by themselves, with a notification to add exercises and weights. Walks, runs, rides and swims of at least %lld minutes become cardio. inForma reads from Health and doesn't write anything."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gym sessions recorded on your Watch come into Forma by themselves, with a notification to add exercises and weights. Walks, runs, rides and swims of at least %lld minutes become cardio. Forma reads from Health and doesn't write anything."
+            "value": "Gym sessions recorded on your Watch come into inForma by themselves, with a notification to add exercises and weights. Walks, runs, rides and swims of at least %lld minutes become cardio. inForma reads from Health and doesn't write anything."
           }
         }
       }
@@ -8698,18 +8698,18 @@
         }
       }
     },
-    "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → Forma.": {
+    "Per ricevere i promemoria consenti le notifiche in Impostazioni → Notifiche → inForma.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To get reminders, allow notifications in Settings → Notifications → Forma."
+            "value": "To get reminders, allow notifications in Settings → Notifications → inForma."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "To get reminders, allow notifications in Settings → Notifications → Forma."
+            "value": "To get reminders, allow notifications in Settings → Notifications → inForma."
           }
         }
       }
@@ -11838,18 +11838,18 @@
         }
       }
     },
-    "Ti presento Forma": {
+    "Ti presento inForma": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Meet Forma"
+            "value": "Meet inForma"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Meet Forma"
+            "value": "Meet inForma"
           }
         }
       }
@@ -12440,18 +12440,18 @@
         }
       }
     },
-    "Un backup di Forma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.": {
+    "Un backup di inForma sostituisce tutti i dati, dieta e palestra. Un backup di Dieta sostituisce la dieta. Gli allenamenti di un backup di Palestra si aggiungono a quelli che ci sono.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A Forma backup replaces all your data, diet and gym. A Diet backup replaces the diet. Workouts from a Gym backup are added to the ones you already have."
+            "value": "A inForma backup replaces all your data, diet and gym. A Diet backup replaces the diet. Workouts from a Gym backup are added to the ones you already have."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "A Forma backup replaces all your data, diet and gym. A Diet backup replaces the diet. Workouts from a Gym backup are added to the ones you already have."
+            "value": "A inForma backup replaces all your data, diet and gym. A Diet backup replaces the diet. Workouts from a Gym backup are added to the ones you already have."
           }
         }
       }
@@ -12953,18 +12953,18 @@
         }
       }
     },
-    "Forma sta per scadere": {
+    "inForma sta per scadere": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma is about to expire"
+            "value": "inForma is about to expire"
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma is about to expire"
+            "value": "inForma is about to expire"
           }
         }
       }
@@ -13001,18 +13001,18 @@
         }
       }
     },
-    "Forma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.": {
+    "inForma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma is not a medical device and does not replace the advice of your nutritionist or doctor."
+            "value": "inForma is not a medical device and does not replace the advice of your nutritionist or doctor."
           }
         },
         "en-GB": {
           "stringUnit": {
             "state": "translated",
-            "value": "Forma is not a medical device and does not replace the advice of your nutritionist or doctor."
+            "value": "inForma is not a medical device and does not replace the advice of your nutritionist or doctor."
           }
         }
       }

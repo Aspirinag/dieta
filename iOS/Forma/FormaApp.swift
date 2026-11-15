@@ -145,7 +145,7 @@ struct Radice: View {
         )) {
             Button("OK") {}
         } message: {
-            Text("I dati salvati sono danneggiati: Forma è ripartita da zero, ma ha tenuto una copia. La trovi in Impostazioni → Backup → Copie dei dati non letti.")
+            Text("I dati salvati sono danneggiati: inForma è ripartita da zero, ma ha tenuto una copia. La trovi in Impostazioni → Backup → Copie dei dati non letti.")
         }
         .alert("Dati non disponibili", isPresented: Binding(
             get: { avvisoDati && (archivio.salvataggioBloccato || palestra.salvataggioBloccato) },
@@ -153,7 +153,7 @@ struct Radice: View {
         )) {
             Button("OK") {}
         } message: {
-            Text("I dati non si aprono, di solito perché l'iPhone è bloccato. Sblocca, chiudi e riapri Forma. Fino ad allora Forma non salva niente, così non perdi dati.")
+            Text("I dati non si aprono, di solito perché l'iPhone è bloccato. Sblocca, chiudi e riapri inForma. Fino ad allora inForma non salva niente, così non perdi dati.")
         }
         .fullScreenCover(isPresented: Binding(
             get: { benvenuto }, set: { if !$0 { benvenutoVisto = true } }
