@@ -12952,6 +12952,38 @@
           }
         }
       }
+    },
+    "Forma sta per scadere": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma is about to expire"
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forma is about to expire"
+          }
+        }
+      }
+    },
+    "Collega l'iPhone al Mac e rinnova l'app: i dati restano.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your iPhone to the Mac and renew the app: your data is kept."
+          }
+        },
+        "en-GB": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your iPhone to the Mac and renew the app: your data is kept."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
