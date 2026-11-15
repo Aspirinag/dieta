@@ -129,6 +129,11 @@ struct PromemoriaTests {
         #expect(s.settimana("2026-11-02") != s.settimana("2026-11-09"))
     }
 
+    // Chi installa Forma da zero (anche solo per la dieta) non riceve il promemoria della palestra finché non lo accende
+    @Test func pagamentoSpentoAllaPrimaInstallazione() {
+        #expect(!StatoPalestra().pagamentoAttivo)
+    }
+
     @Test func campiPagamentoNuoviConValoriDiPrima() throws {
         let s = try JSONDecoder().decode(StatoPalestra.self, from: Data("{}".utf8))
         #expect(s.pagamentoAttivo)
