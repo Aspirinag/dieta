@@ -8,6 +8,7 @@ struct ApriScheda: Hashable { let id: UUID }
 struct AllenamentoView: View {
     @Environment(Palestra.self) private var palestra
     @Environment(Navigazione.self) private var navigazione
+    @Environment(TimerRecupero.self) private var timer
     @Environment(\.dynamicTypeSize) private var dimensione
     @State private var percorso = NavigationPath()
     @State private var daAvviare: Routine??
@@ -71,7 +72,11 @@ struct AllenamentoView: View {
             daAvviare = .some(r)
             return
         }
-        palestra.inizia(r)
+        if palestra.stato.inCorso != nil {
+            palestra.annullaEInizia(r, timer: timer)
+        } else {
+            palestra.inizia(r)
+        }
         navigazione.allenamentoAperto = true
     }
 
@@ -102,7 +107,7 @@ struct AllenamentoView: View {
 
     private var prossima: some View {
         let oggi = Giorni.oggi()
-        let riepilogo = riepilogoAllenamenti(palestra.stato.allenamentiSettimana(oggi), durata: palestra.stato.durataSettimana(oggi))
+        let riepilogo = riepilogoAllenamenti(palestra.stato.riepilogoSettimana(oggi: oggi).allenamenti, durata: palestra.stato.durataSettimana(oggi))
         return Section {
             riquadroPrincipale
                 .listRowInsets(EdgeInsets())

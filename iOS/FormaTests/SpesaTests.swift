@@ -201,4 +201,42 @@ struct SpesaTests {
         #expect(riepilogoAllenamenti(2, durata: 2700, bundle: it) == "2 allenamenti · 45 min")
         #expect(riepilogoAllenamenti(0, durata: 0, bundle: it) == "Nessun allenamento")
     }
+
+    // Quantità: pezzi, unità miste e migliaia all'italiana
+    private func profiloQuantita(_ q: [String], cibo: String) -> Profilo {
+        var p = Profilo(nome: "Io")
+        let pasti = q.map { Pasto(nome: "Pasto", opzioni: [Opzione(alimenti: [Alimento(nome: cibo, quantita: $0)])]) }
+        p.piani = [Piano(nome: "A", dal: "2026-11-02", al: "", giorni: Giorni.nomi.enumerated().map { i, n in
+            GiornoPiano(nome: n, palestra: false, pasti: i == 0 ? pasti : []) })]
+        return p
+    }
+
+    private func quanto(_ q: [String], cibo: String = "Cibo") -> String? {
+        profiloQuantita(q, cibo: cibo).vociSpesa(lunedi: "2026-11-02", locale: Locale(identifier: "it_IT")).first?.quanto
+    }
+
+    @Test func pezziSiSommano() {
+        #expect(quanto(["2"], cibo: "Uova") == "2")
+        #expect(quanto(["2", "3"], cibo: "Uova") == "5")
+        #expect(quanto(["1 vasetto", "2 vasetto"], cibo: "Yogurt") == "3 vasetto")
+    }
+
+    @Test func unitaMisteMostraTutto() {
+        #expect(quanto(["100 g", "1 vasetto"], cibo: "Yogurt") == "100 g + 1 vasetto")
+        #expect(quanto(["100 g", "2"], cibo: "Yogurt") == "100 g + 2")
+    }
+
+    @Test func migliaiaEDecimali() {
+        #expect(quanto(["1.000 g"]) == "1 kg")
+        #expect(quanto(["1.250 g"]) == "1,25 kg")
+        #expect(quanto(["1.5 kg"]) == "1,5 kg")
+        #expect(quanto(["1,5 kg"]) == "1,5 kg")
+        #expect(quanto(["0.250 kg"]) == "250 g")
+        #expect(quanto(["1.250,5 g"]) == "1,25 kg")
+    }
+
+    @Test func senzaNumeroResteAPiacere() {
+        #expect(quanto(["q.b."]) == "a piacere")
+        #expect(quanto(["a piacere"]) == "a piacere")
+    }
 }

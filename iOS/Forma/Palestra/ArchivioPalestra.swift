@@ -9,6 +9,12 @@ final class Palestra {
     }
 
     let demo: Bool
+    // L'ultima serie spuntata (dall'app o dalla Live Activity): da lei si cerca la serie attiva.
+    // Sta nell'allenamento in corso, così si salva e dopo un riavvio la Live Activity riparte dal punto giusto
+    var ultimaSerie: UUID? {
+        get { stato.inCorso?.ultimaSerie }
+        set { if stato.inCorso != nil, stato.inCorso?.ultimaSerie != newValue { stato.inCorso?.ultimaSerie = newValue } }
+    }
     // Copia del file dati che all'avvio non si leggeva (l'app è ripartita senza toccarlo)
     @ObservationIgnored private(set) var fileIlleggibile: URL?
     // Il file dati c'è ma non si è potuto leggere: in questa sessione non si salva niente
@@ -24,6 +30,12 @@ final class Palestra {
         stato = demo ? StatoPalestra.demo : Self.carica(&illeggibile)
         salvataggioBloccato = illeggibile?.path == "/bloccato"
         fileIlleggibile = salvataggioBloccato ? nil : illeggibile
+    }
+
+    // Senza file dati: parte dallo stato dato e non salva (per i test)
+    init(stato: StatoPalestra) {
+        demo = true
+        self.stato = stato
     }
 
     // ---------- File ----------
@@ -63,11 +75,14 @@ final class Palestra {
         }
     }
 
+    func datiDaSalvare() throws -> Data { try JSONEncoder().encode(stato) }
+
     private func salva() {
         guard !salvataggioBloccato else { return }
         do {
             try FileManager.default.createDirectory(at: URL.applicationSupportDirectory, withIntermediateDirectories: true)
-            try JSONEncoder().encode(stato).write(to: Self.fileDati, options: .atomic)
+            // Se la codifica fallisce o i dati sono vuoti non si scrive niente: il file vecchio resta com'è
+            try FileDati.scrivi(datiDaSalvare(), su: Self.fileDati)
         } catch {
             print("Salvataggio non riuscito: \(error)")
         }
@@ -118,6 +133,42 @@ final class Palestra {
         stato.inCorso = a
     }
 
+    // «Fatta» dalla Live Activity: come la spunta nell'app (kg e ripetizioni vuoti dalla serie precedente, recupero che parte).
+    // Se la serie non c'è, è già fatta o mancano i valori, non fa niente
+    func segnaDaLive(_ id: UUID, timer: TimerRecupero) {
+        guard let a = stato.inCorso,
+              let i = a.esercizi.firstIndex(where: { $0.serie.contains { $0.id == id } }),
+              let j = a.esercizi[i].serie.firstIndex(where: { $0.id == id }) else { return }
+        let e = a.esercizi[i]
+        let s = e.serie[j]
+        guard !s.fatta else { return }
+        let ex = esercizio(e.esercizio)
+        guard case .segna(let k, let r) = EsitoSpunta.valuta(kg: s.kg, rip: s.rip, precedente: precedente(e.esercizio, in: e.serie, posizione: j),
+                                                           corpoLibero: ex.attrezzo == .corpoLibero) else { return }
+        stato.inCorso?.esercizi[i].serie[j].kg = k
+        stato.inCorso?.esercizi[i].serie[j].rip = r
+        stato.inCorso?.esercizi[i].serie[j].fatta = true
+        stato.inCorso?.esercizi[i].serie[j].fattaIl = Date()
+        ultimaSerie = id
+        timer.avvia(e.recupero, serie: id, esercizio: ex.titolo)
+        salvaOra()
+    }
+
+    // «Fatta» su un movimento del riscaldamento dalla Live Activity: lo segna e salva subito
+    func segnaRiscaldamentoDaLive(_ movimento: Int) {
+        guard stato.inCorso != nil, Libreria.riscaldamento.indices.contains(movimento) else { return }
+        stato.inCorso?.riscaldamento[String(movimento)] = true
+        salvaOra()
+    }
+
+    // «Salta» sul riscaldamento dalla Live Activity: i movimenti rimasti non si fanno, la Live passa alla prima serie.
+    // Quelli non fatti restano non fatti (l'app dice «Saltato»)
+    func saltaRiscaldamentoDaLive() {
+        guard stato.inCorso != nil else { return }
+        stato.inCorso?.riscaldamentoSaltato = true
+        salvaOra()
+    }
+
     func aggiungi(esercizi ids: [String]) {
         for id in ids {
             stato.inCorso?.esercizi.append(EsercizioFatto(esercizio: id, serie: (0..<3).map { _ in SerieFatta() }))
@@ -129,10 +180,10 @@ final class Palestra {
     @discardableResult
     func termina() -> Allenamento? {
         guard var a = stato.inCorso else { return nil }
-        a.fine = a.fine ?? Date()
+        a.fine = a.fineVerosimile()
         a.esercizi = a.esercizi.compactMap { e in
             var e = e
-            e.serie = e.serie.filter { $0.fatta && ($0.rip ?? 0) > 0 }
+            e.serie = e.serie.filter(\.siSalva)
             return e.serie.isEmpty ? nil : e
         }
         stato.inCorso = nil
@@ -146,6 +197,13 @@ final class Palestra {
         stato.allenamenti.sort { $0.inizio < $1.inizio }
         stato.saltati.removeAll { $0 == a.giorno }
         return a
+    }
+
+    // «Annullalo e inizia il nuovo»: annulla davvero quello vecchio (sessione Watch tenuta, recupero fermato)
+    func annullaEInizia(_ routine: Routine?, timer: TimerRecupero) {
+        timer.ferma()
+        annulla()
+        inizia(routine)
     }
 
     // Annullando, se il Watch aveva registrato la sessione resta quella (senza esercizi)
@@ -221,8 +279,28 @@ final class Palestra {
     }
 
     static func sovrapposti(_ a: Allenamento, _ b: Allenamento) -> Bool {
-        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fine ?? Date()
+        let fa = a.fine ?? a.inizio.addingTimeInterval(3600), fb = b.fineVerosimile()
         return a.inizio < fb && b.inizio < fa
+    }
+
+    // La serie attiva: da quella toccata nell'app o, se non ce n'è (vista appena aperta), dall'ultima serie spuntata,
+    // la stessa da cui parte la Live Activity
+    func serieAttiva(riferimento: UUID?) -> UUID? {
+        SerieAttiva.trova(in: stato.inCorso?.esercizi ?? [], riferimento: riferimento ?? ultimaSerie)
+    }
+
+    // La serie dell'ultima volta che corrisponde a quella in posizione j: il riscaldamento guarda i riscaldamenti,
+    // le serie di lavoro quelle di lavoro
+    func precedente(_ esercizio: String, in serie: [SerieFatta], posizione j: Int) -> SerieFatta? {
+        serie[j].riscaldamento ? precedenteRiscaldamento(esercizio, serie.quantePrima(j)) : precedente(esercizio, serie.quantePrima(j))
+    }
+
+    // Il riscaldamento numero `indice` dell'ultima volta; nil se l'ultima volta non ne aveva abbastanza
+    func precedenteRiscaldamento(_ esercizio: String, _ indice: Int) -> SerieFatta? {
+        guard let ultimo = stato.allenamenti.last(where: { $0.esercizi.contains { $0.esercizio == esercizio } }),
+              let e = ultimo.esercizi.first(where: { $0.esercizio == esercizio }) else { return nil }
+        let caldo = e.serie.filter(\.riscaldamento)
+        return caldo.indices.contains(indice) ? caldo[indice] : nil
     }
 
     // Serie corrispondente (stessa posizione tra quelle valide) nell'ultimo allenamento con quell'esercizio
@@ -234,6 +312,9 @@ final class Palestra {
     }
 
     // ---------- Record e storico ----------
+
+    // A corpo libero (nessun peso, né oggi né prima) il record sono le ripetizioni
+    static func contaRipetizioni(peso: Double, pesoMax: Double) -> Bool { peso == 0 && pesoMax == 0 }
 
     struct Record {
         var pesoMax = 0.0
@@ -266,8 +347,10 @@ final class Palestra {
             guard !valide.isEmpty, prima.pesoMax > 0 || stato.allenamenti.contains(where: { $0.inizio < a.inizio && $0.esercizi.contains { $0.esercizio == e.esercizio } }) else { continue }
             let peso = valide.compactMap(\.kg).max() ?? 0
             let massimale = valide.map(\.massimale).max() ?? 0
+            let rip = valide.compactMap(\.rip).max() ?? 0
             if peso > prima.pesoMax { testi.append(String(localized: "\(nome(e.esercizio)): peso massimo \(num(peso)) kg")) }
             else if massimale > prima.massimale + 0.01 { testi.append(String(localized: "\(nome(e.esercizio)): massimale stimato \(num((massimale * 10).rounded() / 10)) kg")) }
+            else if Self.contaRipetizioni(peso: peso, pesoMax: prima.pesoMax), rip > prima.ripMax { testi.append(String(localized: "\(nome(e.esercizio)): ripetizioni massime \(rip)")) }
         }
         return testi
     }
@@ -351,7 +434,7 @@ final class Palestra {
 
     // Una sola notifica, il primo giorno utile (giorno scelto o il successivo, all'ora scelta) di un mese non pagato
     func programmaPagamento() async {
-        guard !demo else { return }
+        guard !demo, !salvataggioBloccato else { return }
         Notifiche.cancella(["pagamento"])
         guard stato.pagamentoAttivo,
               let p = Self.prossimoPagamento(dopo: Date(), pagamenti: stato.pagamenti, minuti: stato.oraPagamento, giorno: stato.giornoPagamento)
@@ -435,7 +518,7 @@ extension StatoPalestra {
 
     // Record battuti da ogni allenamento (come Palestra.nuoviRecord), in una sola passata
     func conteggioRecord() -> [UUID: Int] {
-        var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:]
+        var pesoMax: [String: Double] = [:], massimale: [String: Double] = [:], ripMax: [String: Int] = [:]
         var visti: Set<String> = []          // esercizi già comparsi, anche senza serie valide
         var risultato: [UUID: Int] = [:]
         for a in allenamenti.sorted(by: { $0.inizio < $1.inizio }) {
@@ -446,13 +529,16 @@ extension StatoPalestra {
                 guard !valide.isEmpty, visti.contains(e.esercizio) || (pesoMax[e.esercizio] ?? 0) > 0 else { continue }
                 let peso = valide.compactMap(\.kg).max() ?? 0
                 let mass = valide.map(\.massimale).max() ?? 0
-                if peso > pesoMax[e.esercizio] ?? 0 || mass > (massimale[e.esercizio] ?? 0) + 0.01 { n += 1 }
+                let rip = valide.compactMap(\.rip).max() ?? 0
+                if peso > pesoMax[e.esercizio] ?? 0 || mass > (massimale[e.esercizio] ?? 0) + 0.01
+                    || (Palestra.contaRipetizioni(peso: peso, pesoMax: pesoMax[e.esercizio] ?? 0) && rip > ripMax[e.esercizio] ?? 0) { n += 1 }
             }
             for e in a.esercizi {
                 let valide = e.serie.filter(\.valida)
                 visti.insert(e.esercizio)
                 pesoMax[e.esercizio] = max(pesoMax[e.esercizio] ?? 0, valide.compactMap(\.kg).max() ?? 0)
                 massimale[e.esercizio] = max(massimale[e.esercizio] ?? 0, valide.map(\.massimale).max() ?? 0)
+                ripMax[e.esercizio] = max(ripMax[e.esercizio] ?? 0, valide.compactMap(\.rip).max() ?? 0)
             }
             risultato[a.id] = n
         }
@@ -474,13 +560,6 @@ extension StatoPalestra {
         let lun = Giorni.lunedi(iso)
         let giorni = Set(allenamenti.map(\.giorno) + cardio.map(\.data))
         return Set((0..<7).filter { giorni.contains(Giorni.aggiungi(lun, $0)) })
-    }
-
-    // Quanti allenamenti (pesi più cardio) nella settimana di una data
-    func allenamentiSettimana(_ iso: String) -> Int {
-        let lun = Giorni.lunedi(iso), dom = Giorni.aggiungi(lun, 6)
-        return allenamenti.filter { $0.giorno >= lun && $0.giorno <= dom }.count
-            + cardio.filter { $0.data >= lun && $0.data <= dom }.count
     }
 
     // Tempo totale di pesi e cardio nella settimana di una data

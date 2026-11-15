@@ -50,6 +50,26 @@ enum PassoSerie {
         return max(0, ((partenza + delta) * 100).rounded() / 100)
     }
 
+    // Rotella: kg da 0 a 300 a passi di 0,5, più il valore attuale se non ci cade (37,25) o è fuori scala
+    static let kgMassimo = 300.0
+    static let kgRotella = 0.5
+    static let ripMassimo = 50
+
+    static func opzioniKg(attuale: Double?) -> [Double] {
+        var o = (0...Int(kgMassimo / kgRotella)).map { Double($0) * kgRotella }
+        if let a = attuale.map({ max(0, ($0 * 100).rounded() / 100) }), !o.contains(a) {
+            o.append(a)
+            o.sort()
+        }
+        return o
+    }
+
+    static func opzioniRip(attuale: Int?) -> [Int] {
+        var o = Array(0...ripMassimo)
+        if let a = attuale, a > ripMassimo { o.append(a) }
+        return o
+    }
+
     static func rip(_ testo: String, base: Int?, delta: Int) -> Int {
         let partenza = Int(testo.trimmingCharacters(in: .whitespaces)) ?? base ?? 0
         return max(0, partenza + delta)

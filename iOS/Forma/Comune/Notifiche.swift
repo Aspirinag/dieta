@@ -23,8 +23,8 @@ enum Notifiche {
         await aggiungi(id: id, titolo: titolo, testo: testo, trigger: UNCalendarNotificationTrigger(dateMatching: quando, repeats: false))
     }
 
-    static func traSecondi(id: String, titolo: String, testo: String, secondi: Int) async {
-        await aggiungi(id: id, titolo: titolo, testo: testo,
+    static func traSecondi(id: String, titolo: String, testo: String, secondi: Int, categoria: String? = nil) async {
+        await aggiungi(id: id, titolo: titolo, testo: testo, categoria: categoria,
                        trigger: UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(max(secondi, 1)), repeats: false))
     }
 
@@ -56,11 +56,28 @@ enum Notifiche {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
     }
 
-    private static func aggiungi(id: String, titolo: String, testo: String, trigger: UNNotificationTrigger) async {
+    // Fine recupero: l'azione «Ancora 30 s» riparte senza aprire l'app (niente `.foreground`)
+    static let categoriaRecupero = "recupero"
+    static let azioneAncora30 = "ancora30"
+
+    static func categorie() -> Set<UNNotificationCategory> {
+        let ancora = UNNotificationAction(identifier: azioneAncora30, title: String(localized: "Ancora 30 s"), options: [])
+        return [UNNotificationCategory(identifier: categoriaRecupero, actions: [ancora], intentIdentifiers: [], options: [])]
+    }
+
+    // Da chiamare all'avvio (nella lingua del momento)
+    static func registraCategorie() {
+        UNUserNotificationCenter.current().setNotificationCategories(categorie())
+    }
+
+    static func eAncora30(_ azione: String) -> Bool { azione == azioneAncora30 }
+
+    private static func aggiungi(id: String, titolo: String, testo: String, categoria: String? = nil, trigger: UNNotificationTrigger) async {
         let c = UNMutableNotificationContent()
         c.title = titolo
         c.body = testo
         c.sound = .default
+        if let categoria { c.categoryIdentifier = categoria }
         try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: c, trigger: trigger))
     }
 }
@@ -75,6 +92,11 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
     }
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        // «Ancora 30 s» sulla notifica di fine recupero: gira anche con l'app chiusa (iOS la apre in background)
+        if Notifiche.eAncora30(response.actionIdentifier) {
+            await AzioniLive.ancora30?()
+            return
+        }
         guard let testo = response.notification.request.content.userInfo["compila"] as? String,
               let id = UUID(uuidString: testo) else { return }
         await MainActor.run {

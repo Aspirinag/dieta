@@ -1,7 +1,6 @@
-import ActivityKit
 import Foundation
 
-// Condiviso tra l'app e l'estensione RecuperoWidget (Live Activity del recupero)
+// Condiviso tra l'app e l'estensione RecuperoWidget (Live Activity dell'allenamento)
 
 // Il recupero in corso, tutto quello che serve per mostrarlo anche fuori dall'app (Live Activity):
 // quando è partito, quando finisce (cambia con ±15 s) e per quale esercizio
@@ -16,9 +15,4 @@ nonisolated struct StatoRecupero: Codable, Hashable, Sendable {
         guard totale > 0 else { return 1 }
         return min(1, max(0, momento.timeIntervalSince(inizio) / totale))
     }
-}
-
-// La Live Activity del recupero: niente dati fissi, tutto sta nello stato (che cambia con ±15 s e a ogni nuova serie)
-nonisolated struct AttivitaRecupero: ActivityAttributes {
-    typealias ContentState = StatoRecupero
 }
