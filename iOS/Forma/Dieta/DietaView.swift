@@ -151,12 +151,12 @@ struct StrisciaGiorni: View {
                 }
                 .frame(height: 6)
             }
-            .foregroundStyle(scelto ? Color(.systemBackground) : Color.primary)
+            .foregroundStyle(scelto ? Colori.sulAccento : Color.primary)
             .frame(maxWidth: .infinity, minHeight: Misure.tocco)
             .padding(.vertical, Spazio.s)
             .background {
                 if scelto {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Colori.accento)
                 } else if oggi {
                     RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Colori.vuoto, lineWidth: Misure.contorno)
                 }
@@ -170,12 +170,12 @@ struct StrisciaGiorni: View {
         .accessibilityAddTraits(scelto ? [.isButton, .isSelected] : .isButton)
     }
 
-    // Pieno = segnato (verde, o chiaro sul giorno scelto); contorno = da fare: si distinguono anche senza colore
+    // Pieno = segnato (verde, o sulAccento sul giorno scelto); contorno = da fare: si distinguono anche senza colore
     @ViewBuilder private func puntino(pieno: Bool, scelto: Bool) -> some View {
         if pieno {
-            Circle().fill(scelto ? Color(.systemBackground) : Colori.accento).frame(width: 6, height: 6)
+            Circle().fill(scelto ? Colori.sulAccento : Colori.accento).frame(width: 6, height: 6)
         } else {
-            Circle().strokeBorder(scelto ? Color(.systemBackground) : Colori.vuoto, lineWidth: 1).frame(width: 6, height: 6)
+            Circle().strokeBorder(scelto ? Colori.sulAccento.opacity(0.6) : Colori.vuoto, lineWidth: 1).frame(width: 6, height: 6)
         }
     }
 }

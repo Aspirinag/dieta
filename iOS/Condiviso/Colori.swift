@@ -20,13 +20,13 @@ import SwiftUI
 // .righeTema() (sulle righe di una List). Pulsante pieno: `Button("Inizia") { … }.buttonStyle(PulsanteAccento())`,
 // al massimo uno per schermata.
 enum Colori {
-    static let accento = Color(chiaro: 0x2F6B4F, scuro: 0x7FB89A, chiaroContrasto: 0x245A40, scuroContrasto: 0x9FD0B5)
+    static let accento = Color(chiaro: 0x438060, scuro: 0x84BFA0, chiaroContrasto: 0x2F6B4F, scuroContrasto: 0xA4D4BA)
     // Il bianco sul verde chiaro dello scuro si legge male: lì il segno è verde scurissimo
     static let sulAccento = Color(chiaro: 0xFFFFFF, scuro: 0x0F2218)
     static let sfondoFatto = Color(UIColor { t in
         t.userInterfaceStyle == .dark
-            ? UIColor(esa: t.accessibilityContrast == .high ? 0x9FD0B5 : 0x7FB89A).withAlphaComponent(0.35)
-            : UIColor(esa: t.accessibilityContrast == .high ? 0x245A40 : 0x2F6B4F).withAlphaComponent(0.25)
+            ? UIColor(esa: t.accessibilityContrast == .high ? 0xA4D4BA : 0x84BFA0).withAlphaComponent(0.35)
+            : UIColor(esa: t.accessibilityContrast == .high ? 0x2F6B4F : 0x438060).withAlphaComponent(0.25)
     })
     // Giallo più scuro in chiaro per arrivare a 3:1 sul bianco (#D6A21E era 2,3:1)
     static let olio = Color(chiaro: 0xB07F0C, scuro: 0xD6A21E, chiaroContrasto: 0x8C6508, scuroContrasto: 0xE8BC4A)

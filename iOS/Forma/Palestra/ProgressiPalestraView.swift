@@ -68,10 +68,10 @@ struct ProgressiPalestraView: View {
                     .frame(maxWidth: .infinity, minHeight: 80, alignment: .leading)
             } else {
                 Chart(barre) { b in
-                    // Settimane intere in tinta piena; la settimana in corso più leggera e con la scritta «finora»
+                    // Settimane intere in salvia leggero; la settimana in corso in salvia pieno con la scritta «finora»
                     BarMark(x: .value("Settimana", etichetta(b.inizio)), y: .value("Kg", b.kg))
                         .cornerRadius(4)
-                        .foregroundStyle(b.ultima ? Color.primary : Color.secondary)
+                        .foregroundStyle(b.ultima ? Colori.accento : Colori.accento.opacity(0.45))
                         .annotation(position: .top, alignment: .center, spacing: 2) {
                             if b.ultima && !dimensione.isAccessibilitySize { Text("finora").font(.caption2).foregroundStyle(.secondary) }
                         }

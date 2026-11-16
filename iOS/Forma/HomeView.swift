@@ -406,9 +406,9 @@ private struct Tendenza: View {
             }
             var linea = Path()
             linea.addLines(punti)
-            ctx.stroke(linea, with: .color(.secondary), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            ctx.stroke(linea, with: .color(Colori.accento), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
             if let u = punti.last {
-                ctx.fill(Path(ellipseIn: CGRect(x: u.x - 3.5, y: u.y - 3.5, width: 7, height: 7)), with: .color(.secondary))
+                ctx.fill(Path(ellipseIn: CGRect(x: u.x - 3.5, y: u.y - 3.5, width: 7, height: 7)), with: .color(Colori.accento))
             }
         }
     }

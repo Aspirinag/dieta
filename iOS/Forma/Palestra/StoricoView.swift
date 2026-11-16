@@ -53,9 +53,9 @@ struct DettaglioEsercizioView: View {
                             LineMark(x: .value("Data", p.data), y: .value("kg", v))
                                 .interpolationMethod(.linear)
                                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Colori.accento)
                             PointMark(x: .value("Data", p.data), y: .value("kg", v))
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Colori.accento)
                         }
                         .chartYScale(domain: .automatic(includesZero: false))
                         .frame(height: 200)

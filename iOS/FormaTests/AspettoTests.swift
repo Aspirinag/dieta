@@ -19,8 +19,8 @@ struct AspettoTests {
     }
 
     @Test func accentoHaDueVarianti() {
-        #expect(vicino(componenti(Colori.accento, .light), 0x2F6B4F))
-        #expect(vicino(componenti(Colori.accento, .dark), 0x7FB89A))
+        #expect(vicino(componenti(Colori.accento, .light), 0x438060))
+        #expect(vicino(componenti(Colori.accento, .dark), 0x84BFA0))
     }
 
     private func luminanza(_ c: (Double, Double, Double)) -> Double {
