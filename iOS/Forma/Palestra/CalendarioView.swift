@@ -109,7 +109,7 @@ struct GrigliaMese: View {
             }
             .frame(maxWidth: .infinity, minHeight: 44)
             .background {
-                if iso == scelto { RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.18)) }
+                if iso == scelto { RoundedRectangle(cornerRadius: 10).fill(Colori.terracotta.opacity(0.18)) }
             }
         }
         .buttonStyle(.plain)

@@ -108,6 +108,7 @@ struct DietaView: View {
             let presi = archivio.spunteSpesa(lunedi: lun)
             let quanti = voci.filter { presi[$0.chiave] == true }.count
             Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
+                .tint(Colori.terracotta)
                 .accessibilityValue(Text("\(quanti) di \(voci.count) presi"))
         }
     }
@@ -158,7 +159,7 @@ struct StrisciaGiorni: View {
                 if scelto {
                     RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Colori.accento)
                 } else if oggi {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Colori.vuoto, lineWidth: Misure.contorno)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Colori.terracotta, lineWidth: Misure.contorno)
                 }
             }
             .contentShape(Rectangle())

@@ -204,9 +204,11 @@ struct AllenamentoInCorsoView: View {
         } label: {
             Label("Aggiungi esercizio", systemImage: "plus")
                 .font(.body.weight(.semibold))
+                .foregroundStyle(Colori.terracotta)
                 .frame(maxWidth: .infinity, minHeight: Misure.tocco)
         }
         .buttonStyle(.bordered)
+        .tint(Colori.terracotta)
         .buttonBorderShape(.capsule)
         .padding(.top, Spazio.l)
         .padding(.bottom, Spazio.xl)
@@ -296,7 +298,7 @@ struct RigaRiscaldamento: View {
 
     private func riga(_ conteggio: String, conNome: Bool) -> some View {
         HStack(spacing: Spazio.s) {
-            Image(systemName: "figure.cooldown").foregroundStyle(.secondary)
+            Image(systemName: "figure.cooldown").foregroundStyle(Colori.terracotta)
             if conNome {
                 Text("Riscaldamento").fontWeight(.semibold).fixedSize()
             }
@@ -413,9 +415,9 @@ struct SezioneEsercizioInCorso: View {
                     } label: {
                         Label("Aggiungi serie", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Colori.terracotta)
                             .frame(maxWidth: .infinity, minHeight: Misure.tocco)
-                            .background(.fill.quaternary, in: .rect(cornerRadius: 8))
+                            .background(Colori.terracotta.opacity(0.12), in: .rect(cornerRadius: 8))
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
@@ -831,7 +833,7 @@ struct TimerInAllenamento: View {
                     EmptyView()
                 }
                 .progressViewStyle(.linear)
-                .tint(.secondary)
+                .tint(Colori.terracotta)
                 .accessibilityHidden(true)
             }
             .padding(.horizontal, Spazio.l)

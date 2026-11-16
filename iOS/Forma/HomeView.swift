@@ -120,7 +120,7 @@ struct HomeView: View {
                     Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .tint(.primary)
+                        .tint(Colori.terracotta)
                         .buttonBorderShape(.capsule)
                 }
                 .accessibilityIdentifier("riquadro-pagamento")
@@ -232,14 +232,14 @@ struct HomeView: View {
                             Button("Registra cardio") { cardioAperto = true }
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
-                                .tint(.primary)
+                                .tint(Colori.terracotta)
                         }
                     } else {
                         Riga(Text("Riposo"), evidente: true) {
                             Button("Allenati lo stesso") { sceltaScheda = true }
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
-                                .tint(.primary)
+                                .tint(Colori.terracotta)
                                 .accessibilityIdentifier("allenati-lo-stesso")
                         }
                     }
@@ -256,7 +256,7 @@ struct HomeView: View {
                 }
                 if altraScheda {
                     Button("Un'altra scheda") { navigazione.scheda = .allenamento }
-                        .tint(.primary)
+                        .tint(Colori.terracotta)
                         .frame(minHeight: Misure.tocco, alignment: .leading)
                 }
             }
