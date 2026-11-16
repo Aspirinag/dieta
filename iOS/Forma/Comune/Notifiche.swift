@@ -91,7 +91,9 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
         notification.request.identifier == "recupero" ? [] : [.banner, .sound]
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    // Sul main actor (niente `nonisolated`): iOS vuole che la risposta arrivi sul thread principale,
+    // altrimenti l'app si chiude quando la si apre toccando una notifica
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         // «Ancora 30 s» sulla notifica di fine recupero: gira anche con l'app chiusa (iOS la apre in background)
         if Notifiche.eAncora30(response.actionIdentifier) {
             await AzioniLive.ancora30?()
@@ -99,10 +101,8 @@ final class DelegatoNotifiche: NSObject, UNUserNotificationCenterDelegate {
         }
         guard let testo = response.notification.request.content.userInfo["compila"] as? String,
               let id = UUID(uuidString: testo) else { return }
-        await MainActor.run {
-            navigazione?.scheda = .allenamento
-            navigazione?.compila = id
-        }
+        navigazione?.scheda = .allenamento
+        navigazione?.compila = id
     }
 }
 
