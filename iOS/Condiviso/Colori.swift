@@ -3,10 +3,13 @@ import SwiftUI
 // Condiviso tra app e Live Activity: i colori del sistema visivo e il font dei numeri, scritti una volta sola
 // SISTEMA VISIVO — colori. Ogni colore ha un solo significato; nessuna schermata scrive colori a mano.
 //
-// Colori.accento     verde #2F6B4F (scuro #7FB89A): SOLO pulsante principale pieno e stato «fatto»
-//                    (spunta, serie fatta). Mai nomi, link, titoli, icone di riga, «Precedente», variazioni di peso.
+// Colori.accento     verde salvia #438060 (scuro #84BFA0): azione principale piena, stato «fatto» (spunta, serie fatta)
+//                    e grafici/giorno selezionato della sezione Dieta/Corpo.
 // Colori.sulAccento  testo e segni sopra l'accento
 // Colori.sfondoFatto sfondo di una riga fatta (serie dell'allenamento): accento al 25 % in chiaro, 35 % in scuro
+// Colori.terracotta  terracotta calda #B84A27 (scuro #E87C56): sezione Palestra, grafici allenamento, trofei,
+//                    icone di riga, frecce e azioni secondarie.
+// Colori.sulTerracotta testo e segni sopra la terracotta
 // Colori.olio        giallo olio: SOLO cucchiaini pieni
 // Colori.acqua       blu acqua: SOLO gocce piene
 // Colori.oltre       arancione: SOLO oltre la dose, sempre insieme a un «+N» scritto
