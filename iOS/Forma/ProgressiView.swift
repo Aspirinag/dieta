@@ -21,7 +21,7 @@ struct ProgressiView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spazio.l) {
+                VStack(spacing: Spazio.m) {
                     Picker("Mostra", selection: $sezione) {
                         ForEach(Sezione.allCases) { Text($0.etichetta).tag($0) }
                     }

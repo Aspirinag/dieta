@@ -23,6 +23,7 @@ struct AllenamentoView: View {
                 altreSchede
                 altro
             }
+            .listSectionSpacing(Spazio.m)
             .tint(.primary)
             .sfondoTema()
             .navigationTitle("Palestra")
@@ -179,7 +180,10 @@ struct AllenamentoView: View {
                         Riga(Text(r.nome), dettaglio: r.voci.isEmpty ? nil : Text(frase(r, massimo: 44)), evidente: true, righeDettaglio: 2) {
                             Button { avvia(r) } label: {
                                 Image(systemName: "play.fill")
-                                    .foregroundStyle(.secondary)
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 30, height: 30)
+                                    .background(.fill.tertiary, in: .circle)
                                     .frame(minWidth: Misure.tocco, minHeight: Misure.tocco)
                                     .contentShape(Rectangle())
                             }
@@ -209,24 +213,29 @@ struct AllenamentoView: View {
 
     private var altro: some View {
         Section("Altro") {
-            Button { cardio = true } label: {
-                Label("Registra cardio", systemImage: "figure.run").foregroundStyle(.primary)
-            }
             NavigationLink(value: PaginaPalestraDest.pianoSettimanale) {
-                Label("Programma della settimana", systemImage: "calendar")
+                rigaAltro("Programma della settimana", "calendar")
             }
             NavigationLink(value: PaginaPalestraDest.libreria) {
-                Label("Libreria esercizi", systemImage: "books.vertical")
+                rigaAltro("Libreria esercizi", "books.vertical")
             }
             NavigationLink(value: PaginaPalestraDest.modelli) {
-                Label("Schede pronte", systemImage: "square.stack.3d.up")
+                rigaAltro("Schede pronte", "square.stack.3d.up")
             }
-            Button { importaPDF = true } label: {
-                Label("Importa da PDF", systemImage: "doc.badge.plus").foregroundStyle(.primary)
+            Button { cardio = true } label: {
+                rigaAltro("Registra cardio", "figure.run")
             }
             Button { avvia(nil) } label: {
-                Label("Allenamento libero", systemImage: "figure.strengthtraining.traditional").foregroundStyle(.primary)
+                rigaAltro("Allenamento libero", "figure.strengthtraining.traditional")
             }
+        }
+    }
+
+    private func rigaAltro(_ titolo: LocalizedStringKey, _ simbolo: String) -> some View {
+        Label {
+            Text(titolo).foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: simbolo).foregroundStyle(.secondary)
         }
     }
 }

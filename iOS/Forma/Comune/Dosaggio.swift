@@ -50,9 +50,16 @@ struct Dosaggio: View {
     }
 
     private var etichetta: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(nome)
-            Text(verbatim: testo).font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: Spazio.s) {
+                Text(nome).font(.subheadline.weight(.semibold))
+                Spacer(minLength: Spazio.s)
+                Text(verbatim: testo).font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nome).font(.subheadline.weight(.semibold))
+                Text(verbatim: testo).font(.footnote.monospacedDigit()).foregroundStyle(.secondary)
+            }
         }
     }
 

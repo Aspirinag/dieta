@@ -143,6 +143,7 @@ struct CorpoView: View {
                         .symbolSize(p.id == punti.last?.id ? 70 : 28)
                         .foregroundStyle(Color.primary)
                 }
+                .chartXScale(range: .plotDimension(padding: 14))
                 .chartYScale(domain: .automatic(includesZero: false))
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 3)) { _ in
@@ -155,9 +156,9 @@ struct CorpoView: View {
                         AxisValueLabel()
                     }
                 }
-                .frame(height: 130)
+                .frame(height: 120)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)   // assi leggibili, senza sovrapporsi al testo grande
-                .padding(.top, Spazio.s)
+                .padding(.top, Spazio.xs)
                 .accessibilityLabel("Grafico: \(campo.nome)")
                 .accessibilityValue(punti.map { "\(num($0.valore)) \(campo.unita)" }.joined(separator: ", "))
             }
@@ -165,7 +166,8 @@ struct CorpoView: View {
                 ForEach(Periodo.allCases) { Text($0.etichetta).tag($0) }
             }
             .pickerStyle(.segmented)
-            .padding(.top, Spazio.m)
+            .controlSize(.small)
+            .padding(.top, Spazio.s)
         }
     }
 
@@ -189,18 +191,20 @@ struct CorpoView: View {
         let valore = ultima?[campo]
         let delta = Self.variazioneTrentaGiorni(bia, campo)
         let dettaglio: Text? = ultima.map { m in
-            // La data e, sotto, la variazione: ognuna sulla sua riga, senza andare a capo a metà
-            Text(verbatim: ([dataMisura(m.data)] + (delta.map { [testoInTrentaGiorni($0, campo)] } ?? [])).joined(separator: "\n"))
+            Text(verbatim: ([dataMisura(m.data)] + (delta.map { [testoInTrentaGiorni($0, campo)] } ?? [])).joined(separator: " · "))
         }
         return Button {
             withAnimation { metrica = scelto ? .peso : campo }
         } label: {
             Riga(Text(verbatim: campo.nome), dettaglio: dettaglio, valore: Text(verbatim: "\(num(valore)) \(campo.unita)")) {
                 Image(systemName: "chart.xyaxis.line")
+                    .font(.subheadline.weight(scelto ? .semibold : .regular))
                     .foregroundStyle(scelto ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                    .frame(width: 28, height: 28)
+                    .background(scelto ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 6))
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, Spazio.s)
+            .padding(.vertical, 2)
             .frame(minHeight: Misure.tocco)
             .contentShape(.rect)
         }

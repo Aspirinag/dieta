@@ -70,7 +70,7 @@ struct SezioniPalestra: View {
             }
             if let pagato {
                 LabeledContent {
-                    Text("pagato il \(Giorni.breve(pagato))")
+                    Text("pagato il \(Testi.data(iso: pagato))")
                 } label: {
                     Label("Pagamento del mese", systemImage: "creditcard")
                 }

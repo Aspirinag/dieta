@@ -120,9 +120,10 @@ struct LibreriaView: View {
             .font(.subheadline.weight(.semibold))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .frame(minHeight: Misure.tocco - 16)
             .foregroundStyle(attivo ? AnyShapeStyle(Color(.systemBackground)) : AnyShapeStyle(.primary))
             .background(attivo ? AnyShapeStyle(.primary) : AnyShapeStyle(.fill.secondary), in: .capsule)
+            .frame(minHeight: Misure.tocco)
+            .contentShape(.rect)
         }
     }
 

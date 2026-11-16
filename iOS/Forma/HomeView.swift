@@ -37,6 +37,7 @@ struct HomeView: View {
                 peso
                 note
             }
+            .listSectionSpacing(Spazio.m)
             .sfondoTema()
             .navigationTitle("Oggi")
             .navigationSubtitleSePossibile(titolo)
@@ -148,7 +149,7 @@ struct HomeView: View {
                 let fatti = elenco.indices.filter { archivio.slot(oggi, $0).fatto }.count
                 Section {
                     ForEach(elenco.indices, id: \.self) { i in
-                        RigaPasto(giorno: oggi, indice: i, pasto: elenco[i])
+                        RigaPasto(giorno: oggi, indice: i, pasto: elenco[i], compatta: true)
                     }
                 } header: {
                     Text("Pasti · \(fatti) di \(elenco.count)").textCase(nil)
@@ -298,9 +299,9 @@ struct HomeView: View {
                     nome: "Olio", unita: "cucchiaini",
                     valore: Binding(get: { r.olio }, set: { v in archivio.cambiaRegistro(oggi) { $0.olio = v } }),
                     dose: p.olio, colore: Colori.olio, simbolo: .cucchiaino)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 2)
             }
-            if p.olio > 0 && p.acqua > 0 { Divider() }
+            if p.olio > 0 && p.acqua > 0 { Divider().padding(.vertical, 2) }
             if p.acqua > 0 {
                 Dosaggio(
                     nome: "Acqua", unita: "L",
@@ -309,7 +310,7 @@ struct HomeView: View {
                         set: { v in archivio.cambiaRegistro(oggi) { $0.acqua = Double(v) * Dosi.litriPerGoccia } }),
                     dose: Dosi.gocce(dose: p.acqua), colore: Colori.acqua, simbolo: .goccia,
                     quantitaPerElemento: Dosi.litriPerGoccia, doseTesto: num(p.acqua))
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 2)
             }
         } } }
     }

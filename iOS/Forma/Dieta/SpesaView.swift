@@ -23,6 +23,7 @@ struct SpesaView: View {
         List {
             Section {
                 intestazione(voci: voci, presi: presi)
+                    .listRowInsets(EdgeInsets(top: 0, leading: Spazio.s, bottom: 0, trailing: Spazio.s))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
             }
@@ -47,6 +48,7 @@ struct SpesaView: View {
             }
             aggiungi
         }
+        .listSectionSpacing(Spazio.m)
         .scrollDismissesKeyboard(.interactively)
         // Se l'app resta aperta oltre la mezzanotte la lista passa alla settimana giusta
         .onChange(of: fase) { _, nuova in

@@ -234,6 +234,7 @@ struct MenuProfilo: View {
                 Label(archivio.profilo.nome, systemImage: "person.crop.circle")
                     .labelStyle(.titleAndIcon)
             }
+            .tint(.primary)
         }
     }
 }
