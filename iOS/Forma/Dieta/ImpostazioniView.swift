@@ -62,12 +62,12 @@ struct ImpostazioniView: View {
         NavigationLink(value: pagina) { etichetta(titolo, simbolo) }
     }
 
-    // Icona grigia: il verde resta all'azione principale e allo stato «fatto»
+    // Icona in terracotta: sostituisce il grigio mantenendo il verde per l'azione principale e lo stato «fatto»
     private func etichetta(_ titolo: LocalizedStringKey, _ simbolo: String) -> some View {
         Label {
             Text(titolo)
         } icon: {
-            Image(systemName: simbolo).foregroundStyle(.secondary)
+            Image(systemName: simbolo).foregroundStyle(Colori.terracotta)
         }
     }
 }

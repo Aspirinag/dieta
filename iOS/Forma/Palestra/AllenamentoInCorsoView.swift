@@ -204,9 +204,11 @@ struct AllenamentoInCorsoView: View {
         } label: {
             Label("Aggiungi esercizio", systemImage: "plus")
                 .font(.body.weight(.semibold))
+                .foregroundStyle(Colori.terracotta)
                 .frame(maxWidth: .infinity, minHeight: Misure.tocco)
         }
         .buttonStyle(.bordered)
+        .tint(Colori.terracotta)
         .buttonBorderShape(.capsule)
         .padding(.top, Spazio.l)
         .padding(.bottom, Spazio.xl)
@@ -296,7 +298,7 @@ struct RigaRiscaldamento: View {
 
     private func riga(_ conteggio: String, conNome: Bool) -> some View {
         HStack(spacing: Spazio.s) {
-            Image(systemName: "figure.cooldown").foregroundStyle(.secondary)
+            Image(systemName: "figure.cooldown").foregroundStyle(Colori.terracotta)
             if conNome {
                 Text("Riscaldamento").fontWeight(.semibold).fixedSize()
             }
@@ -413,9 +415,9 @@ struct SezioneEsercizioInCorso: View {
                     } label: {
                         Label("Aggiungi serie", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Colori.terracotta)
                             .frame(maxWidth: .infinity, minHeight: Misure.tocco)
-                            .background(.fill.quaternary, in: .rect(cornerRadius: 8))
+                            .background(Colori.terracotta.opacity(0.12), in: .rect(cornerRadius: 8))
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
@@ -460,8 +462,10 @@ struct SezioneEsercizioInCorso: View {
 
     private func intestazione(_ ex: Esercizio, _ e: EsercizioFatto, _ i: Int) -> some View {
         HStack(spacing: Spazio.m) {
-            IconaEsercizio(esercizio: ex, lato: 32)
-                .tint(.secondary)
+            if Figura.esercizi[ex.id] != nil {
+                IconaEsercizio(esercizio: ex, lato: 32)
+                    .tint(.secondary)
+            }
             VStack(alignment: .leading, spacing: 0) {
                 Text(verbatim: ex.titolo).font(.headline).foregroundStyle(.primary)
                 Text("\(ex.muscolo.nome) · recupero \(e.recupero) s").font(.caption).foregroundStyle(.secondary)
@@ -547,13 +551,13 @@ struct RigaSerie: View {
                 } precedente: {
                     ultimaVolta(prec, fatta: s.fatta)
                 } kg: {
-                    cella(testo: kg, segnaposto: prec?.kg.map { num($0) } ?? String(localized: "kg"), quale: .kg, serie: numero + 1, riscaldamento: s.riscaldamento)
+                    cella(testo: kg, segnaposto: prec?.kg.map { num($0) } ?? String(localized: "kg"), quale: .kg, serie: numero + 1, riscaldamento: s.riscaldamento, fatta: s.fatta)
                         .onChange(of: kg) { _, v in
                             modifica { $0.kg = leggiNumero(v) }
                             if !v.isEmpty, manca == .kg { manca = nil }
                         }
                 } rip: {
-                    cella(testo: rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), quale: .rip, serie: numero + 1, riscaldamento: s.riscaldamento)
+                    cella(testo: rip, segnaposto: prec?.rip.map(String.init) ?? String(localized: "rip"), quale: .rip, serie: numero + 1, riscaldamento: s.riscaldamento, fatta: s.fatta)
                         .onChange(of: rip) { _, v in
                             modifica { $0.rip = Int(v) }
                             if !v.isEmpty, manca == .rip { manca = nil }
@@ -658,15 +662,16 @@ struct RigaSerie: View {
             applica(quale, su: su, prec: prec)
         } label: {
             TestiPasso.etichetta(quale, su: su)
-                .numero(.subheadline)
-                .foregroundStyle(.primary)
+                .numero(.footnote)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(largo ? 0.6 : 1)
                 .fixedSize(horizontal: !largo, vertical: false)
                 .padding(.horizontal, Spazio.m)
                 .frame(maxWidth: largo ? .infinity : nil)
+                .frame(minHeight: 30)
+                .background(.fill.quaternary, in: .capsule)
                 .frame(minWidth: Misure.tocco, minHeight: Misure.tocco)
-                .background(.fill.tertiary, in: .capsule)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -710,7 +715,7 @@ struct RigaSerie: View {
 
     // Casella di kg o ripetizioni: mostra il valore e, toccata, apre la rotella (niente tastiera).
     // A testo molto grande l'unità si scrive accanto (l'intestazione della tabella non c'è)
-    private func cella(testo: String, segnaposto: String, quale: EsitoSpunta.Campo, serie: Int, riscaldamento: Bool) -> some View {
+    private func cella(testo: String, segnaposto: String, quale: EsitoSpunta.Campo, serie: Int, riscaldamento: Bool, fatta: Bool = false) -> some View {
         let vuota = testo.isEmpty
         let nomeCampo = quale == .kg ? Text("Kg") : Text("Ripetizioni")
         return HStack(spacing: Spazio.xs) {
@@ -726,8 +731,8 @@ struct RigaSerie: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
                     .padding(.horizontal, Spazio.xs)
-                    .frame(minHeight: 36)
-                    .background(.fill.tertiary, in: .rect(cornerRadius: 7))
+                    .frame(minHeight: 34)
+                    .background(fatta ? AnyShapeStyle(.clear) : AnyShapeStyle(.fill.tertiary), in: .rect(cornerRadius: 7))
                     .overlay {
                         if manca == quale {
                             RoundedRectangle(cornerRadius: 7).strokeBorder(Colori.oltre, lineWidth: 2)
@@ -828,7 +833,7 @@ struct TimerInAllenamento: View {
                     EmptyView()
                 }
                 .progressViewStyle(.linear)
-                .tint(.secondary)
+                .tint(Colori.terracotta)
                 .accessibilityHidden(true)
             }
             .padding(.horizontal, Spazio.l)
@@ -895,15 +900,14 @@ struct IconaEsercizio: View {
     var body: some View {
         Group {
             if let f = Figura.esercizi[esercizio.id] {
-                Pittogramma(figura: f, lato: lato * 0.85)
+                Pittogramma(figura: f, lato: lato * 0.9)
             } else {
                 Image(systemName: esercizio.muscolo.simbolo)
-                    .font(.system(size: lato * 0.45))
+                    .font(.system(size: lato * 0.5))
                     .foregroundStyle(.secondary)
             }
         }
         .frame(width: lato, height: lato)
-        .background(Color.secondary.opacity(0.12), in: .circle)
     }
 }
 

@@ -48,7 +48,7 @@ struct ImportaPDF: ViewModifier {
                 }
             }
             .sheet(item: $nuovoPiano) { FoglioNuovoPiano(piano: $0) }
-            .alert("Aggiungere la BIA del \(Giorni.breve(nuovaBia?.data ?? ""))?", isPresented: Binding(
+            .alert("Aggiungere la BIA del \(Testi.data(iso: nuovaBia?.data ?? "", anno: true))?", isPresented: Binding(
                 get: { nuovaBia != nil }, set: { if !$0 { nuovaBia = nil } }
             ), presenting: nuovaBia) { m in
                 Button("Aggiungi") { archivio.salvaMisura(m) }
@@ -136,7 +136,7 @@ struct PianiDietaView: View {
                         Button { pianoDaModificare = p } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(p.nome).font(.headline).foregroundStyle(.primary)
-                                Text("\(Giorni.breve(p.dal)) → \(p.al.isEmpty ? String(localized: "in corso") : Giorni.breve(p.al))")
+                                Text("\(Testi.data(iso: p.dal, anno: true)) → \(p.al.isEmpty ? String(localized: "in corso") : Testi.data(iso: p.al, anno: true))")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }

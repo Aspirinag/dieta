@@ -37,6 +37,7 @@ struct HomeView: View {
                 peso
                 note
             }
+            .listSectionSpacing(Spazio.m)
             .sfondoTema()
             .navigationTitle("Oggi")
             .navigationSubtitleSePossibile(titolo)
@@ -119,7 +120,7 @@ struct HomeView: View {
                     Button("Segna come pagato") { withAnimation { palestra.segnaPagato(p.mese) } }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .tint(.primary)
+                        .tint(Colori.terracotta)
                         .buttonBorderShape(.capsule)
                 }
                 .accessibilityIdentifier("riquadro-pagamento")
@@ -148,7 +149,7 @@ struct HomeView: View {
                 let fatti = elenco.indices.filter { archivio.slot(oggi, $0).fatto }.count
                 Section {
                     ForEach(elenco.indices, id: \.self) { i in
-                        RigaPasto(giorno: oggi, indice: i, pasto: elenco[i])
+                        RigaPasto(giorno: oggi, indice: i, pasto: elenco[i], compatta: true)
                     }
                 } header: {
                     Text("Pasti · \(fatti) di \(elenco.count)").textCase(nil)
@@ -231,14 +232,14 @@ struct HomeView: View {
                             Button("Registra cardio") { cardioAperto = true }
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
-                                .tint(.primary)
+                                .tint(Colori.terracotta)
                         }
                     } else {
                         Riga(Text("Riposo"), evidente: true) {
                             Button("Allenati lo stesso") { sceltaScheda = true }
                                 .buttonStyle(.bordered)
                                 .buttonBorderShape(.capsule)
-                                .tint(.primary)
+                                .tint(Colori.terracotta)
                                 .accessibilityIdentifier("allenati-lo-stesso")
                         }
                     }
@@ -255,7 +256,7 @@ struct HomeView: View {
                 }
                 if altraScheda {
                     Button("Un'altra scheda") { navigazione.scheda = .allenamento }
-                        .tint(.primary)
+                        .tint(Colori.terracotta)
                         .frame(minHeight: Misure.tocco, alignment: .leading)
                 }
             }
@@ -298,9 +299,9 @@ struct HomeView: View {
                     nome: "Olio", unita: "cucchiaini",
                     valore: Binding(get: { r.olio }, set: { v in archivio.cambiaRegistro(oggi) { $0.olio = v } }),
                     dose: p.olio, colore: Colori.olio, simbolo: .cucchiaino)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 2)
             }
-            if p.olio > 0 && p.acqua > 0 { Divider() }
+            if p.olio > 0 && p.acqua > 0 { Divider().padding(.vertical, 2) }
             if p.acqua > 0 {
                 Dosaggio(
                     nome: "Acqua", unita: "L",
@@ -309,7 +310,7 @@ struct HomeView: View {
                         set: { v in archivio.cambiaRegistro(oggi) { $0.acqua = Double(v) * Dosi.litriPerGoccia } }),
                     dose: Dosi.gocce(dose: p.acqua), colore: Colori.acqua, simbolo: .goccia,
                     quantitaPerElemento: Dosi.litriPerGoccia, doseTesto: num(p.acqua))
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 2)
             }
         } } }
     }
@@ -405,9 +406,9 @@ private struct Tendenza: View {
             }
             var linea = Path()
             linea.addLines(punti)
-            ctx.stroke(linea, with: .color(.secondary), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            ctx.stroke(linea, with: .color(Colori.accento), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
             if let u = punti.last {
-                ctx.fill(Path(ellipseIn: CGRect(x: u.x - 3.5, y: u.y - 3.5, width: 7, height: 7)), with: .color(.secondary))
+                ctx.fill(Path(ellipseIn: CGRect(x: u.x - 3.5, y: u.y - 3.5, width: 7, height: 7)), with: .color(Colori.accento))
             }
         }
     }

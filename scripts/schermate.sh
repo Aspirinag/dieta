@@ -27,7 +27,11 @@ for aspetto in light dark; do
     scheda=${s%%:*}; vista=${s#*:}
     args=(-demo -tab "$scheda")
     [ "$vista" != "$s" ] && args+=(-vista "$vista")
-    [ "${LINGUA:-}" = "en" ] && args+=(-AppleLanguages "(en)" -AppleLocale en_US)
+    if [ "${LINGUA:-}" = "en" ]; then
+      args+=(-AppleLanguages "(en)" -AppleLocale en_US)
+    else
+      args+=(-AppleLanguages "(it)" -AppleLocale it_IT)
+    fi
     xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE" "${args[@]}" > /dev/null
     sleep 5
     nome="schermate/$aspetto-${s/:/-}.png"

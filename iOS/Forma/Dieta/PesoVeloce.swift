@@ -61,7 +61,13 @@ struct PesoVeloceView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Peso").font(.headline)
+            HStack {
+                Text("Peso").font(.headline)
+                Spacer()
+                Button("Annulla", role: .cancel) { chiudi() }
+                    .font(.subheadline)
+                    .tint(.primary)
+            }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 TextField("–", text: $testo)
                     .numero(.largeTitle)

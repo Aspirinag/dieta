@@ -23,6 +23,7 @@ struct SpesaView: View {
         List {
             Section {
                 intestazione(voci: voci, presi: presi)
+                    .listRowInsets(EdgeInsets(top: 0, leading: Spazio.s, bottom: 0, trailing: Spazio.s))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
             }
@@ -47,6 +48,7 @@ struct SpesaView: View {
             }
             aggiungi
         }
+        .listSectionSpacing(Spazio.m)
         .scrollDismissesKeyboard(.interactively)
         // Se l'app resta aperta oltre la mezzanotte la lista passa alla settimana giusta
         .onChange(of: fase) { _, nuova in
@@ -107,7 +109,7 @@ struct SpesaView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(attiva ? Color.primary : Color(.tertiaryLabel))
+        .foregroundStyle(attiva ? Colori.terracotta : Color(.tertiaryLabel))
         .disabled(!attiva)
         .accessibilityLabel(Text(nome))
     }
@@ -190,7 +192,7 @@ struct SpesaView: View {
             HStack(spacing: Spazio.xs) {
                 Image(systemName: "plus")
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Colori.terracotta)
                     .frame(width: Misure.tocco, height: Misure.tocco)
                     .accessibilityHidden(true)
                 TextField("Aggiungi qualcos'altro", text: $nuovo)

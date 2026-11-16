@@ -15,10 +15,11 @@ struct SistemaVisivoTests {
     }
 
     // Forme con significato (pieni e vuoti) almeno 3:1 sullo sfondo della riga, in chiaro, scuro e Aumenta contrasto
-    @Test(arguments: ["accento", "olio", "acqua", "oltre", "vuoto"])
+    @Test(arguments: ["accento", "terracotta", "olio", "acqua", "oltre", "vuoto"])
     func formeHannoContrasto(_ nome: String) {
         let colore: Color = switch nome {
         case "accento": Colori.accento
+        case "terracotta": Colori.terracotta
         case "olio": Colori.olio
         case "acqua": Colori.acqua
         case "oltre": Colori.oltre

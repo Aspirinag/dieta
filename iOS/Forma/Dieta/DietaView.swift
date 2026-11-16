@@ -23,7 +23,7 @@ struct DietaView: View {
                 Section {
                     StrisciaGiorni(lunedi: Giorni.lunedi(ultimoOggi), selezionato: $giorno)
                         .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                        .righeTema()
                 }
                 if let piano = archivio.profilo.piano(per: giorno) {
                     let pasti = piano.giorni[Giorni.indice(giorno)].pasti
@@ -108,6 +108,7 @@ struct DietaView: View {
             let presi = archivio.spunteSpesa(lunedi: lun)
             let quanti = voci.filter { presi[$0.chiave] == true }.count
             Button("Spesa", systemImage: "cart") { percorso.append(.spesa) }
+                .tint(Colori.terracotta)
                 .accessibilityValue(Text("\(quanti) di \(voci.count) presi"))
         }
     }
@@ -123,12 +124,13 @@ struct StrisciaGiorni: View {
     @Binding var selezionato: String
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: Spazio.xs) {
             ForEach(0..<7, id: \.self) { i in
                 giorno(Giorni.aggiungi(lunedi, i), i)
             }
         }
-        .padding(.horizontal, Spazio.xs)
+        .padding(.horizontal, Spazio.m)
+        .padding(.vertical, Spazio.s)
         // Sette colonne strette: con il testo molto grande le sigle non devono andare a capo
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
@@ -150,14 +152,14 @@ struct StrisciaGiorni: View {
                 }
                 .frame(height: 6)
             }
-            .foregroundStyle(scelto ? Color(.systemBackground) : Color.primary)
+            .foregroundStyle(scelto ? Colori.sulAccento : Color.primary)
             .frame(maxWidth: .infinity, minHeight: Misure.tocco)
-            .padding(.vertical, Spazio.xs)
+            .padding(.vertical, Spazio.s)
             .background {
                 if scelto {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Colori.accento)
                 } else if oggi {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Colori.vuoto, lineWidth: Misure.contorno)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Colori.terracotta, lineWidth: Misure.contorno)
                 }
             }
             .contentShape(Rectangle())
@@ -169,12 +171,12 @@ struct StrisciaGiorni: View {
         .accessibilityAddTraits(scelto ? [.isButton, .isSelected] : .isButton)
     }
 
-    // Pieno = segnato (verde, o chiaro sul giorno scelto); contorno = da fare: si distinguono anche senza colore
+    // Pieno = segnato (verde, o sulAccento sul giorno scelto); contorno = da fare: si distinguono anche senza colore
     @ViewBuilder private func puntino(pieno: Bool, scelto: Bool) -> some View {
         if pieno {
-            Circle().fill(scelto ? Color(.systemBackground) : Colori.accento).frame(width: 6, height: 6)
+            Circle().fill(scelto ? Colori.sulAccento : Colori.accento).frame(width: 6, height: 6)
         } else {
-            Circle().strokeBorder(scelto ? Color(.systemBackground) : Colori.vuoto, lineWidth: 1).frame(width: 6, height: 6)
+            Circle().strokeBorder(scelto ? Colori.sulAccento.opacity(0.6) : Colori.vuoto, lineWidth: 1).frame(width: 6, height: 6)
         }
     }
 }
@@ -189,12 +191,13 @@ struct RigaPasto: View {
     let giorno: String
     let indice: Int
     let pasto: Pasto
+    var compatta: Bool = false
 
     var body: some View {
         let s = archivio.slot(giorno, indice)
         let scelta = pasto.opzioni.indices.contains(s.opt) ? s.opt : 0
         let cibi = pasto.opzioni.indices.contains(scelta) ? pasto.opzioni[scelta].riassunto : ""
-        let alternativa = pasto.opzioni.count > 1
+        let alternativa = (!compatta && pasto.opzioni.count > 1)
             ? String(localized: "Alternativa: \(pasto.nomeAlternativa(scelta)) (\(scelta + 1) di \(pasto.opzioni.count))")
             : ""
         let dettaglio = [cibi, alternativa].filter { !$0.isEmpty }.joined(separator: "\n")
@@ -217,6 +220,7 @@ struct RigaPasto: View {
                 Riga(titolo, dettaglio: testo, evidente: true, fatta: s.fatto, inizio: spunta)
             }
         }
+        .listRowInsets(compatta ? EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16) : nil)
         .accessibilityIdentifier("pasto-\(pasto.nome)")
         .righeTema()
     }

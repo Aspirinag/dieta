@@ -68,10 +68,10 @@ struct ProgressiPalestraView: View {
                     .frame(maxWidth: .infinity, minHeight: 80, alignment: .leading)
             } else {
                 Chart(barre) { b in
-                    // Settimane intere in tinta piena; la settimana in corso più leggera e con la scritta «finora»
+                    // Settimane intere in terracotta leggero; la settimana in corso in terracotta pieno con la scritta «finora»
                     BarMark(x: .value("Settimana", etichetta(b.inizio)), y: .value("Kg", b.kg))
                         .cornerRadius(4)
-                        .foregroundStyle(b.ultima ? Color.primary : Color.secondary)
+                        .foregroundStyle(b.ultima ? Colori.terracotta : Colori.terracotta.opacity(0.45))
                         .annotation(position: .top, alignment: .center, spacing: 2) {
                             if b.ultima && !dimensione.isAccessibilitySize { Text("finora").font(.caption2).foregroundStyle(.secondary) }
                         }
@@ -229,7 +229,7 @@ struct RigaRecente: View {
         NavigationLink(value: allenamento.id) {
             (dimensione.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 12))) {
                 Image(systemName: allenamento.soloWatch ? "applewatch" : "dumbbell")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Colori.terracotta)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: allenamento.titolo).font(.headline)

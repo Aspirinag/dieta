@@ -134,16 +134,26 @@ struct CorpoView: View {
                     .font(.subheadline).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 100)
             } else {
+                let valori = punti.map(\.valore)
+                let basso = valori.min() ?? 0
+                let alto = valori.max() ?? 1
+                let margine = max((alto - basso) * 0.25, 0.5)
+                let minY = floor((basso - margine) * 2) / 2
+                let maxY = ceil((alto + margine) * 2) / 2
                 Chart(punti) { p in
+                    AreaMark(x: .value("Data", p.data), yStart: .value("Base", minY), yEnd: .value(campo.nome, p.valore))
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(LinearGradient(colors: [Colori.accento.opacity(0.22), .clear], startPoint: .top, endPoint: .bottom))
                     LineMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
                         .interpolationMethod(.monotone)
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(Color.secondary)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .foregroundStyle(Colori.accento)
                     PointMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
-                        .symbolSize(p.id == punti.last?.id ? 70 : 28)
-                        .foregroundStyle(Color.primary)
+                        .symbolSize(p.id == punti.last?.id ? 70 : 32)
+                        .foregroundStyle(Colori.accento)
                 }
-                .chartYScale(domain: .automatic(includesZero: false))
+                .chartXScale(range: .plotDimension(padding: 14))
+                .chartYScale(domain: minY...maxY)
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 3)) { _ in
                         AxisValueLabel(format: .dateTime.day().month(.abbreviated))
@@ -155,9 +165,9 @@ struct CorpoView: View {
                         AxisValueLabel()
                     }
                 }
-                .frame(height: 130)
+                .frame(height: 120)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)   // assi leggibili, senza sovrapporsi al testo grande
-                .padding(.top, Spazio.s)
+                .padding(.top, Spazio.xs)
                 .accessibilityLabel("Grafico: \(campo.nome)")
                 .accessibilityValue(punti.map { "\(num($0.valore)) \(campo.unita)" }.joined(separator: ", "))
             }
@@ -165,7 +175,8 @@ struct CorpoView: View {
                 ForEach(Periodo.allCases) { Text($0.etichetta).tag($0) }
             }
             .pickerStyle(.segmented)
-            .padding(.top, Spazio.m)
+            .controlSize(.small)
+            .padding(.top, Spazio.s)
         }
     }
 
@@ -189,18 +200,20 @@ struct CorpoView: View {
         let valore = ultima?[campo]
         let delta = Self.variazioneTrentaGiorni(bia, campo)
         let dettaglio: Text? = ultima.map { m in
-            // La data e, sotto, la variazione: ognuna sulla sua riga, senza andare a capo a metà
-            Text(verbatim: ([dataMisura(m.data)] + (delta.map { [testoInTrentaGiorni($0, campo)] } ?? [])).joined(separator: "\n"))
+            Text(verbatim: ([dataMisura(m.data)] + (delta.map { [testoInTrentaGiorni($0, campo)] } ?? [])).joined(separator: " · "))
         }
         return Button {
             withAnimation { metrica = scelto ? .peso : campo }
         } label: {
             Riga(Text(verbatim: campo.nome), dettaglio: dettaglio, valore: Text(verbatim: "\(num(valore)) \(campo.unita)")) {
                 Image(systemName: "chart.xyaxis.line")
-                    .foregroundStyle(scelto ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                    .font(.subheadline.weight(scelto ? .semibold : .regular))
+                    .foregroundStyle(scelto ? AnyShapeStyle(Colori.sulAccento) : AnyShapeStyle(Colori.accento))
+                    .frame(width: 28, height: 28)
+                    .background(scelto ? AnyShapeStyle(Colori.accento) : AnyShapeStyle(Colori.accento.opacity(0.14)), in: .rect(cornerRadius: 6))
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, Spazio.s)
+            .padding(.vertical, 2)
             .frame(minHeight: Misure.tocco)
             .contentShape(.rect)
         }
