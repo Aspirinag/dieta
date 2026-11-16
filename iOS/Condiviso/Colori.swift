@@ -34,6 +34,9 @@ enum Colori {
     static let acqua = Color(chiaro: 0x3D7FA6, scuro: 0x5A9CC4, chiaroContrasto: 0x2C6688, scuroContrasto: 0x7DB4D6)
     // L'arancione di sistema è 2,2:1 sul bianco: in chiaro uno più scuro
     static let oltre = Color(chiaro: 0xC4610A, scuro: 0xFF9F0A, chiaroContrasto: 0xA34F06, scuroContrasto: 0xFFB340)
+    // Terracotta calda (richiama il cerchio dell'icona): per la sezione Palestra e i suoi grafici
+    static let terracotta = Color(chiaro: 0xB84A27, scuro: 0xE87C56, chiaroContrasto: 0x943618, scuroContrasto: 0xF49B7B)
+    static let sulTerracotta = Color(chiaro: 0xFFFFFF, scuro: 0x1F0A04)
     // Grigio secondario di sistema (≈ 3,4:1 sul bianco, ≈ 5,9:1 sul grigio scuro; più scuro con Aumenta contrasto)
     static let vuoto = Color(.secondaryLabel)
     static let riempimentoVuoto = Color(.quaternarySystemFill)

@@ -181,9 +181,9 @@ struct AllenamentoView: View {
                             Button { avvia(r) } label: {
                                 Image(systemName: "play.fill")
                                     .font(.caption.weight(.bold))
-                                    .foregroundStyle(.primary)
+                                    .foregroundStyle(Colori.terracotta)
                                     .frame(width: 30, height: 30)
-                                    .background(.fill.tertiary, in: .circle)
+                                    .background(Colori.terracotta.opacity(0.14), in: .circle)
                                     .frame(minWidth: Misure.tocco, minHeight: Misure.tocco)
                                     .contentShape(Rectangle())
                             }
@@ -235,7 +235,7 @@ struct AllenamentoView: View {
         Label {
             Text(titolo).foregroundStyle(.primary)
         } icon: {
-            Image(systemName: simbolo).foregroundStyle(.secondary)
+            Image(systemName: simbolo).foregroundStyle(Colori.terracotta)
         }
     }
 }

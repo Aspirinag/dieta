@@ -53,9 +53,9 @@ struct DettaglioEsercizioView: View {
                             LineMark(x: .value("Data", p.data), y: .value("kg", v))
                                 .interpolationMethod(.linear)
                                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
-                                .foregroundStyle(Colori.accento)
+                                .foregroundStyle(Colori.terracotta)
                             PointMark(x: .value("Data", p.data), y: .value("kg", v))
-                                .foregroundStyle(Colori.accento)
+                                .foregroundStyle(Colori.terracotta)
                         }
                         .chartYScale(domain: .automatic(includesZero: false))
                         .frame(height: 200)
@@ -234,7 +234,13 @@ struct ContenutoAllenamento: View {
         let record = palestra.nuoviRecord(a)
         if !record.isEmpty {
             Section("Nuovi record") {
-                ForEach(record, id: \.self) { Label($0, systemImage: "trophy.fill").foregroundStyle(.primary) }
+                ForEach(record, id: \.self) { voce in
+                    Label {
+                        Text(voce).foregroundStyle(.primary)
+                    } icon: {
+                        Image(systemName: "trophy.fill").foregroundStyle(Colori.terracotta)
+                    }
+                }
             }
         }
         // Una riga per esercizio: «77,5 kg × 12 · 11 · 10»
@@ -342,7 +348,7 @@ struct RigaCardio: View {
         NavigationLink(value: ApriCardio(id: cardio.id)) {
             (dimensione.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 12))) {
                 Image(systemName: Libreria.simboloCardio(cardio.tipo))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Colori.terracotta)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: Libreria.nomeCardio(cardio.tipo)).font(.headline)
