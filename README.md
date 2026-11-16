@@ -55,10 +55,24 @@ Ogni modifica segue gli stessi passi:
 ```bash
 cd iOS
 xcodebuild test -project Forma.xcodeproj -scheme Forma \
-  -destination 'platform=iOS Simulator,name=iPhone 17' -quiet
+  -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -quiet
 ```
 
 Per vedere l'app con i dati di prova, avvia con l'argomento `-demo` (eventualmente `-tab oggi|dieta|allenamento|progressi|inCorso|impostazioni`; `-vista spesa` apre la Spesa dentro Dieta). Per provare l'inglese: `-AppleLanguages "(en)" -AppleLocale en_US`.
+
+Per generare le schermate in chiaro e scuro dal simulatore (di base in italiano, oppure con `LINGUA=en` davanti):
+
+```bash
+bash scripts/schermate.sh <percorso/Forma.app> io.github.aspirinag.forma \
+  "oggi dieta dieta:spesa allenamento progressi inCorso impostazioni"
+```
+
+## Identità visiva
+
+I colori sono centralizzati in [Colori.swift](iOS/Condiviso/Colori.swift) e verificati da `SistemaVisivoTests` in chiaro, scuro e *Aumenta contrasto*:
+- **Verde salvia (`#438060` / scuro `#84BFA0`):** azioni principali, spunte «fatto», giorno scelto e grafici Dieta/Corpo.
+- **Terracotta calda (`#B84A27` / scuro `#E87C56`):** sezione Palestra, grafici allenamento, trofei, icone e azioni secondarie.
+- **Icona (`AppIcon.icon`):** sfondo verde salvia con quadrato crema, cerchio terracotta e triangolo ocra.
 
 ## Avvertenza
 
