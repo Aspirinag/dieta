@@ -91,32 +91,30 @@ struct StoricoAllenamenti: View {
 
     var body: some View {
         let tutte = palestra.stato.attivitaRecenti()
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                if tutte.isEmpty {
-                    Riquadro {
+        List {
+            if tutte.isEmpty {
+                Section {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text("Nessun allenamento").font(.headline)
-                        Text("Gli allenamenti finiti compaiono qui.").font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
+                        Text("Gli allenamenti finiti compaiono qui.").font(.subheadline).foregroundStyle(.secondary)
                     }
-                } else {
-                    riepilogoSettimana
-                    let mesi = Dictionary(grouping: tutte) { String($0.giorno.prefix(7)) }
-                    ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year()))
-                                .font(.headline).padding(.horizontal, 4)
-                            Riquadro {
-                                ForEach(Array((mesi[m] ?? []).enumerated()), id: \.element.id) { i, voce in
-                                    if i > 0 { Divider() }
-                                    RigaAttivita(voce: voce)
-                                }
-                            }
+                    .padding(.vertical, Spazio.xs)
+                }
+                .righeTema()
+            } else {
+                riepilogoSettimana
+                let mesi = Dictionary(grouping: tutte) { String($0.giorno.prefix(7)) }
+                ForEach(mesi.keys.sorted(by: >), id: \.self) { m in
+                    Section {
+                        ForEach(mesi[m] ?? []) { voce in
+                            RigaAttivita(voce: voce)
                         }
+                    } header: {
+                        Text(Giorni.data(m + "-01").formatted(.dateTime.month(.wide).year())).textCase(nil)
                     }
+                    .righeTema()
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
         }
         .sfondoTema()
         .navigationTitle("Allenamenti")
@@ -126,16 +124,20 @@ struct StoricoAllenamenti: View {
     // Questa settimana = da lunedì a domenica, la stessa definizione del grafico in Progressi
     private var riepilogoSettimana: some View {
         let sett = palestra.stato.riepilogoSettimana(oggi: Giorni.oggi())
-        return Riquadro {
-            Text("Questa settimana").font(.headline)
-            Text(verbatim: sett.etichetta()).font(.subheadline).foregroundStyle(.secondary)
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top) { statistiche(sett) }
-                VStack(alignment: .leading, spacing: Spazio.s) { statistiche(sett) }
+        return Section {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Questa settimana").font(.headline)
+                Text(verbatim: sett.etichetta()).font(.subheadline).foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top) { statistiche(sett) }
+                    VStack(alignment: .leading, spacing: Spazio.s) { statistiche(sett) }
+                }
+                .padding(.top, Spazio.s)
             }
-            .padding(.top, Spazio.s)
+            .padding(.vertical, Spazio.xs)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
+        .righeTema()
     }
 
     @ViewBuilder private func statistiche(_ sett: RiepilogoSettimana) -> some View {
@@ -358,12 +360,9 @@ struct RigaCardio: View {
                 if cardio.km > 0 {
                     Text("\(num(cardio.km)) km").font(.subheadline).foregroundStyle(.secondary).numero(.subheadline)
                 }
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
             }
             .frame(minHeight: 44)
-            .contentShape(.rect)
         }
-        .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Apre il dettaglio")
         .accessibilityIdentifier("cardio-\(cardio.id.uuidString)")

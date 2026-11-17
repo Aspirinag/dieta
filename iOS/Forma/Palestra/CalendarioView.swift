@@ -7,9 +7,9 @@ struct CalendarioContenuto: View {
     @State private var scelto = Giorni.oggi()
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Riquadro {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Button("Mese precedente", systemImage: "chevron.left") { cambia(-1) }
                             .labelStyle(.iconOnly).frame(minWidth: 44, minHeight: 44)
@@ -25,10 +25,10 @@ struct CalendarioContenuto: View {
                     Text("Pallino pieno: pesi o cardio fatti. Pallino vuoto: in programma.")
                         .font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                 }
-                giorno
+                .padding(.vertical, Spazio.xs)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            .righeTema()
+            giorno
         }
         .sfondoTema()
         .navigationTitle("Calendario")
@@ -42,26 +42,24 @@ struct CalendarioContenuto: View {
     @ViewBuilder private var giorno: some View {
         let t = palestra.programmato(scelto)
         let pesi = palestra.allenamenti(del: scelto), cardio = palestra.cardio(del: scelto)
-        VStack(alignment: .leading, spacing: 4) {
-            Text(Testi.data(Giorni.data(scelto))).font(.headline).padding(.horizontal, 4)
-            Riquadro {
-                HStack {
-                    Text("In programma")
-                    Spacer()
-                    Image(systemName: t.simbolo).foregroundStyle(.secondary)
-                    Text(t.nome).foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 44)
-                ForEach(pesi) { a in
-                    Divider()
-                    RigaRecente(allenamento: a)
-                }
-                ForEach(cardio) { c in
-                    Divider()
-                    RigaCardio(cardio: c)
-                }
+        Section {
+            HStack {
+                Text("In programma")
+                Spacer()
+                Image(systemName: t.simbolo).foregroundStyle(.secondary)
+                Text(t.nome).foregroundStyle(.secondary)
             }
+            .frame(minHeight: 44)
+            ForEach(pesi) { a in
+                RigaRecente(allenamento: a)
+            }
+            ForEach(cardio) { c in
+                RigaCardio(cardio: c)
+            }
+        } header: {
+            Text(Testi.data(Giorni.data(scelto))).textCase(nil)
         }
+        .righeTema()
     }
 }
 

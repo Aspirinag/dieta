@@ -22,9 +22,10 @@
     --separatore: rgba(60, 60, 67, 0.29);
     --riempimento: rgba(120, 120, 128, 0.12);
     --vuoto: #B4B4B9;
-    --accento: #2F6B4F;
-    --accento-tenue: rgba(47, 107, 79, 0.10);
+    --accento: #438060;
+    --accento-tenue: rgba(67, 128, 96, 0.12);
     --sul-accento: #FFFFFF;
+    --terracotta: #B84A27;
     --rosso: #D70015;
     --verde: #248A3D;
     --barra: rgba(249, 249, 249, 0.86);
@@ -38,9 +39,10 @@
       --separatore: rgba(84, 84, 88, 0.65);
       --riempimento: rgba(120, 120, 128, 0.24);
       --vuoto: #7A7A80;
-      --accento: #7FB89A;
-      --accento-tenue: rgba(127, 184, 154, 0.16);
-      --sul-accento: #000000;
+      --accento: #84BFA0;
+      --accento-tenue: rgba(132, 191, 160, 0.16);
+      --sul-accento: #0F2218;
+      --terracotta: #E87C56;
       --rosso: #FF453A;
       --verde: #30D158;
       --barra: rgba(29, 29, 31, 0.86);
@@ -72,7 +74,7 @@
   label.muted input { margin-top: 4px; }
   button { font: inherit; color: inherit; border: none; cursor: pointer; }
   .primary { display: block; width: 100%; min-height: 48px; background: var(--accento); color: var(--sul-accento); font-weight: 600; font-size: 17px; border-radius: 12px; padding: 12px; margin: 12px 0; }
-  .small { background: var(--riempimento); color: var(--accento); font-weight: 600; border-radius: 10px; padding: 10px 14px; min-height: 44px; min-width: 44px; }
+  .small { background: var(--riempimento); color: var(--terracotta); font-weight: 600; border-radius: 10px; padding: 10px 14px; min-height: 44px; min-width: 44px; }
   .small.mini { min-width: 44px; padding: 4px 8px; font-size: 16px; }
   .small[disabled] { opacity: 0.4; }
   .chip { background: var(--riempimento); color: var(--testo); font-weight: 600; border-radius: 999px; padding: 10px 16px; min-height: 44px; }
@@ -112,7 +114,7 @@
   .profili { display: flex; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
   .giorni { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 8px 0 16px; }
   .giorni .chip { padding: 10px 0; font-size: 13px; text-align: center; position: relative; }
-  .giorni .chip.oggi::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accento); }
+  .giorni .chip.oggi::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--terracotta); }
   .giorni .chip.on.oggi::after { background: var(--sul-accento); }
   /* Alimenti: nome a sinistra, quantità a destra */
   .alimento { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 0.5px solid var(--separatore); }

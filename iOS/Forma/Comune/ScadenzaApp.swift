@@ -8,14 +8,14 @@ enum ScadenzaApp {
     static let oraAvviso = 9
 
     // Data di fine validità del profilo di firma, se l'app ne ha uno
-    static func scadenzaProfilo(_ bundle: Bundle = .main) -> Date? {
+    nonisolated static func scadenzaProfilo(_ bundle: Bundle = .main) -> Date? {
         guard let url = bundle.url(forResource: "embedded", withExtension: "mobileprovision"),
               let dati = try? Data(contentsOf: url) else { return nil }
         return scadenza(dalProfilo: dati)
     }
 
     // Il profilo è un messaggio firmato che contiene un plist XML: si estrae il plist
-    static func scadenza(dalProfilo dati: Data) -> Date? {
+    nonisolated static func scadenza(dalProfilo dati: Data) -> Date? {
         guard let inizio = dati.range(of: Data("<?xml".utf8)),
               let fine = dati.range(of: Data("</plist>".utf8), in: inizio.lowerBound..<dati.endIndex) else { return nil }
         let plist = dati.subdata(in: inizio.lowerBound..<fine.upperBound)

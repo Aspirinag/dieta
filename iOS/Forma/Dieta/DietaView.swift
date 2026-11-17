@@ -221,6 +221,21 @@ struct RigaPasto: View {
             }
         }
         .listRowInsets(compatta ? EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16) : nil)
+        .contextMenu {
+            if pasto.opzioni.count > 1 {
+                ForEach(pasto.opzioni.indices, id: \.self) { j in
+                    Button {
+                        archivio.cambiaSlot(giorno, indice) { $0.opt = j }
+                    } label: {
+                        if j == scelta {
+                            Label(pasto.nomeAlternativa(j), systemImage: "checkmark")
+                        } else {
+                            Text(pasto.nomeAlternativa(j))
+                        }
+                    }
+                }
+            }
+        }
         .accessibilityIdentifier("pasto-\(pasto.nome)")
         .righeTema()
     }

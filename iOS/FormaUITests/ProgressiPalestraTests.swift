@@ -12,15 +12,15 @@ final class ProgressiPalestraTests: XCTestCase {
     }
 
     private func porta(_ el: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<8 where !el.isHittable { app.swipeUp() }
+        for _ in 0..<8 where !el.exists || !el.isHittable { app.swipeUp() }
     }
 
     func testDettaglioETorna() {
         continueAfterFailure = false
         let app = avvia()
         let riga = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'allenamento-'")).firstMatch
-        XCTAssertTrue(riga.waitForExistence(timeout: 5), "Manca un allenamento nell'elenco")
         porta(riga, app)
+        XCTAssertTrue(riga.waitForExistence(timeout: 5), "Manca un allenamento nell'elenco")
         riga.tap()
         XCTAssertTrue(app.navigationBars["Progressi"].waitForNonExistence(timeout: 5), "Toccando un allenamento deve aprirsi il dettaglio")
         app.navigationBars.firstMatch.buttons.firstMatch.tap()
@@ -65,10 +65,10 @@ final class ProgressiPalestraTests: XCTestCase {
         continueAfterFailure = false
         let app = avvia()
         let cardio = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'cardio-'"))
-        XCTAssertTrue(cardio.firstMatch.waitForExistence(timeout: 5), "Nei dati di prova ci sono cardio tra gli ultimi allenamenti")
         let riga = cardio.firstMatch
-        let id = riga.identifier
         porta(riga, app)
+        XCTAssertTrue(riga.waitForExistence(timeout: 5), "Nei dati di prova ci sono cardio tra gli ultimi allenamenti")
+        let id = riga.identifier
         riga.tap()
         let elimina = app.buttons["Elimina cardio"]
         XCTAssertTrue(elimina.waitForExistence(timeout: 3), "Toccando un cardio si apre il dettaglio, dove si elimina")
@@ -82,8 +82,8 @@ final class ProgressiPalestraTests: XCTestCase {
 
     private func tocca(_ prefisso: String, _ app: XCUIApplication) {
         let riga = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", prefisso)).firstMatch
-        XCTAssertTrue(riga.waitForExistence(timeout: 5), "Manca una riga «\(prefisso)»")
         porta(riga, app)
+        XCTAssertTrue(riga.waitForExistence(timeout: 5), "Manca una riga «\(prefisso)»")
         riga.tap()
     }
 

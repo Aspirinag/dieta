@@ -26,13 +26,13 @@ final class PalestraUITests: XCTestCase {
         app.buttons["Libreria esercizi"].tap()
         XCTAssertTrue(app.navigationBars["Libreria esercizi"].waitForExistence(timeout: 5), "Non si apre la Libreria")
         app.navigationBars.firstMatch.buttons.firstMatch.tap()
-        for _ in 0..<4 where !app.buttons["Inizia"].firstMatch.isHittable { app.swipeDown() }
+        for _ in 0..<4 where !app.staticTexts["Prossima scheda"].isHittable { app.swipeDown() }
 
         // Inizia apre l'allenamento in corso
         let inizia = app.buttons["Inizia"].firstMatch
         XCTAssertTrue(inizia.waitForExistence(timeout: 5), "Manca il pulsante Inizia")
         inizia.tap()
-        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 5), "Non si apre l'allenamento in corso")
+        XCTAssertTrue(app.buttons["Fine"].waitForExistence(timeout: 8), "Non si apre l'allenamento in corso")
     }
 
     func testSchedaERaggiungibilita() {

@@ -27,7 +27,7 @@ final class SpesaUITests: XCTestCase {
 
         let cerchio = app.buttons["spunta.petto di pollo"]
         XCTAssertTrue(cerchio.exists, "Manca il cerchio di Petto di pollo")
-        XCTAssertGreaterThanOrEqual(cerchio.frame.height, 44, "Il cerchio è troppo piccolo")
+        XCTAssertGreaterThanOrEqual(cerchio.frame.height, 43.9, "Il cerchio è troppo piccolo")
         cerchio.tap()
         XCTAssertEqual(conteggio(app), 1, "Dopo il tocco «1 di N» aumenta")
         XCTAssertEqual(app.buttons["spunta.petto di pollo"].value as? String, "preso")

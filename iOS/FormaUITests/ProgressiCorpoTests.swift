@@ -43,17 +43,18 @@ final class ProgressiCorpoTests: XCTestCase {
                        "L'aderenza dei pasti non va nel peso")
         XCTAssertTrue(app.staticTexts["variazione"].exists, "Manca la variazione rispetto a 30 giorni fa")
 
-        // Toccando un riquadro il grafico cambia misura; toccando ancora torna al peso
-        let grasso = app.otherElements["metrica-grasso"]
+        // Toccando una riga il grafico cambia misura; toccando ancora torna al peso
+        let grasso = app.descendants(matching: .any)["metrica-grasso"]
         XCTAssertTrue(grasso.exists, "Manca il riquadro Grasso")
         grasso.tap()
         XCTAssertTrue(app.staticTexts["grafico-titolo"].waitForExistence(timeout: 3))
         XCTAssertEqual(app.staticTexts["grafico-titolo"].label, "Massa grassa")
-        app.otherElements["metrica-grasso"].tap()
+        app.descendants(matching: .any)["metrica-grasso"].tap()
         XCTAssertEqual(app.staticTexts["grafico-titolo"].label, "Peso")
 
-        XCTAssertGreaterThanOrEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'misura-'")).count, 2,
-                                    "Servono le ultime due misurazioni")
+        let misure = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'misura-'"))
+        for _ in 0..<4 where misure.count < 2 { app.swipeUp() }
+        XCTAssertGreaterThanOrEqual(misure.count, 2, "Servono le ultime due misurazioni")
     }
 
     func testMenuPiuAggiungeMisurazione() {
