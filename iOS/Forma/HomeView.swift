@@ -37,7 +37,7 @@ struct HomeView: View {
                 peso
                 note
             }
-            .listSectionSpacing(Spazio.m)
+            .listSectionSpacing(Spazio.s)
             .sfondoTema()
             .navigationTitle("Oggi")
             .navigationSubtitleSePossibile(titolo)
@@ -293,15 +293,15 @@ struct HomeView: View {
         let oggi = ultimoOggi
         let r = archivio.registro(oggi)
         let p = archivio.profilo
-        Section { rigaRiquadro { Riquadro {
+        Section {
             if p.olio > 0 {
                 Dosaggio(
                     nome: "Olio", unita: "cucchiaini",
                     valore: Binding(get: { r.olio }, set: { v in archivio.cambiaRegistro(oggi) { $0.olio = v } }),
                     dose: p.olio, colore: Colori.olio, simbolo: .cucchiaino)
-                    .padding(.vertical, 2)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 6, trailing: 16))
+                    .righeTema()
             }
-            if p.olio > 0 && p.acqua > 0 { Divider().padding(.vertical, 2) }
             if p.acqua > 0 {
                 Dosaggio(
                     nome: "Acqua", unita: "L",
@@ -310,9 +310,10 @@ struct HomeView: View {
                         set: { v in archivio.cambiaRegistro(oggi) { $0.acqua = Double(v) * Dosi.litriPerGoccia } }),
                     dose: Dosi.gocce(dose: p.acqua), colore: Colori.acqua, simbolo: .goccia,
                     quantitaPerElemento: Dosi.litriPerGoccia, doseTesto: num(p.acqua))
-                    .padding(.vertical, 2)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 8, trailing: 16))
+                    .righeTema()
             }
-        } } }
+        }
     }
 
     // ---------- Peso ----------

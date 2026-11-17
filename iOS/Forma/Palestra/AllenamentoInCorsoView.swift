@@ -417,7 +417,7 @@ struct SezioneEsercizioInCorso: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Colori.terracotta)
                             .frame(maxWidth: .infinity, minHeight: Misure.tocco)
-                            .background(Colori.terracotta.opacity(0.12), in: .rect(cornerRadius: 8))
+                            .background(.fill.quaternary, in: .rect(cornerRadius: 8))
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)

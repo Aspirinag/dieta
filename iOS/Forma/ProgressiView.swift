@@ -20,20 +20,21 @@ struct ProgressiView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: Spazio.m) {
+            List {
+                Section {
                     Picker("Mostra", selection: $sezione) {
                         ForEach(Sezione.allCases) { Text($0.etichetta).tag($0) }
                     }
                     .pickerStyle(.segmented)
-                    switch sezione {
-                    case .corpo: CorpoView(aggiungi: { nuovaMisura = true })
-                    case .palestra: ProgressiPalestraView()
-                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                 }
-                .padding(.horizontal, Spazio.l)
-                .padding(.bottom, Spazio.l)
+                switch sezione {
+                case .corpo: CorpoView(aggiungi: { nuovaMisura = true })
+                case .palestra: ProgressiPalestraView()
+                }
             }
+            .listSectionSpacing(Spazio.m)
             .sfondoTema()
             .navigationTitle("Progressi")
             .toolbar {

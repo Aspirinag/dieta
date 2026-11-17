@@ -51,12 +51,15 @@ struct CorpoView: View {
     // ---------- Stato vuoto ----------
 
     private var vuoto: some View {
-        Riquadro {
-            Text("Peso").font(.headline)
-            Button("Aggiungi il primo peso", action: aggiungi)
-                .buttonStyle(PulsanteAccento())
-                .padding(.top, Spazio.s)
+        Section {
+            VStack(alignment: .leading, spacing: Spazio.s) {
+                Text("Peso").font(.headline)
+                Button("Aggiungi il primo peso", action: aggiungi)
+                    .buttonStyle(PulsanteAccento())
+            }
+            .padding(.vertical, Spazio.xs)
         }
+        .righeTema()
     }
 
     // ---------- Dati ----------
@@ -106,92 +109,95 @@ struct CorpoView: View {
         let ultimo = bia.last { $0[campo] != nil }?[campo]
         let delta = Self.variazioneTrentaGiorni(bia, campo)
         let punti = misure.compactMap { m in m[campo].map { Punto(data: Giorni.data(m.data), valore: $0) } }
-        return Riquadro {
-            HStack(alignment: .firstTextBaseline) {
-                Text(campo.nome).font(.headline)
-                    .accessibilityIdentifier("grafico-titolo")
-                Spacer()
-                if campo != .peso {
-                    Button("Torna al peso") { withAnimation { metrica = .peso } }
-                        .font(.subheadline)
-                        .tint(.primary)
-                        .frame(minHeight: Misure.tocco)
-                }
-            }
-            HStack(alignment: .firstTextBaseline, spacing: Spazio.xs) {
-                Text(num(ultimo)).numero(.largeTitle)
-                    .accessibilityIdentifier("valore-grande")
-                Text(campo.unita).font(.subheadline).foregroundStyle(.secondary)
-            }
-            if let delta {
-                Text(testoInTrentaGiorni(delta, campo))
-                    .font(.subheadline).foregroundStyle(.secondary)
-                    .monospacedDigit()
-                    .accessibilityIdentifier("variazione")
-            }
-            if punti.count < 2 {
-                Text(punti.isEmpty ? LocalizedStringKey("Nessun valore in questo periodo.") : LocalizedStringKey("Servono due misurazioni in questo periodo."))
-                    .font(.subheadline).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 100)
-            } else {
-                let valori = punti.map(\.valore)
-                let basso = valori.min() ?? 0
-                let alto = valori.max() ?? 1
-                let margine = max((alto - basso) * 0.25, 0.5)
-                let minY = floor((basso - margine) * 2) / 2
-                let maxY = ceil((alto + margine) * 2) / 2
-                Chart(punti) { p in
-                    AreaMark(x: .value("Data", p.data), yStart: .value("Base", minY), yEnd: .value(campo.nome, p.valore))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(LinearGradient(colors: [Colori.accento.opacity(0.22), .clear], startPoint: .top, endPoint: .bottom))
-                    LineMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
-                        .interpolationMethod(.monotone)
-                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .foregroundStyle(Colori.accento)
-                    PointMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
-                        .symbolSize(p.id == punti.last?.id ? 70 : 32)
-                        .foregroundStyle(Colori.accento)
-                }
-                .chartXScale(range: .plotDimension(padding: 14))
-                .chartYScale(domain: minY...maxY)
-                .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+        return Section {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(campo.nome).font(.headline)
+                        .accessibilityIdentifier("grafico-titolo")
+                    Spacer()
+                    if campo != .peso {
+                        Button("Torna al peso") { withAnimation { metrica = .peso } }
+                            .font(.subheadline)
+                            .tint(.primary)
+                            .frame(minHeight: Misure.tocco)
                     }
                 }
-                .chartYAxis {
-                    AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
-                        AxisGridLine()
-                        AxisValueLabel()
-                    }
+                HStack(alignment: .firstTextBaseline, spacing: Spazio.xs) {
+                    Text(num(ultimo)).numero(.largeTitle)
+                        .accessibilityIdentifier("valore-grande")
+                    Text(campo.unita).font(.subheadline).foregroundStyle(.secondary)
                 }
-                .frame(height: 120)
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)   // assi leggibili, senza sovrapporsi al testo grande
-                .padding(.top, Spazio.xs)
-                .accessibilityLabel("Grafico: \(campo.nome)")
-                .accessibilityValue(punti.map { "\(num($0.valore)) \(campo.unita)" }.joined(separator: ", "))
+                if let delta {
+                    Text(testoInTrentaGiorni(delta, campo))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .accessibilityIdentifier("variazione")
+                }
+                if punti.count < 2 {
+                    Text(punti.isEmpty ? LocalizedStringKey("Nessun valore in questo periodo.") : LocalizedStringKey("Servono due misurazioni in questo periodo."))
+                        .font(.subheadline).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 100)
+                } else {
+                    let valori = punti.map(\.valore)
+                    let basso = valori.min() ?? 0
+                    let alto = valori.max() ?? 1
+                    let margine = max((alto - basso) * 0.25, 0.5)
+                    let minY = floor((basso - margine) * 2) / 2
+                    let maxY = ceil((alto + margine) * 2) / 2
+                    Chart(punti) { p in
+                        AreaMark(x: .value("Data", p.data), yStart: .value("Base", minY), yEnd: .value(campo.nome, p.valore))
+                            .interpolationMethod(.monotone)
+                            .foregroundStyle(LinearGradient(colors: [Colori.accento.opacity(0.22), .clear], startPoint: .top, endPoint: .bottom))
+                        LineMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
+                            .interpolationMethod(.monotone)
+                            .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                            .foregroundStyle(Colori.accento)
+                        PointMark(x: .value("Data", p.data), y: .value(campo.nome, p.valore))
+                            .symbolSize(p.id == punti.last?.id ? 70 : 32)
+                            .foregroundStyle(Colori.accento)
+                    }
+                    .chartXScale(range: .plotDimension(padding: 14))
+                    .chartYScale(domain: minY...maxY)
+                    .chartXAxis {
+                        AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                            AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in
+                            AxisGridLine()
+                            AxisValueLabel()
+                        }
+                    }
+                    .frame(height: 120)
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)   // assi leggibili, senza sovrapporsi al testo grande
+                    .padding(.top, Spazio.xs)
+                    .accessibilityLabel("Grafico: \(campo.nome)")
+                    .accessibilityValue(punti.map { "\(num($0.valore)) \(campo.unita)" }.joined(separator: ", "))
+                }
+                Picker("Periodo", selection: $periodo) {
+                    ForEach(Periodo.allCases) { Text($0.etichetta).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .padding(.top, Spazio.s)
             }
-            Picker("Periodo", selection: $periodo) {
-                ForEach(Periodo.allCases) { Text($0.etichetta).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .controlSize(.small)
-            .padding(.top, Spazio.s)
+            .padding(.vertical, Spazio.xs)
         }
+        .righeTema()
     }
 
     // ---------- Grasso, magra, vita ----------
 
     private func composizione(_ bia: [Misura]) -> some View {
-        VStack(alignment: .leading, spacing: Spazio.xs) {
-            Text("Composizione").font(.headline).padding(.horizontal, Spazio.xs)
-            Riquadro {
-                ForEach(Array(Self.riquadri.enumerated()), id: \.element) { i, campo in
-                    if i > 0 { Divider() }
-                    rigaComposizione(bia, campo)
-                }
+        Section {
+            ForEach(Self.riquadri, id: \.self) { campo in
+                rigaComposizione(bia, campo)
             }
+        } header: {
+            Text("Composizione").textCase(nil)
         }
+        .righeTema()
     }
 
     private func rigaComposizione(_ bia: [Misura], _ campo: CampoMisura) -> some View {
@@ -229,24 +235,16 @@ struct CorpoView: View {
     // ---------- Misurazioni ----------
 
     private func misurazioni(_ bia: [Misura]) -> some View {
-        VStack(alignment: .leading, spacing: Spazio.xs) {
-            Text("Misurazioni").font(.headline).padding(.horizontal, Spazio.xs)
-            Riquadro {
-                RigheMisure(misure: Array(bia.reversed().prefix(2)))
-                Divider()
-                NavigationLink(value: PaginaDieta.misure) {
-                    HStack {
-                        Text("Tutte le misurazioni")
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                    }
-                    .frame(minHeight: Misure.riga)
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("tutte-le-misurazioni")
+        Section {
+            RigheMisure(misure: Array(bia.reversed().prefix(2)))
+            NavigationLink(value: PaginaDieta.misure) {
+                Text("Tutte le misurazioni")
             }
+            .accessibilityIdentifier("tutte-le-misurazioni")
+        } header: {
+            Text("Misurazioni").textCase(nil)
         }
+        .righeTema()
     }
 }
 
@@ -262,16 +260,10 @@ struct RigheMisure: View {
     let misure: [Misura]
 
     var body: some View {
-        ForEach(Array(misure.enumerated()), id: \.element.id) { i, m in
-            if i > 0 { Divider() }
+        ForEach(misure) { m in
             NavigationLink(value: PaginaDieta.misura(m.data)) {
-                HStack {
-                    RigaMisura(misura: m)
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                }
-                .contentShape(.rect)
+                RigaMisura(misura: m)
             }
-            .buttonStyle(.plain)
             .accessibilityLabel("\(dataMisura(m.data)), \(m.peso.map { kgTesto($0) } ?? String(localized: "senza peso"))")
             .accessibilityHint(Text("Apre la misurazione per modificarla"))
             .accessibilityIdentifier("misura-\(m.data)")

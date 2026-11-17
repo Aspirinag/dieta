@@ -9,6 +9,7 @@ struct RecuperoLiveTests {
     enum Evento: Equatable { case aggiunta(Int), cancella }
 
     // Finto della notifica di fine recupero: tiene in ordine quello che il timer chiede
+    @MainActor
     final class Registro {
         var eventi: [Evento] = []
         var aggiunte: [Int] { eventi.compactMap { if case .aggiunta(let s) = $0 { s } else { nil } } }
