@@ -184,4 +184,26 @@ struct RecuperoLiveTests {
         let vecchio = try JSONDecoder().decode(Allenamento.self, from: Data(#"{"nome":"Push"}"#.utf8))
         #expect(!vecchio.riscaldamentoSaltato)
     }
+
+    @Test func saltaEsercizioPassaAlProssimoApertoSenzaSegnareSerie() throws {
+        var s = StatoPalestra()
+        var a = Allenamento(nome: "Push")
+        a.riscaldamentoSaltato = true
+        a.esercizi = [
+            EsercizioFatto(esercizio: "panca", serie: [SerieFatta(kg: 60, rip: 8)]),
+            EsercizioFatto(esercizio: "squat", serie: [SerieFatta(kg: 80, rip: 6)]),
+        ]
+        s.inCorso = a
+        let p = Palestra(stato: s)
+        let libreria = [
+            Esercizio(id: "panca", nome: "Panca piana", muscolo: .petto, attrezzo: .bilanciere),
+            Esercizio(id: "squat", nome: "Squat", muscolo: .quadricipiti, attrezzo: .bilanciere),
+        ]
+        p.saltaEsercizioDaLive()
+        let dopo = try #require(StatoAllenamentoLive.da(allenamento: p.stato.inCorso, ultimaSerie: p.ultimaSerie,
+                                                        recupero: nil, libreria: libreria))
+        #expect(dopo.esercizio == "Squat")
+        #expect(dopo.idSerie == p.stato.inCorso?.esercizi[1].serie[0].id)
+        #expect(p.stato.inCorso?.esercizi[0].serie[0].fatta == false)
+    }
 }

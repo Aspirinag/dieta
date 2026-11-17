@@ -52,11 +52,24 @@ struct RecuperoLiveActivity: Widget {
                             Text("Apri inForma per finire l'allenamento")
                                 .font(.footnote).foregroundStyle(.secondary)
                         } else if !stato.puoSpuntare {
-                            Text("Apri inForma per i kg").font(.footnote).foregroundStyle(.secondary)
-                        } else if stato.movimento != nil {
                             HStack {
+                                Text("Apri inForma per i kg").font(.footnote).foregroundStyle(.secondary)
                                 Spacer(minLength: 0)
-                                PulsanteSaltaRiscaldamento(compatto: true)
+                                if stato.movimento == nil && stato.prossimo != nil {
+                                    PulsanteSaltaEsercizio(compatto: true)
+                                }
+                            }
+                        } else if recupero == nil {
+                            if stato.movimento != nil {
+                                HStack {
+                                    Spacer(minLength: 0)
+                                    PulsanteSaltaRiscaldamento(compatto: true)
+                                }
+                            } else if stato.prossimo != nil {
+                                HStack {
+                                    Spacer(minLength: 0)
+                                    PulsanteSaltaEsercizio(compatto: true)
+                                }
                             }
                         }
                     }
@@ -127,14 +140,23 @@ struct VistaAllenamentoBloccata: View {
                     Spacer(minLength: 0)
                     if stato.puoSpuntare {
                         HStack(spacing: 6) {
-                            if stato.movimento != nil { PulsanteSaltaRiscaldamento(compatto: true) }
+                            if stato.movimento != nil {
+                                PulsanteSaltaRiscaldamento(compatto: true)
+                            } else if stato.prossimo != nil {
+                                PulsanteSaltaEsercizio(compatto: true)
+                            }
                             PulsanteFatta(stato: stato, compatto: false)
                         }
                     } else {
-                        Text("Apri inForma per i kg")
-                            .font(.caption).foregroundStyle(.secondary)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 84, alignment: .trailing)
+                        HStack(spacing: 6) {
+                            Text("Apri inForma per i kg")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
+                                .frame(maxWidth: 84, alignment: .trailing)
+                            if stato.movimento == nil && stato.prossimo != nil {
+                                PulsanteSaltaEsercizio(compatto: true)
+                            }
+                        }
                     }
                 }
             } else {
@@ -227,6 +249,15 @@ struct PulsanteSaltaRiscaldamento: View {
 
     var body: some View {
         PulsanteSecondario(titolo: "Salta", voce: "Salta il riscaldamento", intent: SaltaRiscaldamentoIntent(), compatto: compatto)
+    }
+}
+
+// «Salta» sull'esercizio: passa al prossimo esercizio aperto
+struct PulsanteSaltaEsercizio: View {
+    let compatto: Bool
+
+    var body: some View {
+        PulsanteSecondario(titolo: "Salta", voce: "Salta l'esercizio", intent: SaltaEsercizioIntent(), compatto: compatto)
     }
 }
 

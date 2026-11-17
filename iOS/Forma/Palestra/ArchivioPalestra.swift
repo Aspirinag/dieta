@@ -169,6 +169,19 @@ final class Palestra {
         salvaOra()
     }
 
+    // «Salta» sull'esercizio dalla Live Activity: passa alla prima serie da fare del prossimo esercizio aperto,
+    // senza segnare come fatte le serie rimaste di quello attuale
+    func saltaEsercizioDaLive() {
+        guard let a = stato.inCorso,
+              let idAttuale = SerieAttiva.trova(in: a.esercizi, riferimento: ultimaSerie),
+              let attuale = a.esercizi.first(where: { $0.serie.contains { $0.id == idAttuale } }),
+              let idProssimo = PercorsoAllenamento.prossimoAperto(dopo: attuale.id, in: a.esercizi),
+              let prossimo = a.esercizi.first(where: { $0.id == idProssimo }),
+              let primaDaFare = prossimo.serie.first(where: { !$0.fatta })?.id else { return }
+        ultimaSerie = primaDaFare
+        salvaOra()
+    }
+
     func aggiungi(esercizi ids: [String]) {
         for id in ids {
             stato.inCorso?.esercizi.append(EsercizioFatto(esercizio: id, serie: (0..<3).map { _ in SerieFatta() }))

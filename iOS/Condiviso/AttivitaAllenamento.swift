@@ -37,6 +37,7 @@ enum AzioniLive {
     @MainActor static var cambiaRecupero: ((Int) async -> Void)?     // ±15 s
     @MainActor static var saltaRecupero: (() async -> Void)?
     @MainActor static var saltaRiscaldamento: (() async -> Void)?
+    @MainActor static var saltaEsercizio: (() async -> Void)?
     @MainActor static var ancora30: (() async -> Void)?              // dalla notifica di fine recupero
 }
 
@@ -124,6 +125,19 @@ struct SaltaRiscaldamentoIntent: LiveActivityIntent {
 
     func perform() async throws -> some IntentResult {
         await AzioniLive.saltaRiscaldamento?()
+        return .result()
+    }
+}
+
+// «Salta» sull'esercizio: passa al prossimo esercizio aperto senza segnare le serie rimaste (gira nel processo dell'app)
+struct SaltaEsercizioIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Salta l'esercizio"
+    static let isDiscoverable = false
+
+    init() {}
+
+    func perform() async throws -> some IntentResult {
+        await AzioniLive.saltaEsercizio?()
         return .result()
     }
 }
