@@ -517,6 +517,7 @@ struct RigaSerie: View {
     @State private var rip = ""
     @State private var caricato = false
     @State private var errore = 0
+    @State private var tocco = 0
     @State private var manca: EsitoSpunta.Campo?   // campo vuoto alla spunta: contorno e «Scrivi i kg» finché non si scrive
 
     private var posizione: (Int, Int)? {
@@ -593,6 +594,7 @@ struct RigaSerie: View {
             }
             .sensoryFeedback(.success, trigger: s.fatta) { _, nuovo in nuovo }
             .sensoryFeedback(.error, trigger: errore)
+            .sensoryFeedback(.selection, trigger: tocco)
             // Rotella di kg o ripetizioni: un foglio basso che si apre toccando la casella
             .sheet(isPresented: Binding(
                 get: { campo?.serie == idSerie },
@@ -680,6 +682,7 @@ struct RigaSerie: View {
 
     private func applica(_ quale: EsitoSpunta.Campo, su: Bool, prec: SerieFatta?) {
         riferimento = idSerie
+        tocco += 1
         switch quale {
         case .kg: kg = num(PassoSerie.kg(kg, base: prec?.kg, delta: su ? PassoSerie.kg : -PassoSerie.kg))
         case .rip: rip = String(PassoSerie.rip(rip, base: prec?.rip, delta: su ? PassoSerie.rip : -PassoSerie.rip))
@@ -698,6 +701,7 @@ struct RigaSerie: View {
             .frame(maxWidth: .infinity, minHeight: Misure.tocco)
         if let v = UltimaVolta.valori(da: prec), !fatta {
             Button {
+                tocco += 1
                 if let k = v.kg { kg = num(k) }
                 if let r = v.rip { rip = String(r) }
             } label: { etichetta.contentShape(.rect) }

@@ -237,6 +237,7 @@ struct RigaPasto: View {
             }
         }
         .accessibilityIdentifier("pasto-\(pasto.nome)")
+        .sensoryFeedback(.selection, trigger: scelta)
         .righeTema()
     }
 }

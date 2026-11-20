@@ -341,6 +341,15 @@ struct InformazioniImpostazioni: View {
                 Section {
                     Text("inForma non è un dispositivo medico e non sostituisce il parere del tuo nutrizionista o medico.")
                 }
+                if let scadenza = ScadenzaApp.testoScadenza() {
+                    Section {
+                        Label {
+                            Text(scadenza)
+                        } icon: {
+                            Image(systemName: "signature").foregroundStyle(Colori.terracotta)
+                        }
+                    }
+                }
                 Section {
                     Text("I tuoi dati restano sul telefono: niente account, niente server, nessun tracciamento.")
                     if let url = URL(string: "https://aspirinag.github.io/dieta/privacy.html") {
