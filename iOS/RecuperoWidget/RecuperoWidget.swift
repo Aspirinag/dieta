@@ -28,7 +28,7 @@ struct RecuperoLiveActivity: Widget {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: stato.esercizio ?? "").font(.headline).lineLimit(1)
                             Text(verbatim: stato.rigaSerie)
-                                .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         .padding(.leading, 4)
                     } else {
@@ -37,28 +37,39 @@ struct RecuperoLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     if stato.puoSpuntare {
-                        PulsanteFatta(stato: stato).padding(.trailing, 4)
+                        PulsanteFatta(stato: stato, compatto: true).padding(.trailing, 4)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         if let recupero {
-                            RigaRecupero(stato: recupero, stile: .title2, compatto: true)
+                            RigaRecupero(stato: recupero, stile: .title3, compatto: true)
                         } else if stato.recupero != nil {
                             Label("Recupero finito", systemImage: "timer")
-                                .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(Colori.terracotta)
                         }
                         if stato.esercizio == nil {
                             Text("Apri inForma per finire l'allenamento")
                                 .font(.footnote).foregroundStyle(.secondary)
-                        } else {
-                            if !stato.puoSpuntare {
+                        } else if !stato.puoSpuntare {
+                            HStack {
                                 Text("Apri inForma per i kg").font(.footnote).foregroundStyle(.secondary)
-                            }
-                            HStack(alignment: .center, spacing: 8) {
-                                RigaPoi(prossimo: stato.prossimo)
                                 Spacer(minLength: 0)
-                                if stato.movimento != nil { PulsanteSaltaRiscaldamento(compatto: true) }
+                                if stato.movimento == nil && stato.prossimo != nil {
+                                    PulsanteSaltaEsercizio(compatto: true)
+                                }
+                            }
+                        } else if recupero == nil {
+                            if stato.movimento != nil {
+                                HStack {
+                                    Spacer(minLength: 0)
+                                    PulsanteSaltaRiscaldamento(compatto: true)
+                                }
+                            } else if stato.prossimo != nil {
+                                HStack {
+                                    Spacer(minLength: 0)
+                                    PulsanteSaltaEsercizio(compatto: true)
+                                }
                             }
                         }
                     }
@@ -66,6 +77,7 @@ struct RecuperoLiveActivity: Widget {
                 }
             } compactLeading: {
                 Image(systemName: recupero != nil ? "timer" : "dumbbell.fill")
+                    .foregroundStyle(recupero != nil ? Colori.terracotta : Colori.accento)
             } compactTrailing: {
                 if let recupero {
                     Text(timerInterval: recupero.intervallo, countsDown: true)
@@ -85,9 +97,10 @@ struct RecuperoLiveActivity: Widget {
                         Image(systemName: "timer")
                     }
                     .progressViewStyle(.circular)
-                    .tint(.primary)
+                    .tint(Colori.terracotta)
                 } else {
                     Image(systemName: "dumbbell.fill")
+                        .foregroundStyle(Colori.accento)
                 }
             }
         }
@@ -101,77 +114,63 @@ struct VistaAllenamentoBloccata: View {
 
     var body: some View {
         let recupero = stato.recuperoAttivo(scaduto: scaduto)
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(verbatim: stato.titolo)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Text(timerInterval: stato.inizio...Date.distantFuture, countsDown: false)
-                    .font(.numero(.subheadline))
+                    .font(.numero(.caption))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 90, alignment: .trailing)
+                    .frame(maxWidth: 80, alignment: .trailing)
             }
             if let esercizio = stato.esercizio {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(verbatim: esercizio).font(.title2.weight(.bold)).lineLimit(2)
-                        Text(verbatim: stato.rigaSerie).font(.body).lineLimit(1)
-                        if let spiegazione = stato.spiegazione {
-                            Text(verbatim: spiegazione).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                        }
+                HStack(alignment: .center, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: esercizio).font(.headline).lineLimit(1)
+                        Text(verbatim: stato.rigaSerie).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                         if scaduto && stato.recupero != nil {
                             Label("Recupero finito", systemImage: "timer")
-                                .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                                .font(.caption.weight(.semibold)).foregroundStyle(Colori.terracotta)
                         }
-                        RigaPoi(prossimo: stato.prossimo)
                     }
                     Spacer(minLength: 0)
                     if stato.puoSpuntare {
-                        // «Fatta» è il principale; durante il riscaldamento sotto c'è «Salta», secondario
-                        VStack(alignment: .trailing, spacing: 6) {
-                            PulsanteFatta(stato: stato)
-                            if stato.movimento != nil { PulsanteSaltaRiscaldamento(compatto: false) }
+                        HStack(spacing: 6) {
+                            if stato.movimento != nil {
+                                PulsanteSaltaRiscaldamento(compatto: true)
+                            } else if stato.prossimo != nil {
+                                PulsanteSaltaEsercizio(compatto: true)
+                            }
+                            PulsanteFatta(stato: stato, compatto: false)
                         }
                     } else {
-                        Text("Apri inForma per i kg")
-                            .font(.caption).foregroundStyle(.secondary)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 90, alignment: .trailing)
+                        HStack(spacing: 6) {
+                            Text("Apri inForma per i kg")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
+                                .frame(maxWidth: 84, alignment: .trailing)
+                            if stato.movimento == nil && stato.prossimo != nil {
+                                PulsanteSaltaEsercizio(compatto: true)
+                            }
+                        }
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Tutte le serie fatte").font(.title2.weight(.bold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tutte le serie fatte").font(.headline)
                     Text("Apri inForma per finire l'allenamento").font(.subheadline).foregroundStyle(.secondary)
                 }
             }
             if let recupero {
-                RigaRecupero(stato: recupero, stile: .title, compatto: false)
+                RigaRecupero(stato: recupero, stile: .title2, compatto: false)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-    }
-}
-
-// «Poi: Squat» oppure «Ultimo esercizio»
-struct RigaPoi: View {
-    let prossimo: String?
-
-    var body: some View {
-        Group {
-            if let prossimo {
-                Text("Poi: \(prossimo)")
-            } else {
-                Text("Ultimo esercizio")
-            }
-        }
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
+        .padding(.vertical, 12)
     }
 }
 
@@ -179,6 +178,7 @@ struct RigaPoi: View {
 // (gira nell'app, senza aprirla)
 struct PulsanteFatta: View {
     let stato: StatoAllenamentoLive
+    var compatto = false
 
     var body: some View {
         if let m = stato.movimento {
@@ -194,10 +194,10 @@ struct PulsanteFatta: View {
 
     private var etichetta: some View {
         Label("Fatta", systemImage: "checkmark")
-                .font(.subheadline.weight(.semibold))
+                .font((compatto ? Font.footnote : Font.subheadline).weight(.semibold))
                 .foregroundStyle(Colori.sulAccento)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.horizontal, compatto ? 12 : 14)
+                .padding(.vertical, compatto ? 8 : 9)
                 .background(Colori.accento, in: Capsule())
     }
 }
@@ -214,12 +214,11 @@ struct ContoRecupero: View {
             .multilineTextAlignment(allineato == .leading ? .leading : .trailing)
             .lineLimit(1)
             .minimumScaleFactor(0.7)
-            .frame(maxWidth: 140, alignment: allineato)
+            .frame(maxWidth: 96, alignment: allineato)
     }
 }
 
-// Il recupero: timer e conto alla rovescia a sinistra, «−15 s», «+15 s» e «Salta» a destra sulla stessa riga
-// (nessuna riga in più: il conto non si taglia), la barra sotto
+// Il recupero: timer e conto alla rovescia a sinistra, «−15 s», «+15 s» e «Salta» a destra sulla stessa riga, la barra sotto
 struct RigaRecupero: View {
     let stato: StatoRecupero
     let stile: Font.TextStyle
@@ -227,13 +226,13 @@ struct RigaRecupero: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            HStack(alignment: .center, spacing: 8) {
-                Image(systemName: "timer").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 6) {
+                Image(systemName: "timer").font(.subheadline.weight(.semibold)).foregroundStyle(Colori.terracotta)
                     .accessibilityHidden(true)
                 ContoRecupero(stato: stato, stile: stile, allineato: .leading)
                     .accessibilityLabel("Recupero")
-                Spacer(minLength: 0)
-                HStack(spacing: compatto ? 5 : 8) {
+                Spacer(minLength: 4)
+                HStack(spacing: compatto ? 5 : 6) {
                     PulsanteSecondario(titolo: "−15 s", voce: "Togli 15 secondi", intent: CambiaRecuperoIntent(secondi: -15), compatto: compatto)
                     PulsanteSecondario(titolo: "+15 s", voce: "Aggiungi 15 secondi", intent: CambiaRecuperoIntent(secondi: 15), compatto: compatto)
                     PulsanteSecondario(titolo: "Salta", voce: "Salta il recupero", intent: SaltaRecuperoIntent(), compatto: compatto)
@@ -253,6 +252,15 @@ struct PulsanteSaltaRiscaldamento: View {
     }
 }
 
+// «Salta» sull'esercizio: passa al prossimo esercizio aperto
+struct PulsanteSaltaEsercizio: View {
+    let compatto: Bool
+
+    var body: some View {
+        PulsanteSecondario(titolo: "Salta", voce: "Salta l'esercizio", intent: SaltaEsercizioIntent(), compatto: compatto)
+    }
+}
+
 // Pulsante secondario: capsula chiara, testo normale. Solo «Fatta» è pieno e verde
 struct PulsanteSecondario<I: AppIntent>: View {
     let titolo: LocalizedStringKey
@@ -266,9 +274,9 @@ struct PulsanteSecondario<I: AppIntent>: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
-                .padding(.horizontal, compatto ? 8 : 11)
-                .padding(.vertical, 8)
-                .background(Color.primary.opacity(0.14), in: Capsule())
+                .padding(.horizontal, compatto ? 8 : 10)
+                .padding(.vertical, 7)
+                .background(Color.primary.opacity(0.12), in: Capsule())
         }
         .buttonStyle(.plain)
         .fixedSize()
@@ -287,7 +295,7 @@ struct BarraRecupero: View {
             EmptyView()
         }
         .progressViewStyle(.linear)
-        .tint(.primary)
+        .tint(Colori.terracotta)
         .accessibilityHidden(true)
     }
 }

@@ -28,6 +28,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
+                scadenza
                 pagamento
                 pasti
                 allenamento
@@ -110,7 +111,22 @@ struct HomeView: View {
         }
     }
 
-    // ---------- Pagamento ----------
+    // ---------- Scadenza e pagamento ----------
+
+    @ViewBuilder private var scadenza: some View {
+        if let testo = ScadenzaApp.avvisoInApp() {
+            Section {
+                Label {
+                    Text(testo).font(.subheadline)
+                } icon: {
+                    Image(systemName: "clock.badge.exclamationmark")
+                        .foregroundStyle(Colori.terracotta)
+                }
+                .accessibilityIdentifier("riquadro-scadenza")
+                .righeTema()
+            }
+        }
+    }
 
     // Solo da una settimana prima del giorno di pagamento al giorno dopo, finché non è segnato pagato
     @ViewBuilder private var pagamento: some View {
@@ -214,6 +230,13 @@ struct HomeView: View {
                                 Spacer(minLength: 8)
                                 Button("Crea la prima scheda") { navigazione.scheda = .allenamento }
                                     .buttonStyle(PulsanteAccento())
+                            }
+                        }
+                    }
+                    .contextMenu {
+                        if palestra.stato.routine.count > 1 {
+                            Button("Cambia scheda…", systemImage: "arrow.triangle.2.circlepath") {
+                                sceltaScheda = true
                             }
                         }
                     }

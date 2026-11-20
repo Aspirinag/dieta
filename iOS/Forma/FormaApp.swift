@@ -54,6 +54,10 @@ struct FormaApp: App {
             p.saltaRiscaldamentoDaLive()
             await collegamento.aggiornaEAttendi()
         }
+        AzioniLive.saltaEsercizio = {
+            p.saltaEsercizioDaLive()
+            await collegamento.aggiornaEAttendi()
+        }
         // «Ancora 30 s» sulla notifica di fine recupero, con l'app anche chiusa
         AzioniLive.ancora30 = {
             t.ancora30()

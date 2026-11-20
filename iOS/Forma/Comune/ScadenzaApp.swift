@@ -42,4 +42,27 @@ enum ScadenzaApp {
                             testo: String(localized: "Collega l'iPhone al Mac e rinnova l'app: i dati restano."),
                             quando: c)
     }
+
+    // Testo per il promemoria in Oggi negli ultimi 2 giorni prima della scadenza (nil se mancano più di 2 giorni o non c'è profilo)
+    static func avvisoInApp(scadenza: Date? = scadenzaProfilo(), adesso: Date = Date(), calendario: Calendar = .current) -> String? {
+        guard let scadenza, scadenza > adesso,
+              let soglia = calendario.date(byAdding: .day, value: -giorniPrima, to: scadenza),
+              adesso >= calendario.startOfDay(for: soglia) else { return nil }
+        let inizioOggi = calendario.startOfDay(for: adesso)
+        let inizioScadenza = calendario.startOfDay(for: scadenza)
+        let giorni = calendario.dateComponents([.day], from: inizioOggi, to: inizioScadenza).day ?? 0
+        if giorni <= 0 {
+            return String(localized: "L'app scade oggi · Rinnova dal Mac")
+        } else if giorni == 1 {
+            return String(localized: "L'app scade domani · Rinnova dal Mac")
+        } else {
+            return String(localized: "L'app scade tra \(giorni) giorni · Rinnova dal Mac")
+        }
+    }
+
+    // Testo per Impostazioni → Informazioni e privacy: data di scadenza del profilo di firma, se presente
+    static func testoScadenza(scadenza: Date? = scadenzaProfilo()) -> String? {
+        guard let scadenza else { return nil }
+        return String(localized: "Firma valida fino a \(Testi.data(scadenza))")
+    }
 }

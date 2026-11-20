@@ -28,4 +28,13 @@ final class ScadenzaAppTests: XCTestCase {
     func testProfiloIllegibileNessunaScadenza() {
         XCTAssertNil(ScadenzaApp.scadenza(dalProfilo: Data([1, 2, 3])))
     }
+
+    func testAvvisoInAppNegliUltimiDueGiorni() {
+        let scadenza = data(22, 15)
+        XCTAssertNil(ScadenzaApp.avvisoInApp(scadenza: scadenza, adesso: data(17, 12), calendario: cal))
+        XCTAssertNotNil(ScadenzaApp.avvisoInApp(scadenza: scadenza, adesso: data(20, 8), calendario: cal))
+        XCTAssertNotNil(ScadenzaApp.avvisoInApp(scadenza: scadenza, adesso: data(21, 10), calendario: cal))
+        XCTAssertNotNil(ScadenzaApp.avvisoInApp(scadenza: scadenza, adesso: data(22, 10), calendario: cal))
+        XCTAssertNil(ScadenzaApp.avvisoInApp(scadenza: scadenza, adesso: data(22, 16), calendario: cal))
+    }
 }
